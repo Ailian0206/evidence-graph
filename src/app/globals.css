@@ -308,8 +308,9 @@ button {
 .hero-scroll {
   position: absolute;
   z-index: 4;
-  right: max(var(--page-gutter), calc((100% - var(--content-width)) / 2));
+  right: auto;
   bottom: 28px;
+  left: max(var(--page-gutter), calc((100% - var(--content-width)) / 2));
   display: flex;
   align-items: center;
   gap: 8px;
@@ -870,6 +871,36 @@ button {
   }
   to {
     transform: translateX(190px);
+  }
+}
+
+@media (min-width: 681px) and (max-width: 1100px) {
+  .hero-content {
+    width: 44%;
+  }
+
+  .hero-content h1 {
+    font-size: 84px;
+  }
+
+  .hero-role,
+  .hero-summary {
+    max-width: 100%;
+  }
+
+  .graph-node-claim {
+    right: 4%;
+    width: 30%;
+  }
+
+  .graph-node-evidence {
+    right: 8%;
+    width: 34%;
+  }
+
+  .graph-node-source {
+    right: 2%;
+    width: 30%;
   }
 }
 

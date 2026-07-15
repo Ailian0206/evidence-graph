@@ -78,11 +78,12 @@ export function EvidenceCanvas({
         <button
           className="graph-node graph-node-claim"
           type="button"
-          aria-pressed={activeNode === "claim"}
+          aria-pressed={selectedNode === "claim"}
           onClick={selectNode("claim")}
           onFocus={previewActiveNode("claim")}
           onBlur={clearPreviewNode}
           onPointerEnter={previewActiveNode("claim")}
+          onPointerLeave={clearPreviewNode}
         >
           <span>{copy.labels.claim}</span>
           <strong>{copy.claim}</strong>
@@ -90,11 +91,12 @@ export function EvidenceCanvas({
         <button
           className="graph-node graph-node-evidence"
           type="button"
-          aria-pressed={activeNode === "evidence"}
+          aria-pressed={selectedNode === "evidence"}
           onClick={selectNode("evidence")}
           onFocus={previewActiveNode("evidence")}
           onBlur={clearPreviewNode}
           onPointerEnter={previewActiveNode("evidence")}
+          onPointerLeave={clearPreviewNode}
         >
           <Quote aria-hidden="true" size={16} />
           <span>{copy.labels.evidence}</span>
@@ -103,11 +105,12 @@ export function EvidenceCanvas({
         <button
           className="graph-node graph-node-source"
           type="button"
-          aria-pressed={activeNode === "source"}
+          aria-pressed={selectedNode === "source"}
           onClick={selectNode("source")}
           onFocus={previewActiveNode("source")}
           onBlur={clearPreviewNode}
           onPointerEnter={previewActiveNode("source")}
+          onPointerLeave={clearPreviewNode}
         >
           <FileText aria-hidden="true" size={16} />
           <span>{copy.labels.source}</span>
