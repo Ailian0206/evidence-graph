@@ -78,12 +78,12 @@
 - Create: `src/components/portfolio/practice-notes.tsx`
 - Create: `src/components/portfolio/profile-band.tsx`
 
-- [ ] Run the existing public navigation Playwright test and confirm RED with missing pages.
-- [ ] Implement the locale layout, public pages, accessible navigation, language switcher, and mail/GitHub links.
-- [ ] Use a full-bleed hero whose primary visual is a functional sample evidence graph built from semantic HTML/CSS, not a decorative SVG.
-- [ ] Present Evidence Graph first and AI Photo Studio CN second; use honest `Building` and `In development` states.
-- [ ] Run the navigation test and verify GREEN.
-- [ ] Commit as `feat: 实现双语个人作品集页面`.
+- [x] Run the existing public navigation Playwright test and confirm RED with missing pages.
+- [x] Implement the locale layout, public pages, accessible navigation, language switcher, and mail/GitHub links.
+- [x] Use a full-bleed hero whose primary visual is a functional sample evidence graph built from semantic HTML/CSS, not a decorative SVG.
+- [x] Present Evidence Graph first and AI Photo Studio CN second; use honest `Building` and `In development` states.
+- [x] Run the navigation test and verify GREEN.
+- [x] Commit as `feat: 实现双语个人作品集页面`.
 
 ### Task 5: Create the responsive visual system
 
