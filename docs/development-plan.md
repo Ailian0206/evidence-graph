@@ -20,8 +20,8 @@ Development is split into module branches and Draft PRs so CI and the configured
 - Each module uses small Chinese Conventional Commits and one Draft PR; do not open separate PRs for intermediate commits.
 - `PROJECT_STATUS.md` is updated when branch, PR, CI, or milestone state changes.
 - A module is not complete until lint, typecheck, unit, build, and relevant Playwright checks pass.
-- Cursor Bugbot Autofix is the first fixer for Bugbot findings when it is enabled. Codex reviews and integrates the Autofix diff, and only writes a follow-up fix if Autofix fails, stalls, or introduces a verified problem.
-- Waiting for CI, Bugbot, or Autofix should not block unrelated local progress. Continue the next local module task in a separate branch/worktree when safe, and use a read-only subagent to monitor PR state.
+- `docs/bugbot-autofix-workflow.md` defines the PR review state machine. Autofix owns active Bugbot findings; Codex reviews and integrates its completed output and only fixes a verified remainder on the same module branch without opening another PR.
+- Waiting for CI, Bugbot, or Autofix does not block unrelated local progress. Continue the next local module task in a separate branch/worktree and use one read-only monitor subagent per active module PR.
 
 ## Current module
 

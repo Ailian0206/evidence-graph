@@ -30,10 +30,11 @@ Do not add ProjectPilot AI, generic chat, billing, teams, browser extensions, OC
 7. Use Chinese Conventional Commits.
 8. Keep pull requests at module granularity. Do not create PRs for intermediate tasks, review-only cleanups, or every small commit.
 9. At the module milestone, run the complete gate, push the branch, and create one Draft PR for that module.
-10. When Cursor Bugbot Autofix is enabled, let Autofix attempt the first code fix for Bugbot findings. Do not race it by manually fixing the same finding unless Autofix fails, stalls, or produces an incorrect patch.
-11. Review Autofix output before accepting it: fetch the branch, inspect the diff, run focused tests for the finding, then run the module gate before merging or continuing.
-12. While CI, Bugbot, or Autofix is pending, continue non-overlapping local work for the next module when possible. A subagent may monitor PR checks and Autofix branches, but it must stay read-only unless explicitly assigned an implementation task.
-13. Merge with `gh pr merge <number> --merge --delete-branch` only after checks are green and valid bot feedback has been reviewed.
+10. Follow `docs/bugbot-autofix-workflow.md` for every module PR. Once Bugbot starts Autofix, Autofix owns that finding until it publishes a patch or reaches a terminal failure; Codex must not race it with the same fix.
+11. Use a read-only subagent to monitor PR checks, Autofix state, and Cursor-authored commits. The main process continues non-overlapping local work instead of waiting.
+12. Review Autofix output before accepting it: fetch the remote state, inspect the diff, run focused tests for the finding, then run the module gate.
+13. If Autofix is incorrect or incomplete, fix the verified remainder on the same module branch and update the existing module PR with one reviewed push. Do not open a follow-up PR.
+14. Merge with `gh pr merge <number> --merge --delete-branch` only after checks are green and valid bot feedback has been reviewed.
 
 ## Cost and external-write gates
 

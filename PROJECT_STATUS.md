@@ -44,7 +44,7 @@ Updated: 2026-07-15
 - Placeholder scan: no unfinished placeholders found; hits were explanatory documentation such as `no placeholder demos`.
 - Environment note: local shell must use Node 22. Node 16 fails ESLint because `structuredClone` is unavailable.
 - Review note: Cursor Bugbot localization, metadata title, mobile navigation, evidence-canvas interaction, and mobile hero graph touch feedback addressed on PR #1.
-- Automation note: Cursor Bugbot Autofix should attempt the first fix for new Bugbot findings; Codex reviews and integrates Autofix output before making any follow-up code changes.
+- Automation note: `docs/bugbot-autofix-workflow.md` assigns active findings to Cursor Autofix, keeps monitor subagents read-only, and requires Codex follow-ups to update the existing module PR instead of opening another PR.
 - Research-domain note: schemas, source utilities, claim quote validation, deterministic fixtures, and the in-memory repository use local fixtures only and make no provider calls.
 
 ## Next action
