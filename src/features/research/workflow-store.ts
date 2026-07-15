@@ -16,6 +16,10 @@ import {
 } from "@/features/research/domain";
 import type { DemoResearchFixture } from "@/features/research/fixtures";
 import {
+  providerUsageSchema,
+  type ProviderUsage,
+} from "@/providers/contracts";
+import {
   embeddedChunkSchema,
   researchReportSchema,
   runLogEntrySchema,
@@ -43,6 +47,7 @@ export type InMemoryResearchWorkflowStore = {
   listRunLogs: (runId: string) => RunLogEntry[];
   getEmbedding: (chunkId: string) => EmbeddedChunk | undefined;
   saveEmbedding: (embedding: EmbeddedChunk) => EmbeddedChunk;
+  saveProviderUsage: (idempotencyKey: string, usage: ProviderUsage) => boolean;
   getSnapshot: () => ResearchWorkflowSnapshot;
 };
 
@@ -58,28 +63,40 @@ export type ResearchWorkflowSnapshot = {
   reports: ResearchReport[];
   runLogs: RunLogEntry[];
   embeddings: EmbeddedChunk[];
+  providerUsages: Array<{ idempotencyKey: string; usage: ProviderUsage }>;
 };
 
 const cloneValue = <T>(value: T): T => structuredClone(value);
 
+const createUniqueEntityMap = <T extends { id: string }>(entities: T[]) => {
+  const entityMap = new Map<string, T>();
+
+  for (const entity of entities) {
+    if (entityMap.has(entity.id)) {
+      throw new Error("ENTITY_ID_CONFLICT");
+    }
+
+    entityMap.set(entity.id, cloneValue(entity));
+  }
+
+  return entityMap;
+};
+
 export const createInMemoryResearchWorkflowStore = (
   fixture: DemoResearchFixture,
 ): InMemoryResearchWorkflowStore => {
-  const projects = new Map(
-    fixture.projects.map((project) => [project.id, cloneValue(project)]),
-  );
-  const runs = new Map(fixture.researchRuns.map((run) => [run.id, cloneValue(run)]));
-  const sources = new Map(fixture.sources.map((source) => [source.id, cloneValue(source)]));
-  const chunks = new Map(fixture.chunks.map((chunk) => [chunk.id, cloneValue(chunk)]));
-  const claims = new Map(fixture.claims.map((claim) => [claim.id, cloneValue(claim)]));
-  const evidenceLinks = new Map(
-    fixture.evidenceLinks.map((link) => [link.id, cloneValue(link)]),
-  );
-  const claimRelations = new Map<string, ClaimRelation>();
+  const projects = createUniqueEntityMap(fixture.projects);
+  const runs = createUniqueEntityMap(fixture.researchRuns);
+  const sources = createUniqueEntityMap(fixture.sources);
+  const chunks = createUniqueEntityMap(fixture.chunks);
+  const claims = createUniqueEntityMap(fixture.claims);
+  const evidenceLinks = createUniqueEntityMap(fixture.evidenceLinks);
+  const claimRelations = createUniqueEntityMap(fixture.claimRelations);
   const checkpoints = new Map<string, WorkflowCheckpoint>();
   const reports = new Map<string, ResearchReport>();
   const runLogs = new Map<string, RunLogEntry>();
   const embeddings = new Map<string, EmbeddedChunk>();
+  const providerUsages = new Map<string, ProviderUsage>();
   const createCheckpointKey = (runId: string, step: WorkflowStep) => `${runId}:${step}`;
 
   return {
@@ -102,6 +119,14 @@ export const createInMemoryResearchWorkflowStore = (
         current.projectId !== run.projectId
       ) {
         throw new Error("RUN_NOT_FOUND");
+      }
+
+      if (current.status === "ready") {
+        if (JSON.stringify(current) !== JSON.stringify(run)) {
+          throw new Error("RUN_IMMUTABLE");
+        }
+
+        return cloneValue(current);
       }
 
       runs.set(run.id, cloneValue(run));
@@ -269,8 +294,9 @@ export const createInMemoryResearchWorkflowStore = (
     },
     saveCheckpoint: (input) => {
       const checkpoint = workflowCheckpointSchema.parse(input);
+      const run = runs.get(checkpoint.runId);
 
-      if (!runs.has(checkpoint.runId)) {
+      if (!run) {
         throw new Error("RUN_NOT_FOUND");
       }
 
@@ -283,6 +309,10 @@ export const createInMemoryResearchWorkflowStore = (
         }
 
         return cloneValue(current);
+      }
+
+      if (run.status === "ready") {
+        throw new Error("RUN_IMMUTABLE");
       }
 
       checkpoints.set(key, cloneValue(checkpoint));
@@ -404,6 +434,16 @@ export const createInMemoryResearchWorkflowStore = (
       embeddings.set(embedding.chunkId, cloneValue(embedding));
       return cloneValue(embedding);
     },
+    saveProviderUsage: (idempotencyKey, input) => {
+      const usage = providerUsageSchema.parse(input);
+
+      if (providerUsages.has(idempotencyKey)) {
+        return false;
+      }
+
+      providerUsages.set(idempotencyKey, cloneValue(usage));
+      return true;
+    },
     getSnapshot: () =>
       cloneValue({
         projects: Array.from(projects.values()),
@@ -417,6 +457,9 @@ export const createInMemoryResearchWorkflowStore = (
         reports: Array.from(reports.values()),
         runLogs: Array.from(runLogs.values()),
         embeddings: Array.from(embeddings.values()),
+        providerUsages: Array.from(providerUsages.entries()).map(
+          ([idempotencyKey, usage]) => ({ idempotencyKey, usage }),
+        ),
       }),
   };
 };

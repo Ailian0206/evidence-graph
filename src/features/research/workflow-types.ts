@@ -23,6 +23,10 @@ export const claimCandidatesSchema = z.object({
   ),
 });
 
+export const extractedClaimsOutputSchema = claimCandidatesSchema.extend({
+  claimIdsByCandidate: z.record(z.string().min(1), z.string().min(1)),
+});
+
 export const evidenceCandidatesSchema = z.object({
   evidence: z.array(
     z.object({

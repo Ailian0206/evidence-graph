@@ -8,12 +8,17 @@ import type {
 export type FixtureProviderCall = {
   operation: "search" | "embed" | ResearchModelOperation;
   idempotencyKey: string;
+  payload?: unknown;
 };
 
 export type FixtureResearchProviderOptions = {
+  additionalSupportingEvidence?: boolean;
   costOverrides?: Partial<Record<FixtureProviderCall["operation"], number>>;
+  evidenceCount?: number;
   failOnceAt?: FixtureProviderCall["operation"];
+  failSearchAtCall?: number;
   invalidQuote?: boolean;
+  mixedUnsupportedReportClaim?: boolean;
   searchResultCount?: number;
 };
 
@@ -29,7 +34,7 @@ const SEARCH_RESULTS = [
   {
     url: "https://docs.example.com/evidence-graph",
     title: "Evidence Graph product notes",
-    body: "Ordinary AI summaries can omit saved source excerpts unless evidence links are persisted.",
+    body: "A cited report should use only claims with stored evidence links and preserved source excerpts.",
     sourceType: "official_document" as const,
     publishedAt: "2026-07-15T00:00:00.000Z",
   },
@@ -131,6 +136,8 @@ export const createFixtureResearchProviders = (
 ) => {
   const calls: FixtureProviderCall[] = [];
   const failedOperations = new Set<FixtureProviderCall["operation"]>();
+  let searchCallCount = 0;
+  let searchCallFailureUsed = false;
   const failOnce = (operation: FixtureProviderCall["operation"]) => {
     if (options.failOnceAt === operation && !failedOperations.has(operation)) {
       failedOperations.add(operation);
@@ -145,6 +152,29 @@ export const createFixtureResearchProviders = (
       evidenceOutput.evidence[0].quote = "This quote is not present in the saved chunk";
     }
 
+    if (options.additionalSupportingEvidence && operation === "link_evidence") {
+      const evidenceOutput = output as { evidence: unknown[] };
+      evidenceOutput.evidence.push({
+        claimCandidateId: "claim_exact_quotes",
+        sourceUrl: "https://docs.example.com/evidence-graph",
+        quote:
+          "A cited report should use only claims with stored evidence links and preserved source excerpts",
+        relation: "supports",
+        strength: "moderate",
+        rationale: "The product notes provide a second exact excerpt for the claim.",
+      });
+    }
+
+    if (options.evidenceCount !== undefined && operation === "link_evidence") {
+      const evidenceOutput = output as { evidence: unknown[] };
+      evidenceOutput.evidence = evidenceOutput.evidence.slice(0, options.evidenceCount);
+    }
+
+    if (options.mixedUnsupportedReportClaim && operation === "draft_report") {
+      const reportOutput = output as { sections: Array<{ claimIds: string[] }> };
+      reportOutput.sections[0].claimIds.push("claim_links_unnecessary");
+    }
+
     return output;
   };
   const getCost = (operation: FixtureProviderCall["operation"], fallback: number) =>
@@ -152,6 +182,13 @@ export const createFixtureResearchProviders = (
   const search: SearchProvider = {
     search: async ({ maxResults, idempotencyKey }) => {
       calls.push({ operation: "search", idempotencyKey });
+      searchCallCount += 1;
+
+      if (options.failSearchAtCall === searchCallCount && !searchCallFailureUsed) {
+        searchCallFailureUsed = true;
+        throw new Error("FIXTURE_PROVIDER_FAILED");
+      }
+
       failOnce("search");
 
       return {
@@ -168,8 +205,8 @@ export const createFixtureResearchProviders = (
     },
   };
   const languageModel: LanguageModel = {
-    generateStructured: async ({ operation, schema, idempotencyKey }) => {
-      calls.push({ operation, idempotencyKey });
+    generateStructured: async ({ operation, schema, payload, idempotencyKey }) => {
+      calls.push({ operation, idempotencyKey, payload });
       failOnce(operation);
 
       return {

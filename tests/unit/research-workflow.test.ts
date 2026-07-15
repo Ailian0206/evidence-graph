@@ -112,6 +112,61 @@ describe("research workflow store", () => {
     ).toThrow("RUN_NOT_FOUND");
   });
 
+  it("preserves initialized claim relations", () => {
+    const fixture = createDemoResearchFixture();
+    const relatedClaim = {
+      ...fixture.claims[0],
+      id: "claim_related",
+      statement: "Cited reports depend on exact-quote traceability.",
+      normalizedKey: "cited reports depend on exact quote traceability",
+    };
+    const relation = {
+      id: "relation_initialized",
+      projectId: fixture.projects[0].id,
+      fromClaimId: fixture.claims[0].id,
+      toClaimId: relatedClaim.id,
+      relation: "depends_on" as const,
+      rationale: "The report claim depends on the traceability claim.",
+    };
+    fixture.claims.push(relatedClaim);
+    fixture.claimRelations.push(relation);
+
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    expect(store.getSnapshot().claimRelations).toEqual([relation]);
+  });
+
+  it("rejects duplicate fixture entity IDs before map initialization", () => {
+    const sourceFixture = createDemoResearchFixture();
+    const otherProject = {
+      ...sourceFixture.projects[0],
+      id: "project_other",
+      slug: "other-project",
+    };
+    sourceFixture.projects.push(otherProject);
+    sourceFixture.sources.push({
+      ...sourceFixture.sources[0],
+      projectId: otherProject.id,
+      canonicalUrl: "https://other.example.com/research",
+      contentHash: "sha256_other_source",
+    });
+
+    const claimFixture = createDemoResearchFixture();
+    claimFixture.projects.push(otherProject);
+    claimFixture.claims.push({
+      ...claimFixture.claims[0],
+      projectId: otherProject.id,
+      normalizedKey: "other project claim",
+    });
+
+    expect(() => createInMemoryResearchWorkflowStore(sourceFixture)).toThrow(
+      "ENTITY_ID_CONFLICT",
+    );
+    expect(() => createInMemoryResearchWorkflowStore(claimFixture)).toThrow(
+      "ENTITY_ID_CONFLICT",
+    );
+  });
+
   it("upserts generated entities and returns detached snapshots", () => {
     const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
     const source = {
@@ -304,6 +359,25 @@ describe("research workflow store", () => {
     ).toThrow("STEP_ALREADY_COMPLETED");
   });
 
+  it("rejects state and checkpoint mutations after a run is ready", () => {
+    const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
+    const run = store.requireRun({ runId: "run_demo", ownerId: "user_ailian" });
+    const readyRun = store.updateRun({ ...run, status: "ready", step: "ready" });
+
+    expect(() =>
+      store.updateRun({ ...readyRun, status: "running", step: "planning" }),
+    ).toThrow("RUN_IMMUTABLE");
+    expect(() =>
+      store.saveCheckpoint({
+        runId: readyRun.id,
+        step: "planning",
+        idempotencyKey: "run_demo:planning",
+        output: { queries: [] },
+        completedAt: "2026-07-15T00:05:00.000Z",
+      }),
+    ).toThrow("RUN_IMMUTABLE");
+  });
+
   it("rejects factual report sections without persisted citations", () => {
     const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
     const report = {
@@ -382,7 +456,13 @@ describe("research workflow store", () => {
 describe("research workflow", () => {
   it("runs the deterministic workflow to a fully cited report", async () => {
     const providers = createFixtureResearchProviders();
-    const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
+    const fixture = createDemoResearchFixture();
+    fixture.sources = [];
+    fixture.chunks = [];
+    fixture.claims = [];
+    fixture.evidenceLinks = [];
+    fixture.claimRelations = [];
+    const store = createInMemoryResearchWorkflowStore(fixture);
 
     const result = await runResearchWorkflow({
       runId: "run_demo",
@@ -403,6 +483,9 @@ describe("research workflow", () => {
     expect(result.evidenceLinks.map((link) => link.relation)).toEqual(
       expect.arrayContaining(["supports", "rebuts"]),
     );
+    expect(
+      result.evidenceLinks.every((link) => link.claimId.startsWith("claim_project_demo_")),
+    ).toBe(true);
     expect(result.completedSteps).toEqual([
       "planning",
       "searching",
@@ -413,6 +496,134 @@ describe("research workflow", () => {
       "detecting_conflicts",
       "drafting_report",
     ]);
+  });
+
+  it("drafts only supported claims and cites every factual paragraph", async () => {
+    const providers = createFixtureResearchProviders({ evidenceCount: 1 });
+    const fixture = createDemoResearchFixture();
+    fixture.sources = [];
+    fixture.chunks = [];
+    fixture.claims = [];
+    fixture.evidenceLinks = [];
+    fixture.claimRelations = [];
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+    const draftCall = providers.calls.find((call) => call.operation === "draft_report");
+    const draftClaims = (draftCall?.payload as { claims: Array<{ candidateId: string }> })
+      .claims;
+
+    expect(result.run.status).toBe("ready");
+    expect(draftClaims.map((claim) => claim.candidateId)).toEqual(["claim_exact_quotes"]);
+    expect(result.report?.sections).toHaveLength(1);
+    for (const section of result.report?.sections ?? []) {
+      for (const paragraph of section.markdown.split("\n\n")) {
+        expect(section.citationIds.some((citationId) => paragraph.includes(`[${citationId}]`))).toBe(
+          true,
+        );
+      }
+    }
+  });
+
+  it("rejects a report section that mixes supported and unsupported claims", async () => {
+    const providers = createFixtureResearchProviders({
+      evidenceCount: 1,
+      mixedUnsupportedReportClaim: true,
+    });
+    const fixture = createDemoResearchFixture();
+    fixture.sources = [];
+    fixture.chunks = [];
+    fixture.claims = [];
+    fixture.evidenceLinks = [];
+    fixture.claimRelations = [];
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+
+    expect(result.run).toMatchObject({
+      status: "failed",
+      errorMessage: "REPORT_CITATION_INVALID",
+    });
+    expect(result.report).toBeUndefined();
+  });
+
+  it("resolves evidence sources inside the run project when URLs overlap", async () => {
+    const fixture = createDemoResearchFixture();
+    const otherProject = {
+      ...fixture.projects[0],
+      id: "project_other",
+      slug: "other-project",
+    };
+    const otherSource = {
+      ...fixture.sources[0],
+      id: "source_other",
+      projectId: otherProject.id,
+      contentHash: "sha256_other_source",
+    };
+    const otherChunk = {
+      ...fixture.chunks[0],
+      id: "source_other_chunk_0",
+      sourceId: otherSource.id,
+      projectId: otherProject.id,
+    };
+    fixture.projects.push(otherProject);
+    fixture.sources.push(otherSource);
+    fixture.chunks.push(otherChunk);
+    const providers = createFixtureResearchProviders();
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+
+    expect(result.run.status).toBe("ready");
+    expect(result.evidenceLinks.every((link) => link.projectId === "project_demo")).toBe(true);
+  });
+
+  it("keeps multiple same-relation citations for one claim", async () => {
+    const providers = createFixtureResearchProviders({ additionalSupportingEvidence: true });
+    const fixture = createDemoResearchFixture();
+    fixture.sources = [];
+    fixture.chunks = [];
+    fixture.claims = [];
+    fixture.evidenceLinks = [];
+    fixture.claimRelations = [];
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+    const supportingLinks = result.evidenceLinks.filter(
+      (link) => link.claimId.endsWith("claim_exact_quotes") && link.relation === "supports",
+    );
+
+    expect(result.run.status).toBe("ready");
+    expect(supportingLinks).toHaveLength(2);
+    expect(new Set(supportingLinks.map((link) => link.id))).toHaveLength(2);
   });
 
   it("returns an already-ready run without provider calls or duplicate entities", async () => {
@@ -483,6 +694,36 @@ describe("research workflow", () => {
         .filter((entry) => entry.status === "skipped")
         .map((entry) => entry.step),
     ).toEqual(["planning", "searching", "collecting", "indexing"]);
+    expect(
+      store
+        .listRunLogs("run_demo")
+        .filter((entry) => entry.status === "skipped")
+        .every((entry) => entry.attempt === 1),
+    ).toBe(true);
+  });
+
+  it("does not double-count usage when a partial search step retries", async () => {
+    const providers = createFixtureResearchProviders({ failSearchAtCall: 2 });
+    const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
+    const input = {
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    };
+
+    const failed = await runResearchWorkflow(input);
+    const resumed = await runResearchWorkflow(input);
+
+    expect(failed.run.status).toBe("failed");
+    expect(resumed.run).toMatchObject({
+      status: "ready",
+      estimatedCostUsd: 0.081,
+      searchCount: 3,
+    });
+    expect(providers.calls.filter((call) => call.operation === "search")).toHaveLength(5);
   });
 
   it("fails without a report when evidence contains a non-exact quote", async () => {
@@ -530,6 +771,31 @@ describe("research workflow", () => {
     expect(providers.calls.some((call) => call.operation === "extract_claims")).toBe(false);
   });
 
+  it("records paid usage when one provider call exceeds the cost limit", async () => {
+    const providers = createFixtureResearchProviders({
+      costOverrides: { plan: 1.1 },
+    });
+    const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+
+    expect(result.run).toMatchObject({
+      status: "failed",
+      errorMessage: "RUN_COST_LIMIT_EXCEEDED",
+      estimatedCostUsd: 1,
+      tokenCount: 120,
+    });
+    expect(store.getSnapshot().providerUsages).toHaveLength(1);
+    expect(providers.calls.some((call) => call.operation === "search")).toBe(false);
+  });
+
   it("rejects manual sources above the run limit before provider calls", async () => {
     const providers = createFixtureResearchProviders();
     const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
@@ -554,11 +820,24 @@ describe("research workflow", () => {
       errorMessage: "MANUAL_URL_LIMIT_EXCEEDED",
     });
     expect(providers.calls).toEqual([]);
+    expect(store.listRunLogs("run_demo")).toContainEqual(
+      expect.objectContaining({
+        step: "planning",
+        status: "failed",
+        attempt: 1,
+        errorCode: "MANUAL_URL_LIMIT_EXCEEDED",
+      }),
+    );
   });
 
   it("rejects collected source text above the run content limit", async () => {
     const fixture = createDemoResearchFixture();
     fixture.researchRuns[0].maxContentChars = 50;
+    fixture.sources = [];
+    fixture.chunks = [];
+    fixture.claims = [];
+    fixture.evidenceLinks = [];
+    fixture.claimRelations = [];
     const providers = createFixtureResearchProviders();
     const store = createInMemoryResearchWorkflowStore(fixture);
 
@@ -576,6 +855,7 @@ describe("research workflow", () => {
       errorMessage: "CONTENT_LIMIT_EXCEEDED",
     });
     expect(providers.calls.some((call) => call.operation === "embed")).toBe(false);
+    expect(store.getSnapshot().sources).toEqual([]);
   });
 
   it("caps deduplicated search sources at the run source limit", async () => {
@@ -634,6 +914,14 @@ describe("research workflow", () => {
         .filter((call) => call.operation === "extract_claims"),
     ).toHaveLength(3);
     expect(providersByAttempt[3].calls).toEqual([]);
+    expect(store.listRunLogs("run_demo")).toContainEqual(
+      expect.objectContaining({
+        step: "extracting_claims",
+        status: "failed",
+        attempt: 4,
+        errorCode: "STEP_RETRY_LIMIT_EXCEEDED",
+      }),
+    );
   });
 
   it("does not leak unknown provider errors into run logs", async () => {
@@ -694,6 +982,28 @@ describe("research workflow", () => {
       status: "failed",
       errorMessage: "RUN_NOT_FOUND",
     });
+    expect(providers.calls).toEqual([]);
+  });
+
+  it("rejects a ready run before report access when project ownership mismatches", async () => {
+    const fixture = createDemoResearchFixture();
+    fixture.projects[0].ownerId = "user_other";
+    fixture.researchRuns[0].status = "ready";
+    fixture.researchRuns[0].step = "ready";
+    const providers = createFixtureResearchProviders();
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    await expect(
+      runResearchWorkflow({
+        runId: "run_demo",
+        ownerId: "user_ailian",
+        manualSources: [],
+        providers,
+        store,
+        now: () => "2026-07-15T01:00:00.000Z",
+      }),
+    ).rejects.toThrow("RUN_NOT_FOUND");
+    expect(store.getSnapshot().runs[0]).toMatchObject({ status: "ready", step: "ready" });
     expect(providers.calls).toEqual([]);
   });
 });

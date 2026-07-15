@@ -13,11 +13,13 @@ export const searchResultSchema = z.object({
 
 export type SearchResult = z.infer<typeof searchResultSchema>;
 
-export type ProviderUsage = {
-  estimatedCostUsd: number;
-  searchCount: number;
-  tokenCount: number;
-};
+export const providerUsageSchema = z.object({
+  estimatedCostUsd: z.number().nonnegative(),
+  searchCount: z.number().int().nonnegative(),
+  tokenCount: z.number().int().nonnegative(),
+});
+
+export type ProviderUsage = z.infer<typeof providerUsageSchema>;
 
 export type ProviderResult<T> = {
   data: T;

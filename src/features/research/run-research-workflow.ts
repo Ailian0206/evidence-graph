@@ -1,12 +1,13 @@
 import { z } from "zod";
 
 import { createClaimKey } from "@/features/claims/claim-utils";
-import type { EvidenceLink, ResearchRun } from "@/features/research/domain";
+import type { EvidenceLink, ResearchRun, Source } from "@/features/research/domain";
 import type { InMemoryResearchWorkflowStore } from "@/features/research/workflow-store";
 import {
   claimCandidatesSchema,
   conflictCandidatesSchema,
   evidenceCandidatesSchema,
+  extractedClaimsOutputSchema,
   reportDraftSchema,
   searchPlanSchema,
   type ResearchReport,
@@ -78,8 +79,10 @@ const KNOWN_WORKFLOW_ERRORS = new Set([
   "STEP_RETRY_LIMIT_EXCEEDED",
 ]);
 
-const createSourceId = (contentHash: string) =>
-  `source_${contentHash.replace("sha256_", "").slice(0, 20)}`;
+const createSourceId = (projectId: string, contentHash: string) =>
+  `source_${projectId}_${contentHash.replace("sha256_", "").slice(0, 20)}`;
+const createClaimId = (projectId: string, candidateId: string) =>
+  `claim_${projectId}_${candidateId}`;
 
 const roundCost = (cost: number) => Math.round(cost * 1_000_000) / 1_000_000;
 
@@ -93,6 +96,13 @@ const runResearchWorkflowAttempt = async ({
 }: RunResearchWorkflowInput): Promise<ResearchWorkflowResult> => {
   let run = store.requireRun({ runId, ownerId });
   const completedSteps: WorkflowStep[] = [];
+  const project = store
+    .getSnapshot()
+    .projects.find((candidate) => candidate.id === run.projectId);
+
+  if (!project || project.ownerId !== ownerId || project.ownerId !== run.ownerId) {
+    throw new Error("RUN_NOT_FOUND");
+  }
 
   if (run.status === "ready") {
     const report = store.getReport(runId);
@@ -112,25 +122,32 @@ const runResearchWorkflowAttempt = async ({
   }
 
   if (manualSources.length > run.manualUrlLimit) {
+    run = store.updateRun({
+      ...run,
+      status: "running",
+      step: "planning",
+      updatedAt: now(),
+    });
     throw new Error("MANUAL_URL_LIMIT_EXCEEDED");
   }
 
-  const project = store
-    .getSnapshot()
-    .projects.find((candidate) => candidate.id === run.projectId);
+  const applyUsage = (idempotencyKey: string, usage: ProviderUsage) => {
+    if (!store.saveProviderUsage(idempotencyKey, usage)) {
+      return;
+    }
 
-  if (!project || project.ownerId !== ownerId || project.ownerId !== run.ownerId) {
-    throw new Error("RUN_NOT_FOUND");
-  }
-
-  const applyUsage = (usage: ProviderUsage) => {
+    const nextCost = roundCost(run.estimatedCostUsd + usage.estimatedCostUsd);
     run = store.updateRun({
       ...run,
-      estimatedCostUsd: roundCost(run.estimatedCostUsd + usage.estimatedCostUsd),
+      estimatedCostUsd: Math.min(nextCost, 1),
       searchCount: run.searchCount + usage.searchCount,
       tokenCount: run.tokenCount + usage.tokenCount,
       updatedAt: now(),
     });
+
+    if (nextCost > 1) {
+      throw new Error("RUN_COST_LIMIT_EXCEEDED");
+    }
   };
 
   const assertProviderBudget = () => {
@@ -148,13 +165,15 @@ const runResearchWorkflowAttempt = async ({
     const stepLogs = store.listRunLogs(runId).filter((entry) => entry.step === step);
 
     if (checkpoint) {
-      const skippedAttempt = stepLogs.filter((entry) => entry.status === "skipped").length + 1;
+      const skippedSequence = stepLogs.filter((entry) => entry.status === "skipped").length + 1;
+      const completedAttempt =
+        stepLogs.filter((entry) => entry.status === "started").length || 1;
       store.appendRunLog({
-        id: `${runId}:${step}:${skippedAttempt}:skipped`,
+        id: `${runId}:${step}:skip_${skippedSequence}`,
         runId,
         step,
         status: "skipped",
-        attempt: skippedAttempt,
+        attempt: completedAttempt,
         timestamp: now(),
       });
       completedSteps.push(step);
@@ -165,6 +184,12 @@ const runResearchWorkflowAttempt = async ({
     const attempt = stepLogs.filter((entry) => entry.status === "started").length + 1;
 
     if (attempt > 3) {
+      run = store.updateRun({
+        ...run,
+        status: "running",
+        step,
+        updatedAt: now(),
+      });
       throw new Error("STEP_RETRY_LIMIT_EXCEEDED");
     }
 
@@ -212,7 +237,7 @@ const runResearchWorkflowAttempt = async ({
       payload: { question: project.question },
       idempotencyKey,
     });
-    applyUsage(result.usage);
+    applyUsage(idempotencyKey, result.usage);
     return searchPlanSchema.parse(result.data);
   });
 
@@ -229,7 +254,7 @@ const runResearchWorkflowAttempt = async ({
           maxResults: run.sourceLimit,
           idempotencyKey: `${idempotencyKey}:${queryIndex}`,
         });
-        applyUsage(result.usage);
+        applyUsage(`${idempotencyKey}:${queryIndex}`, result.usage);
         results.push(...searchResultSchema.array().parse(result.data));
       }
 
@@ -243,7 +268,11 @@ const runResearchWorkflowAttempt = async ({
     async () => {
       const canonicalUrls = new Set<string>();
       const contentHashes = new Set<string>();
-      const sourceIds: string[] = [];
+      const currentSources = store
+        .getSnapshot()
+        .sources.filter((source) => source.projectId === run.projectId);
+      const selectedSources: Source[] = [];
+      const pendingSources: Source[] = [];
 
       for (const candidate of [...manualSources, ...searchOutput.results]) {
         const parsed = searchResultSchema.parse(candidate);
@@ -257,8 +286,12 @@ const runResearchWorkflowAttempt = async ({
         canonicalUrls.add(canonicalUrl);
         contentHashes.add(contentHash);
 
-        const source = store.upsertSource({
-          id: createSourceId(contentHash),
+        const existingSource = currentSources.find(
+          (source) =>
+            source.canonicalUrl === canonicalUrl || source.contentHash === contentHash,
+        );
+        const source: Source = existingSource ?? {
+          id: createSourceId(run.projectId, contentHash),
           projectId: run.projectId,
           canonicalUrl,
           title: parsed.title,
@@ -269,19 +302,20 @@ const runResearchWorkflowAttempt = async ({
           body: parsed.body,
           contentHash,
           retrievedAt: now(),
-        });
-        sourceIds.push(source.id);
+        };
+        selectedSources.push(source);
 
-        if (sourceIds.length === run.sourceLimit) {
+        if (!existingSource) {
+          pendingSources.push(source);
+        }
+
+        if (selectedSources.length === run.sourceLimit) {
           break;
         }
       }
 
-      const sourceById = new Map(
-        store.getSnapshot().sources.map((source) => [source.id, source]),
-      );
-      const contentCharacters = sourceIds.reduce(
-        (total, sourceId) => total + (sourceById.get(sourceId)?.body.length ?? 0),
+      const contentCharacters = selectedSources.reduce(
+        (total, source) => total + source.body.length,
         0,
       );
 
@@ -289,7 +323,11 @@ const runResearchWorkflowAttempt = async ({
         throw new Error("CONTENT_LIMIT_EXCEEDED");
       }
 
-      return { sourceIds };
+      for (const source of pendingSources) {
+        store.upsertSource(source);
+      }
+
+      return { sourceIds: selectedSources.map((source) => source.id) };
     },
   );
 
@@ -323,7 +361,7 @@ const runResearchWorkflowAttempt = async ({
         texts: missingEmbeddings.map((chunk) => chunk.text),
         idempotencyKey,
       });
-      applyUsage(result.usage);
+      applyUsage(idempotencyKey, result.usage);
       const vectors = z
         .array(z.array(z.number()).length(1536))
         .length(missingEmbeddings.length)
@@ -344,7 +382,7 @@ const runResearchWorkflowAttempt = async ({
 
   const extractedClaims = await executeStep(
     "extracting_claims",
-    claimCandidatesSchema,
+    extractedClaimsOutputSchema,
     async (idempotencyKey) => {
       const snapshot = store.getSnapshot();
       const chunks = snapshot.chunks.filter((chunk) => indexed.chunkIds.includes(chunk.id));
@@ -355,12 +393,13 @@ const runResearchWorkflowAttempt = async ({
         payload: { chunks },
         idempotencyKey,
       });
-      applyUsage(result.usage);
+      applyUsage(idempotencyKey, result.usage);
       const output = claimCandidatesSchema.parse(result.data);
+      const claimIdsByCandidate: Record<string, string> = {};
 
       for (const candidate of output.claims) {
-        store.upsertClaim({
-          id: candidate.candidateId,
+        const claim = store.upsertClaim({
+          id: createClaimId(run.projectId, candidate.candidateId),
           projectId: run.projectId,
           statement: candidate.statement,
           normalizedKey: createClaimKey(candidate.statement),
@@ -370,9 +409,10 @@ const runResearchWorkflowAttempt = async ({
           reviewStatus: "pending",
           createdAt: now(),
         });
+        claimIdsByCandidate[candidate.candidateId] = claim.id;
       }
 
-      return output;
+      return { ...output, claimIdsByCandidate };
     },
   );
 
@@ -387,17 +427,22 @@ const runResearchWorkflowAttempt = async ({
         payload: { claims: extractedClaims.claims, chunkIds: indexed.chunkIds },
         idempotencyKey,
       });
-      applyUsage(result.usage);
+      applyUsage(idempotencyKey, result.usage);
       const output = evidenceCandidatesSchema.parse(result.data);
       const snapshot = store.getSnapshot();
       const sourceByUrl = new Map(
-        snapshot.sources.map((source) => [source.canonicalUrl, source]),
+        snapshot.sources
+          .filter((source) => source.projectId === run.projectId)
+          .map((source) => [source.canonicalUrl, source]),
       );
       const evidenceLinkIds = output.evidence.map((candidate) => {
         const source = sourceByUrl.get(canonicalizeUrl(candidate.sourceUrl));
         const chunk = snapshot.chunks.find(
           (current) =>
-            current.sourceId === source?.id && current.text.includes(candidate.quote),
+            indexed.chunkIds.includes(current.id) &&
+            current.sourceId === source?.id &&
+            current.projectId === run.projectId &&
+            current.text.includes(candidate.quote),
         );
 
         if (!source || !chunk) {
@@ -405,9 +450,9 @@ const runResearchWorkflowAttempt = async ({
         }
 
         return store.upsertEvidenceLink({
-          id: `link_${candidate.claimCandidateId}_${candidate.relation}`,
+          id: `link_${run.projectId}_${extractedClaims.claimIdsByCandidate[candidate.claimCandidateId]}_${chunk.id}_${candidate.relation}`,
           projectId: run.projectId,
-          claimId: candidate.claimCandidateId,
+          claimId: extractedClaims.claimIdsByCandidate[candidate.claimCandidateId],
           chunkId: chunk.id,
           relation: candidate.relation,
           strength: candidate.strength,
@@ -431,14 +476,14 @@ const runResearchWorkflowAttempt = async ({
         payload: { claims: extractedClaims.claims },
         idempotencyKey,
       });
-      applyUsage(result.usage);
+      applyUsage(idempotencyKey, result.usage);
       const output = conflictCandidatesSchema.parse(result.data);
       const claimRelationIds = output.relations.map((candidate) =>
         store.upsertClaimRelation({
-          id: `relation_${candidate.fromClaimCandidateId}_${candidate.toClaimCandidateId}_${candidate.relation}`,
+          id: `relation_${run.projectId}_${extractedClaims.claimIdsByCandidate[candidate.fromClaimCandidateId]}_${extractedClaims.claimIdsByCandidate[candidate.toClaimCandidateId]}_${candidate.relation}`,
           projectId: run.projectId,
-          fromClaimId: candidate.fromClaimCandidateId,
-          toClaimId: candidate.toClaimCandidateId,
+          fromClaimId: extractedClaims.claimIdsByCandidate[candidate.fromClaimCandidateId],
+          toClaimId: extractedClaims.claimIdsByCandidate[candidate.toClaimCandidateId],
           relation: candidate.relation,
           rationale: candidate.rationale,
         }).id,
@@ -452,33 +497,74 @@ const runResearchWorkflowAttempt = async ({
     "drafting_report",
     reportOutputSchema,
     async (idempotencyKey) => {
-      assertProviderBudget();
-      const result = await providers.languageModel.generateStructured({
-        operation: "draft_report",
-        schema: reportDraftSchema,
-        payload: { claims: extractedClaims.claims, evidenceLinkIds: linkedEvidence.evidenceLinkIds },
-        idempotencyKey,
-      });
-      applyUsage(result.usage);
-      const output = reportDraftSchema.parse(result.data);
       const snapshot = store.getSnapshot();
       const evidenceByClaim = new Map<string, EvidenceLink[]>();
 
       for (const link of snapshot.evidenceLinks) {
+        if (link.projectId !== run.projectId) {
+          continue;
+        }
+
         const current = evidenceByClaim.get(link.claimId) ?? [];
         current.push(link);
         evidenceByClaim.set(link.claimId, current);
       }
 
-      const sections = output.sections.map((section) => ({
-        id: section.id,
-        heading: section.heading,
-        factual: section.factual,
-        markdown: section.markdown,
-        citationIds: section.claimIds.flatMap((claimId) =>
-          (evidenceByClaim.get(claimId) ?? []).map((link) => link.id),
-        ),
-      }));
+      const supportedClaims = extractedClaims.claims.filter((claim) =>
+        evidenceByClaim.has(extractedClaims.claimIdsByCandidate[claim.candidateId]),
+      );
+      const supportedClaimIds = new Set(supportedClaims.map((claim) => claim.candidateId));
+      assertProviderBudget();
+      const result = await providers.languageModel.generateStructured({
+        operation: "draft_report",
+        schema: reportDraftSchema,
+        payload: { claims: supportedClaims, evidenceLinkIds: linkedEvidence.evidenceLinkIds },
+        idempotencyKey,
+      });
+      applyUsage(idempotencyKey, result.usage);
+      const output = reportDraftSchema.parse(result.data);
+
+      for (const section of output.sections) {
+        const hasSupportedClaim = section.claimIds.some((claimId) =>
+          supportedClaimIds.has(claimId),
+        );
+        const hasUnsupportedClaim = section.claimIds.some(
+          (claimId) => !supportedClaimIds.has(claimId),
+        );
+
+        if (hasSupportedClaim && hasUnsupportedClaim) {
+          throw new Error("REPORT_CITATION_INVALID");
+        }
+      }
+
+      const sections = output.sections
+        .filter((section) => section.claimIds.some((claimId) => supportedClaimIds.has(claimId)))
+        .map((section) => {
+          const citationIds = Array.from(
+            new Set(
+              section.claimIds.flatMap((claimId) =>
+                (
+                  evidenceByClaim.get(extractedClaims.claimIdsByCandidate[claimId]) ?? []
+                ).map((link) => link.id),
+              ),
+            ),
+          );
+          const citationMarkers = citationIds.map((citationId) => `[${citationId}]`).join(" ");
+          const markdown = section.factual
+            ? section.markdown
+                .split(/\n\n+/)
+                .map((paragraph) => `${paragraph} ${citationMarkers}`)
+                .join("\n\n")
+            : section.markdown;
+
+          return {
+            id: section.id,
+            heading: section.heading,
+            factual: section.factual,
+            markdown,
+            citationIds,
+          };
+        });
       const citationLinkIds = new Set(sections.flatMap((section) => section.citationIds));
       const chunkById = new Map(snapshot.chunks.map((chunk) => [chunk.id, chunk]));
       const sourceById = new Map(snapshot.sources.map((source) => [source.id, source]));
@@ -550,6 +636,11 @@ export const runResearchWorkflow = async (
     return await runResearchWorkflowAttempt(input);
   } catch (error) {
     let run = input.store.requireRun({ runId: input.runId, ownerId: input.ownerId });
+
+    if (run.status === "ready") {
+      throw error;
+    }
+
     const activeStep = WORKFLOW_STEPS.find((step) => step === run.step);
     const errorMessage = error instanceof Error ? error.message : "";
     const errorCode = KNOWN_WORKFLOW_ERRORS.has(errorMessage)
@@ -557,9 +648,12 @@ export const runResearchWorkflow = async (
       : "WORKFLOW_FAILED";
 
     if (activeStep) {
-      const attempt = input.store
+      const stepLogs = input.store
         .listRunLogs(input.runId)
-        .filter((entry) => entry.step === activeStep && entry.status === "started").length;
+        .filter((entry) => entry.step === activeStep);
+      const startedAttempts = stepLogs.filter((entry) => entry.status === "started").length;
+      const failedAttempts = stepLogs.filter((entry) => entry.status === "failed").length;
+      const attempt = Math.max(startedAttempts, failedAttempts + 1, 1);
       input.store.appendRunLog({
         id: `${input.runId}:${activeStep}:${attempt}:2_failed`,
         runId: input.runId,
