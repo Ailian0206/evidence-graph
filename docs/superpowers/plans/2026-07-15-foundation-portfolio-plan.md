@@ -48,7 +48,7 @@
 **Files:**
 - Create: `src/i18n/routing.ts`
 - Create: `src/i18n/request.ts`
-- Create: `src/middleware.ts`
+- Create: `src/proxy.ts`
 - Create: `src/content/profile.ts`
 - Create: `src/content/projects.ts`
 - Create: `src/content/notes.ts`
