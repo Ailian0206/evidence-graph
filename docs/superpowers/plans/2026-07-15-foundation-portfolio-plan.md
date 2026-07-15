@@ -56,11 +56,11 @@
 - Create: `messages/zh.json`
 - Create: `messages/en.json`
 
-- [ ] Write unit tests requiring locales `zh` and `en`, Ailian's email, exactly two public projects, and no ProjectPilot entry.
-- [ ] Run the focused test and verify RED because content modules do not exist.
-- [ ] Implement typed bilingual content and next-intl locale routing.
-- [ ] Run the focused test and verify GREEN.
-- [ ] Commit as `feat: 增加双语作品集内容模型`.
+- [x] Write unit tests requiring locales `zh` and `en`, Ailian's email, exactly two public projects, and no ProjectPilot entry.
+- [x] Run the focused test and verify RED because content modules do not exist.
+- [x] Implement typed bilingual content and next-intl locale routing.
+- [x] Run the focused test and verify GREEN.
+- [x] Commit as `feat: 增加双语作品集内容模型`.
 
 ### Task 4: Build the public portfolio pages
 
