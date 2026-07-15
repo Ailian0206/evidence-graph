@@ -1,6 +1,6 @@
 # Research Domain Foundation Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Build the provider-free research domain foundation: typed Project, Research Run, Source, Chunk, Claim, Evidence Link, Relation, deterministic fixtures, and an in-memory persistence boundary that can later be replaced by Supabase.
 
@@ -26,7 +26,7 @@
 - Create: `src/features/research/domain.ts`
 - Create: `tests/unit/research-domain.test.ts`
 
-- [ ] Write the failing schema test.
+- [x] Write the failing schema test.
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -132,7 +132,7 @@ describe("research domain schemas", () => {
 });
 ```
 
-- [ ] Run the test and verify RED.
+- [x] Run the test and verify RED.
 
 ```bash
 npm run test:unit -- tests/unit/research-domain.test.ts --reporter=dot
@@ -140,7 +140,7 @@ npm run test:unit -- tests/unit/research-domain.test.ts --reporter=dot
 
 Expected: FAIL because `@/features/research/domain` does not exist.
 
-- [ ] Implement the minimum schemas.
+- [x] Implement the minimum schemas.
 
 ```ts
 import { z } from "zod";
@@ -275,8 +275,8 @@ export type EvidenceLink = z.infer<typeof evidenceLinkSchema>;
 export type ClaimRelation = z.infer<typeof claimRelationSchema>;
 ```
 
-- [ ] Run the focused test and verify GREEN.
-- [ ] Commit as `feat: 增加研究领域实体模型`.
+- [x] Run the focused test and verify GREEN.
+- [x] Commit as `feat: 增加研究领域实体模型`.
 
 ## Task 2: Add deterministic source utilities
 
@@ -284,7 +284,7 @@ export type ClaimRelation = z.infer<typeof claimRelationSchema>;
 - Modify: `tests/unit/research-domain.test.ts`
 - Create: `src/features/sources/source-utils.ts`
 
-- [ ] Add failing tests for canonical URL, content hash, and chunking.
+- [x] Add failing tests for canonical URL, content hash, and chunking.
 
 ```ts
 import {
@@ -315,10 +315,10 @@ it("chunks source text with stable character offsets", () => {
 });
 ```
 
-- [ ] Run focused tests and verify RED.
-- [ ] Implement utilities with Node `crypto`, `URL`, and paragraph-aware chunking. Keep chunks between 800 and 1200 characters where possible and preserve offsets from the original text.
-- [ ] Run focused tests and verify GREEN.
-- [ ] Commit as `feat: 增加来源规范化与切块工具`.
+- [x] Run focused tests and verify RED.
+- [x] Implement utilities with Node `crypto`, `URL`, and paragraph-aware chunking. Keep chunks between 800 and 1200 characters where possible and preserve offsets from the original text.
+- [x] Run focused tests and verify GREEN.
+- [x] Commit as `feat: 增加来源规范化与切块工具`.
 
 ## Task 3: Add claim and evidence validation utilities
 
@@ -326,7 +326,7 @@ it("chunks source text with stable character offsets", () => {
 - Modify: `tests/unit/research-domain.test.ts`
 - Create: `src/features/claims/claim-utils.ts`
 
-- [ ] Add failing tests for normalized claim keys and exact quote validation.
+- [x] Add failing tests for normalized claim keys and exact quote validation.
 
 ```ts
 import { createClaimKey, validateExactQuote } from "@/features/claims/claim-utils";
@@ -352,10 +352,10 @@ it("accepts only exact quotes from saved chunks", () => {
 });
 ```
 
-- [ ] Run focused tests and verify RED.
-- [ ] Implement minimum utilities. `validateExactQuote` must not fuzzy-match or normalize away differences.
-- [ ] Run focused tests and verify GREEN.
-- [ ] Commit as `feat: 增加主张与引用校验工具`.
+- [x] Run focused tests and verify RED.
+- [x] Implement minimum utilities. `validateExactQuote` must not fuzzy-match or normalize away differences.
+- [x] Run focused tests and verify GREEN.
+- [x] Commit as `feat: 增加主张与引用校验工具`.
 
 ## Task 4: Add deterministic research fixtures
 
@@ -363,7 +363,7 @@ it("accepts only exact quotes from saved chunks", () => {
 - Modify: `tests/unit/research-domain.test.ts`
 - Create: `src/features/research/fixtures.ts`
 
-- [ ] Add a failing fixture test.
+- [x] Add a failing fixture test.
 
 ```ts
 import { createDemoResearchFixture } from "@/features/research/fixtures";
@@ -382,10 +382,10 @@ it("creates deterministic provider-free research fixtures", () => {
 });
 ```
 
-- [ ] Run focused tests and verify RED.
-- [ ] Implement fixture builders by composing schemas and utilities. Use fixed IDs and fixed ISO dates. Do not call providers or read network data.
-- [ ] Run focused tests and verify GREEN.
-- [ ] Commit as `test: 增加研究领域确定性夹具`.
+- [x] Run focused tests and verify RED.
+- [x] Implement fixture builders by composing schemas and utilities. Use fixed IDs and fixed ISO dates. Do not call providers or read network data.
+- [x] Run focused tests and verify GREEN.
+- [x] Commit as `test: 增加研究领域确定性夹具`.
 
 ## Task 5: Add in-memory project repository boundary
 
@@ -393,7 +393,7 @@ it("creates deterministic provider-free research fixtures", () => {
 - Modify: `tests/unit/research-domain.test.ts`
 - Create: `src/features/projects/project-repository.ts`
 
-- [ ] Add failing repository tests for owner isolation, source uniqueness, evidence quote rejection, and cascade delete.
+- [x] Add failing repository tests for owner isolation, source uniqueness, evidence quote rejection, and cascade delete.
 
 ```ts
 import { createInMemoryProjectRepository } from "@/features/projects/project-repository";
@@ -436,10 +436,10 @@ it("rejects duplicate sources and non-exact evidence quotes", () => {
 });
 ```
 
-- [ ] Run focused tests and verify RED.
-- [ ] Implement the in-memory repository. Enforce `sources(project_id, canonical_url)`, `sources(content_hash)`, `claims(project_id, normalized_key)`, and `evidence_links(claim_id, chunk_id, relation)` uniqueness.
-- [ ] Run focused tests and verify GREEN.
-- [ ] Commit as `feat: 增加项目内存仓储边界`.
+- [x] Run focused tests and verify RED.
+- [x] Implement the in-memory repository. Enforce `sources(project_id, canonical_url)`, `sources(content_hash)`, `claims(project_id, normalized_key)`, and `evidence_links(claim_id, chunk_id, relation)` uniqueness.
+- [x] Run focused tests and verify GREEN.
+- [x] Commit as `feat: 增加项目内存仓储边界`.
 
 ## Task 6: Close the research-domain module locally
 
@@ -448,7 +448,7 @@ it("rejects duplicate sources and non-exact evidence quotes", () => {
 - Modify: `docs/development-plan.md`
 - Modify: `README.md` if new commands or fixtures need documentation.
 
-- [ ] Run the full local gate.
+- [x] Run the full local gate.
 
 ```bash
 npm run test:ci
@@ -456,7 +456,7 @@ npm run test:ci
 
 Expected: lint, typecheck, unit, build, and e2e all pass without provider calls.
 
-- [ ] Run diff and safety checks.
+- [x] Run diff and safety checks.
 
 ```bash
 git diff --check
@@ -464,7 +464,7 @@ git status -sb
 git diff --stat
 ```
 
-- [ ] Update `PROJECT_STATUS.md` with branch `feat/research-domain`, local verification output, and note that provider calls remain disabled.
-- [ ] Update `docs/development-plan.md` to mark the research-domain module local gate complete only after the full gate passes.
-- [ ] Commit as `docs: 记录研究领域模块结果`.
-- [ ] Do not open a PR until the module is complete and PR #1 foundation review state is understood. If PR #1 is still open, keep this branch local and merge the accepted foundation branch into it before pushing.
+- [x] Update `PROJECT_STATUS.md` with branch `feat/research-domain`, local verification output, and note that provider calls remain disabled.
+- [x] Update `docs/development-plan.md` to mark the research-domain module local gate complete only after the full gate passes.
+- [x] Commit as `docs: 记录研究领域模块结果`.
+- [x] Do not open a PR until the module is complete and PR #1 foundation review state is understood. If PR #1 is still open, keep this branch local and merge the accepted foundation branch into it before pushing.
