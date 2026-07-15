@@ -74,6 +74,16 @@ export const workflowCheckpointSchema = z.object({
   completedAt: z.string().datetime(),
 });
 
+export const runLogEntrySchema = z.object({
+  id: z.string().min(1),
+  runId: z.string().min(1),
+  step: workflowStepSchema,
+  status: z.enum(["started", "completed", "failed", "skipped"]),
+  attempt: z.number().int().positive(),
+  timestamp: z.string().datetime(),
+  errorCode: z.string().min(1).optional(),
+});
+
 export const reportSectionSchema = z.object({
   id: z.string().min(1),
   heading: z.string().min(1),
@@ -105,4 +115,5 @@ export const researchReportSchema = z.object({
 
 export type WorkflowStep = z.infer<typeof workflowStepSchema>;
 export type WorkflowCheckpoint = z.infer<typeof workflowCheckpointSchema>;
+export type RunLogEntry = z.infer<typeof runLogEntrySchema>;
 export type ResearchReport = z.infer<typeof researchReportSchema>;

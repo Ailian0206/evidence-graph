@@ -174,4 +174,21 @@ describe("research workflow store", () => {
       }),
     ).toThrow("REPORT_CITATION_REQUIRED");
   });
+
+  it("records ordered run log entries idempotently", () => {
+    const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
+    const entry = {
+      id: "run_demo:planning:1:started",
+      runId: "run_demo",
+      step: "planning" as const,
+      status: "started" as const,
+      attempt: 1,
+      timestamp: "2026-07-15T00:03:00.000Z",
+    };
+
+    store.appendRunLog(entry);
+    store.appendRunLog(entry);
+
+    expect(store.listRunLogs("run_demo")).toEqual([entry]);
+  });
 });

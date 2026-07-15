@@ -2,8 +2,10 @@ import type { ResearchRun } from "@/features/research/domain";
 import type { DemoResearchFixture } from "@/features/research/fixtures";
 import {
   researchReportSchema,
+  runLogEntrySchema,
   workflowCheckpointSchema,
   type ResearchReport,
+  type RunLogEntry,
   type WorkflowCheckpoint,
   type WorkflowStep,
 } from "@/features/research/workflow-types";
@@ -14,6 +16,8 @@ export type InMemoryResearchWorkflowStore = {
   saveCheckpoint: (checkpoint: WorkflowCheckpoint) => WorkflowCheckpoint;
   getReport: (runId: string) => ResearchReport | undefined;
   saveReport: (report: ResearchReport) => ResearchReport;
+  appendRunLog: (entry: RunLogEntry) => RunLogEntry;
+  listRunLogs: (runId: string) => RunLogEntry[];
 };
 
 export const createInMemoryResearchWorkflowStore = (
@@ -25,6 +29,7 @@ export const createInMemoryResearchWorkflowStore = (
   const evidenceLinks = new Map(fixture.evidenceLinks.map((link) => [link.id, link]));
   const checkpoints = new Map<string, WorkflowCheckpoint>();
   const reports = new Map<string, ResearchReport>();
+  const runLogs = new Map<string, RunLogEntry>();
   const createCheckpointKey = (runId: string, step: WorkflowStep) => `${runId}:${step}`;
 
   return {
@@ -120,5 +125,28 @@ export const createInMemoryResearchWorkflowStore = (
       reports.set(report.runId, report);
       return report;
     },
+    appendRunLog: (input) => {
+      const entry = runLogEntrySchema.parse(input);
+
+      if (!runs.has(entry.runId)) {
+        throw new Error("RUN_NOT_FOUND");
+      }
+
+      const current = runLogs.get(entry.id);
+
+      if (current) {
+        return current;
+      }
+
+      runLogs.set(entry.id, entry);
+      return entry;
+    },
+    listRunLogs: (runId) =>
+      Array.from(runLogs.values())
+        .filter((entry) => entry.runId === runId)
+        .sort(
+          (left, right) =>
+            left.timestamp.localeCompare(right.timestamp) || left.id.localeCompare(right.id),
+        ),
   };
 };
