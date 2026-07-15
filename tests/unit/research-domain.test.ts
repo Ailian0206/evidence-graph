@@ -8,6 +8,12 @@ import {
   sourceChunkSchema,
   sourceSchema,
 } from "@/features/research/domain";
+import {
+  canonicalizeUrl,
+  chunkSourceText,
+  createContentHash,
+  extractDomain,
+} from "@/features/sources/source-utils";
 
 describe("research domain schemas", () => {
   it("validates the core research entities", () => {
@@ -97,5 +103,27 @@ describe("research domain schemas", () => {
         rationale: "The source states the persistence requirement directly.",
       }).relation,
     ).toBe("supports");
+  });
+});
+
+describe("source utilities", () => {
+  it("canonicalizes source URLs and hashes body text deterministically", () => {
+    expect(canonicalizeUrl("HTTPS://Example.com/Research/?utm_source=x&b=2&a=1#top")).toBe(
+      "https://example.com/Research/?a=1&b=2",
+    );
+    expect(extractDomain("https://Sub.Example.com/research")).toBe("sub.example.com");
+    expect(createContentHash("  Evidence Graph keeps exact quotes.  ")).toBe(
+      createContentHash("Evidence Graph keeps exact quotes."),
+    );
+  });
+
+  it("chunks source text with stable character offsets", () => {
+    const text = `${"A".repeat(900)}\n\n${"B".repeat(700)}`;
+    const chunks = chunkSourceText({ sourceId: "source_demo", projectId: "project_demo", text });
+
+    expect(chunks).toHaveLength(2);
+    expect(chunks[0]).toMatchObject({ chunkIndex: 0, startChar: 0, endChar: 900 });
+    expect(chunks[1].text).toBe("B".repeat(700));
+    expect(chunks[1].embeddingModel).toBe("text-embedding-3-small");
   });
 });
