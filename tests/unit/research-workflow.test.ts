@@ -111,6 +111,81 @@ describe("research workflow store", () => {
     ).toThrow("RUN_NOT_FOUND");
   });
 
+  it("upserts generated entities and returns detached snapshots", () => {
+    const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
+    const source = {
+      id: "source_generated",
+      projectId: "project_demo",
+      canonicalUrl: "https://example.com/generated",
+      title: "Generated research source",
+      domain: "example.com",
+      sourceType: "article" as const,
+      body: "Generated evidence remains linked to an exact quote.",
+      contentHash: "sha256_generated",
+      retrievedAt: "2026-07-15T00:01:00.000Z",
+    };
+    const chunk = {
+      id: "source_generated_chunk_0",
+      sourceId: source.id,
+      projectId: source.projectId,
+      chunkIndex: 0,
+      text: source.body,
+      startChar: 0,
+      endChar: source.body.length,
+      embeddingModel: "text-embedding-3-small" as const,
+      embeddingDimensions: 1536 as const,
+    };
+    const claim = {
+      id: "claim_generated",
+      projectId: source.projectId,
+      statement: "Generated evidence remains linked to an exact quote.",
+      normalizedKey: "generated evidence remains linked to an exact quote",
+      claimType: "factual" as const,
+      qualifiers: [],
+      confidence: 0.8,
+      reviewStatus: "pending" as const,
+      createdAt: "2026-07-15T00:02:00.000Z",
+    };
+    const evidenceLink = {
+      id: "link_generated",
+      projectId: source.projectId,
+      claimId: claim.id,
+      chunkId: chunk.id,
+      relation: "supports" as const,
+      strength: "strong" as const,
+      quote: "Generated evidence remains linked to an exact quote",
+      rationale: "The generated source contains the exact statement.",
+    };
+    const claimRelation = {
+      id: "relation_generated",
+      projectId: source.projectId,
+      fromClaimId: "claim_exact_quotes",
+      toClaimId: claim.id,
+      relation: "depends_on" as const,
+      rationale: "The generated claim depends on exact-quote traceability.",
+    };
+
+    expect(store.upsertSource(source)).toEqual(source);
+    expect(store.upsertSource({ ...source, id: "source_duplicate" })).toEqual(source);
+    expect(store.upsertChunk(chunk)).toEqual(chunk);
+    expect(store.upsertClaim(claim)).toEqual(claim);
+    expect(store.upsertEvidenceLink(evidenceLink)).toEqual(evidenceLink);
+    expect(store.upsertClaimRelation(claimRelation)).toEqual(claimRelation);
+
+    const snapshot = store.getSnapshot();
+    expect(snapshot.sources).toHaveLength(3);
+    expect(snapshot.chunks).toHaveLength(3);
+    expect(snapshot.claims).toHaveLength(2);
+    expect(snapshot.evidenceLinks).toHaveLength(2);
+    expect(snapshot.claimRelations).toEqual([claimRelation]);
+
+    snapshot.sources[0].title = "Mutated outside the store";
+    snapshot.claims[0].qualifiers.push("mutated");
+
+    expect(store.getSnapshot().sources[0].title).not.toBe("Mutated outside the store");
+    expect(store.getSnapshot().claims[0].qualifiers).not.toContain("mutated");
+  });
+
   it("keeps one idempotent checkpoint per run step", () => {
     const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
     const checkpoint = {
