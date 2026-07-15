@@ -20,11 +20,11 @@
 - Create: `next.config.ts`
 - Create: `eslint.config.mjs`
 
-- [ ] Create a Next.js App Router project with TypeScript, Tailwind, ESLint, `src/`, and npm.
-- [ ] Pin Node 22 in `.nvmrc` and `package.json#engines`.
-- [ ] Install `next-intl`, `lucide-react`, `zod`, Vitest, Testing Library, jsdom, and Playwright.
-- [ ] Run `npm run lint`, `npm run typecheck`, and `npm run build`; record the clean scaffold baseline.
-- [ ] Commit as `chore: 初始化 Evidence Graph 工程`.
+- [x] Create a Next.js App Router project with TypeScript, Tailwind, ESLint, `src/`, and npm.
+- [x] Pin Node 22 in `.nvmrc` and `package.json#engines`.
+- [x] Install `next-intl`, `lucide-react`, `zod`, Vitest, Testing Library, jsdom, and Playwright.
+- [x] Run `npm run lint`, `npm run typecheck`, and `npm run build`; record the clean scaffold baseline.
+- [x] Commit as `chore: 初始化 Evidence Graph 工程`.
 
 ### Task 2: Establish tests and CI
 
