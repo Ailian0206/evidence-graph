@@ -10,7 +10,7 @@ Updated: 2026-07-15
 - Active module: foundation and portfolio shell.
 - External provider calls: disabled.
 - Production deployment: not configured.
-- Local gate: passed on 2026-07-15 with Node `v22.22.1`.
+- Local gate: passed on 2026-07-15 with Node `v22.22.1` after the pointer-selection regression fix.
 
 ## Confirmed identity and portfolio content
 
@@ -34,7 +34,7 @@ Updated: 2026-07-15
 ## Verification summary
 
 - `npm run test:ci`: passed.
-- `npm run test:e2e`: 16 passed; screenshots written to `output/playwright/`.
+- `npm run test:e2e`: 17 passed; screenshots written to `output/playwright/`.
 - Visual screenshots cover 390x844, 1024x768, and 1440x1000.
 - Route screenshots cover `/zh`, `/en`, `/zh/work`, `/zh/evidence`, `/zh/notes`, and case-study pages.
 - `git diff --check`: passed.
@@ -46,4 +46,4 @@ Updated: 2026-07-15
 
 ## Next action
 
-Run the complete gate for the pointer-selection fix, update Draft PR #1 once, and merge after CI and Codex review pass without waiting for Bugbot.
+Push the verified pointer-selection fix to Draft PR #1 once, then merge after CI and Codex review pass without waiting for Bugbot.
