@@ -14,6 +14,7 @@ import {
   createContentHash,
   extractDomain,
 } from "@/features/sources/source-utils";
+import { createClaimKey, validateExactQuote } from "@/features/claims/claim-utils";
 
 describe("research domain schemas", () => {
   it("validates the core research entities", () => {
@@ -125,5 +126,27 @@ describe("source utilities", () => {
     expect(chunks[0]).toMatchObject({ chunkIndex: 0, startChar: 0, endChar: 900 });
     expect(chunks[1].text).toBe("B".repeat(700));
     expect(chunks[1].embeddingModel).toBe("text-embedding-3-small");
+  });
+});
+
+describe("claim utilities", () => {
+  it("normalizes claim keys without losing meaning", () => {
+    expect(createClaimKey(" Evidence Graph stores exact source quotes! ")).toBe(
+      "evidence graph stores exact source quotes",
+    );
+  });
+
+  it("accepts only exact quotes from saved chunks", () => {
+    const chunkText = "The saved source says exact quotes must be preserved for review.";
+
+    expect(validateExactQuote({ chunkText, quote: "exact quotes must be preserved" })).toEqual({
+      ok: true,
+      startChar: 22,
+      endChar: 52,
+    });
+    expect(validateExactQuote({ chunkText, quote: "exact quotes should be preserved" })).toEqual({
+      ok: false,
+      reason: "QUOTE_NOT_FOUND",
+    });
   });
 });
