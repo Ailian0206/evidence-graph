@@ -16,6 +16,7 @@ import {
 } from "@/features/sources/source-utils";
 import { createClaimKey, validateExactQuote } from "@/features/claims/claim-utils";
 import { createDemoResearchFixture } from "@/features/research/fixtures";
+import { createInMemoryProjectRepository } from "@/features/projects/project-repository";
 
 describe("research domain schemas", () => {
   it("validates the core research entities", () => {
@@ -164,5 +165,43 @@ describe("research fixtures", () => {
       "evidence graph keeps claims connected to exact quotes",
     );
     expect(first.evidenceLinks.every((link) => link.quote.length > 0)).toBe(true);
+  });
+});
+
+describe("project repository boundary", () => {
+  it("enforces owner isolation and project cascade deletion", () => {
+    const repository = createInMemoryProjectRepository(createDemoResearchFixture());
+
+    expect(repository.listProjects("user_ailian")).toHaveLength(1);
+    expect(repository.listProjects("user_other")).toHaveLength(0);
+
+    const projectId = repository.listProjects("user_ailian")[0].id;
+    repository.deleteProject({ ownerId: "user_ailian", projectId });
+
+    expect(repository.listProjects("user_ailian")).toHaveLength(0);
+    expect(repository.listSources(projectId)).toHaveLength(0);
+    expect(repository.listClaims(projectId)).toHaveLength(0);
+  });
+
+  it("rejects duplicate sources and non-exact evidence quotes", () => {
+    const repository = createInMemoryProjectRepository(createDemoResearchFixture());
+    const projectId = repository.listProjects("user_ailian")[0].id;
+    const [source] = repository.listSources(projectId);
+    const [claim] = repository.listClaims(projectId);
+    const [chunk] = repository.listChunks(source.id);
+
+    expect(() => repository.addSource(source)).toThrow("SOURCE_ALREADY_EXISTS");
+    expect(() =>
+      repository.addEvidenceLink({
+        id: "link_bad_quote",
+        projectId,
+        claimId: claim.id,
+        chunkId: chunk.id,
+        relation: "supports",
+        strength: "strong",
+        quote: "not present in the chunk",
+        rationale: "This should fail.",
+      }),
+    ).toThrow("QUOTE_NOT_FOUND");
   });
 });
