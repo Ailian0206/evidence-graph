@@ -23,7 +23,6 @@ export const publicProjects: PortfolioProject[] = [
       en: "Currently building the bilingual portfolio, evidence domain model, repeatable research workflow, and public reports.",
     },
     tags: ["Next.js", "TypeScript", "Agent", "pgvector"],
-    href: "/evidence",
     repositoryUrl: "https://github.com/Ailian0206/evidence-graph",
   },
   {
@@ -48,7 +47,6 @@ export const publicProjects: PortfolioProject[] = [
       en: "Validated model creation, training uploads, generation jobs, gallery downloads, and a gated real-provider smoke path.",
     },
     tags: ["Next.js", "Prisma", "Playwright", "Image API"],
-    href: "/work/ai-photo-studio-cn",
     repositoryUrl: "https://github.com/Ailian0206/ai-photo-studio-cn",
   },
 ];

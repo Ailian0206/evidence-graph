@@ -6,9 +6,18 @@ import { EvidenceCanvas } from "@/components/portfolio/evidence-canvas";
 import { Link } from "@/i18n/navigation";
 import type { AppLocale } from "@/i18n/routing";
 
-export const metadata: Metadata = {
-  title: "Evidence Graph",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: AppLocale }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "Evidence" });
+
+  return {
+    title: t("title"),
+  };
+}
 
 export default async function EvidencePage({
   params,

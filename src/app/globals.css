@@ -939,8 +939,7 @@ button {
     padding: 0 var(--page-gutter);
   }
 
-  .brand-link > span:last-child,
-  .primary-nav a:last-child {
+  .brand-link > span:last-child {
     display: none;
   }
 
@@ -1017,8 +1016,7 @@ button {
   }
 
   .evidence-canvas-hero .canvas-toolbar,
-  .evidence-canvas-hero .canvas-query,
-  .evidence-canvas-hero .canvas-inspector {
+  .evidence-canvas-hero .canvas-query {
     display: none;
   }
 
