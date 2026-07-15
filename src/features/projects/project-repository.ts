@@ -174,7 +174,14 @@ export const createInMemoryProjectRepository = (
       throw new Error("CHUNK_ALREADY_EXISTS");
     }
 
-    if (!source || source.projectId !== chunk.projectId) {
+    const offsetsMatchSource =
+      source &&
+      chunk.startChar < chunk.endChar &&
+      chunk.endChar <= source.body.length &&
+      chunk.text.length === chunk.endChar - chunk.startChar &&
+      source.body.slice(chunk.startChar, chunk.endChar) === chunk.text;
+
+    if (!source || source.projectId !== chunk.projectId || !offsetsMatchSource) {
       throw new Error("CHUNK_SOURCE_MISMATCH");
     }
 
@@ -214,6 +221,10 @@ export const createInMemoryProjectRepository = (
 
     if (duplicate) {
       throw new Error("CLAIM_RELATION_ALREADY_EXISTS");
+    }
+
+    if (relation.fromClaimId === relation.toClaimId) {
+      throw new Error("CLAIM_RELATION_SELF_REFERENCE");
     }
 
     if (

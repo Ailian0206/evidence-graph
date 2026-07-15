@@ -283,6 +283,48 @@ describe("project repository boundary", () => {
     );
   });
 
+  it("rejects chunks whose offsets do not match the saved source body", () => {
+    const baseFixture = createDemoResearchFixture();
+    const chunk = baseFixture.chunks[0];
+    const invalidChunks = [
+      { ...chunk, startChar: 10, endChar: 5 },
+      {
+        ...chunk,
+        startChar: baseFixture.sources[0].body.length + 1,
+        endChar: baseFixture.sources[0].body.length + 2,
+        text: "X",
+      },
+      { ...chunk, endChar: chunk.endChar - 1 },
+      { ...chunk, text: `X${chunk.text.slice(1)}` },
+    ];
+
+    for (const invalidChunk of invalidChunks) {
+      const fixture = createDemoResearchFixture();
+      fixture.chunks[0] = invalidChunk;
+
+      expect(() => createInMemoryProjectRepository(fixture)).toThrow(
+        "CHUNK_SOURCE_MISMATCH",
+      );
+    }
+  });
+
+  it("rejects self-referential claim relations", () => {
+    const fixture = createDemoResearchFixture();
+    const claimId = fixture.claims[0].id;
+    fixture.claimRelations.push({
+      id: "relation_self_reference",
+      projectId: fixture.projects[0].id,
+      fromClaimId: claimId,
+      toClaimId: claimId,
+      relation: "contradicts",
+      rationale: "A claim cannot contradict itself.",
+    });
+
+    expect(() => createInMemoryProjectRepository(fixture)).toThrow(
+      "CLAIM_RELATION_SELF_REFERENCE",
+    );
+  });
+
   it("rejects source ID overwrites and duplicate normalized claims", () => {
     const repository = createInMemoryProjectRepository(createDemoResearchFixture());
     const projectId = repository.listProjects("user_ailian")[0].id;
