@@ -44,7 +44,7 @@ This module does not include:
 - Create: `src/providers/fixtures/research-providers.ts`
 - Create: `tests/unit/research-workflow.test.ts`
 
-- [ ] **Step 1: Write the failing provider-boundary test**
+- [x] **Step 1: Write the failing provider-boundary test**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -77,7 +77,7 @@ describe("research provider fixtures", () => {
 });
 ```
 
-- [ ] **Step 2: Run the focused test and verify RED**
+- [x] **Step 2: Run the focused test and verify RED**
 
 ```bash
 npm run test:unit -- tests/unit/research-workflow.test.ts --reporter=dot
@@ -85,7 +85,7 @@ npm run test:unit -- tests/unit/research-workflow.test.ts --reporter=dot
 
 Expected: FAIL because the provider contracts and fixture providers do not exist.
 
-- [ ] **Step 3: Implement the minimum provider boundary**
+- [x] **Step 3: Implement the minimum provider boundary**
 
 `src/providers/contracts.ts` must export:
 
@@ -130,7 +130,7 @@ export type EmbeddingProvider = {
 
 `createFixtureResearchProviders` must return the three providers plus a shared `calls` array. This task supplies fixed search results, a valid three-query `plan` output, and deterministic 1536-dimensional embeddings. Task 2 adds the remaining structured model outputs after their schemas exist; Task 4 adds controlled failure, invalid-quote, source-count, and cost options.
 
-- [ ] **Step 4: Run the focused test and verify GREEN**
+- [x] **Step 4: Run the focused test and verify GREEN**
 
 ```bash
 npm run test:unit -- tests/unit/research-workflow.test.ts --reporter=dot
@@ -138,7 +138,7 @@ npm run test:unit -- tests/unit/research-workflow.test.ts --reporter=dot
 
 Expected: 1 workflow test passes and no provider performs network I/O.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/providers/contracts.ts src/providers/fixtures/research-providers.ts tests/unit/research-workflow.test.ts
@@ -154,7 +154,7 @@ git commit -m "feat: 建立研究 Provider 夹具边界"
 - Modify: `src/providers/fixtures/research-providers.ts`
 - Modify: `tests/unit/research-workflow.test.ts`
 
-- [ ] **Step 1: Write failing store tests**
+- [x] **Step 1: Write failing store tests**
 
 Add tests that require:
 
@@ -190,7 +190,7 @@ expect(() =>
 
 Also require duplicate-safe upserts for generated sources, chunks, claims, evidence links, relations, embeddings, and one report per run.
 
-- [ ] **Step 2: Run the focused test and verify RED**
+- [x] **Step 2: Run the focused test and verify RED**
 
 ```bash
 npm run test:unit -- tests/unit/research-workflow.test.ts --reporter=dot
@@ -198,7 +198,7 @@ npm run test:unit -- tests/unit/research-workflow.test.ts --reporter=dot
 
 Expected: FAIL because workflow records and the store do not exist.
 
-- [ ] **Step 3: Implement workflow records and store**
+- [x] **Step 3: Implement workflow records and store**
 
 Define Zod-backed types for:
 
@@ -212,13 +212,13 @@ The store must enforce owner isolation through `requireRun`, preserve one checkp
 
 Extend the Fixture LanguageModel with schema-validated outputs for `extract_claims`, `link_evidence`, `detect_conflicts`, and `draft_report`. The evidence fixture must include both `supports` and `rebuts` relations so the workflow cannot silently discard rebutting evidence.
 
-- [ ] **Step 4: Run focused tests and verify GREEN**
+- [x] **Step 4: Run focused tests and verify GREEN**
 
 ```bash
 npm run test:unit -- tests/unit/research-workflow.test.ts --reporter=dot
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/features/research/workflow-types.ts src/features/research/workflow-store.ts src/providers/fixtures/research-providers.ts tests/unit/research-workflow.test.ts
@@ -232,7 +232,7 @@ git commit -m "feat: 增加研究工作流幂等存储"
 - Create: `src/features/research/run-research-workflow.ts`
 - Modify: `tests/unit/research-workflow.test.ts`
 
-- [ ] **Step 1: Write the failing full-run test**
+- [x] **Step 1: Write the failing full-run test**
 
 ```ts
 it("runs the deterministic workflow to a fully cited report", async () => {
@@ -267,7 +267,7 @@ it("runs the deterministic workflow to a fully cited report", async () => {
 });
 ```
 
-- [ ] **Step 2: Run the focused test and verify RED**
+- [x] **Step 2: Run the focused test and verify RED**
 
 ```bash
 npm run test:unit -- tests/unit/research-workflow.test.ts --reporter=dot
@@ -275,7 +275,7 @@ npm run test:unit -- tests/unit/research-workflow.test.ts --reporter=dot
 
 Expected: FAIL because `runResearchWorkflow` does not exist.
 
-- [ ] **Step 3: Implement the minimum orchestrator**
+- [x] **Step 3: Implement the minimum orchestrator**
 
 For each state-machine step:
 
@@ -289,13 +289,13 @@ For each state-machine step:
 
 The orchestrator accepts optional manual source records, rejects more than the run's `manualUrlLimit`, and merges them with search results before collecting. Collecting must canonicalize URLs, deduplicate by canonical URL and content hash, cap the merged result at the run's `sourceLimit`, and reject total persisted body text beyond `maxContentChars`. Indexing must reuse `chunkSourceText` and require 1536-dimensional fixture embeddings. Linking evidence must reject non-exact quotes and preserve both supporting and rebutting evidence. Drafting must include only claims with saved evidence links and build citation snapshots from saved sources and chunks.
 
-- [ ] **Step 4: Run focused tests and verify GREEN**
+- [x] **Step 4: Run focused tests and verify GREEN**
 
 ```bash
 npm run test:unit -- tests/unit/research-workflow.test.ts --reporter=dot
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/features/research/run-research-workflow.ts tests/unit/research-workflow.test.ts
@@ -310,11 +310,11 @@ git commit -m "feat: 实现确定性研究状态机"
 - Modify: `src/features/research/workflow-store.ts`
 - Modify: `tests/unit/research-workflow.test.ts`
 
-- [ ] **Step 1: Write failing idempotency and resume tests**
+- [x] **Step 1: Write failing idempotency and resume tests**
 
 Require that running an already-ready run returns the stored report without adding provider calls or duplicate entities. Configure `failOnceAt: "extract_claims"`, run once to obtain `failed`, then run again and verify planning, searching, collecting, and indexing are not repeated while extraction is attempted twice.
 
-- [ ] **Step 2: Write failing correctness-limit tests**
+- [x] **Step 2: Write failing correctness-limit tests**
 
 Require these exact outcomes:
 
@@ -334,13 +334,13 @@ expect(
 
 Also verify that merged search and manual sources are capped at `sourceLimit`, and cover `MANUAL_URL_LIMIT_EXCEEDED`, `CONTENT_LIMIT_EXCEEDED`, and owner mismatch.
 
-- [ ] **Step 3: Run the focused tests and verify RED**
+- [x] **Step 3: Run the focused tests and verify RED**
 
 ```bash
 npm run test:unit -- tests/unit/research-workflow.test.ts --reporter=dot
 ```
 
-- [ ] **Step 4: Implement failure and resume semantics**
+- [x] **Step 4: Implement failure and resume semantics**
 
 - Convert known validation and limit errors into a failed run with a stable error code and failed log entry.
 - Add Fixture Provider options for `failOnceAt`, `invalidQuote`, `searchResultCount`, and per-operation cost overrides; keep their outputs deterministic.
@@ -351,13 +351,13 @@ npm run test:unit -- tests/unit/research-workflow.test.ts --reporter=dot
 - A ready run is immutable and returns its stored result without invoking providers.
 - Unknown exceptions use `WORKFLOW_FAILED` without leaking provider payloads or source text into logs.
 
-- [ ] **Step 5: Run focused tests and verify GREEN**
+- [x] **Step 5: Run focused tests and verify GREEN**
 
 ```bash
 npm run test:unit -- tests/unit/research-workflow.test.ts --reporter=dot
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/features/research/run-research-workflow.ts src/features/research/workflow-store.ts tests/unit/research-workflow.test.ts
@@ -372,7 +372,7 @@ git commit -m "test: 覆盖研究工作流恢复与成本门禁"
 - Modify: `docs/development-plan.md`
 - Modify: `docs/superpowers/plans/2026-07-15-research-workflow-plan.md`
 
-- [ ] **Step 1: Run the focused workflow suite**
+- [x] **Step 1: Run the focused workflow suite**
 
 ```bash
 npm run test:unit -- tests/unit/research-workflow.test.ts --reporter=dot
@@ -380,7 +380,7 @@ npm run test:unit -- tests/unit/research-workflow.test.ts --reporter=dot
 
 Expected: all workflow tests pass with fixture providers only.
 
-- [ ] **Step 2: Run the complete local module gate with Node 22**
+- [x] **Step 2: Run the complete local module gate with Node 22**
 
 ```bash
 npm run test:ci
@@ -388,9 +388,9 @@ git diff --check
 git status -sb
 ```
 
-Expected: lint, typecheck, unit, build, and 16 existing public E2E tests pass; no external provider call is made.
+Expected: lint, typecheck, unit, build, and all existing public E2E tests pass; no external provider call is made.
 
-- [ ] **Step 3: Inspect provider-call safety**
+- [x] **Step 3: Inspect provider-call safety**
 
 ```bash
 rg -n "api\.openai\.com|api\.tavily\.com|OPENAI_API_KEY|TAVILY_API_KEY" src tests
@@ -398,17 +398,19 @@ rg -n "api\.openai\.com|api\.tavily\.com|OPENAI_API_KEY|TAVILY_API_KEY" src test
 
 Expected: no real endpoint or key use. Contract names in documentation are acceptable; executable provider code remains fixture-only.
 
-- [ ] **Step 4: Update module state**
+- [x] **Step 4: Update module state**
 
 Mark the plan tasks complete, record exact test counts in `PROJECT_STATUS.md`, and mark the research-workflow local exit gate complete in `docs/development-plan.md`.
 
-- [ ] **Step 5: Commit the module result**
+- [x] **Step 5: Commit the module result**
 
 ```bash
 git add PROJECT_STATUS.md docs/development-plan.md docs/superpowers/plans/2026-07-15-research-workflow-plan.md
 git commit -m "docs: 记录研究工作流模块结果"
 ```
 
-- [ ] **Step 6: Keep the branch local**
+- [x] **Step 6: Keep the branch local**
 
 Do not push or open a PR until the foundation and research-domain module PR sequence is settled. Before the eventual module PR, merge accepted predecessor branches with merge commits, rerun `npm run test:ci`, then create exactly one Draft PR for `feat/research-workflow`.
+
+Result on 2026-07-15: the predecessor modules are merged, 33 focused workflow tests pass, and the complete gate passes with 60 unit and 18 E2E tests. Provider safety scans found no credentials, real provider endpoints, network implementations, or provider SDK dependencies. Final read-only Codex review remains before the single Draft PR.
