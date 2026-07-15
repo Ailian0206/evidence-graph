@@ -20,9 +20,9 @@ Development is split into module branches and Draft PRs so CI and the configured
 - Each module uses small Chinese Conventional Commits and one Draft PR; do not open separate PRs for intermediate commits.
 - `PROJECT_STATUS.md` is updated when branch, PR, CI, or milestone state changes.
 - A module is not complete until lint, typecheck, unit, build, and relevant Playwright checks pass.
-- Cursor Bugbot Autofix is the first fixer for Bugbot findings when it is enabled. Codex reviews and integrates the Autofix diff, and only writes a follow-up fix if Autofix fails, stalls, or introduces a verified problem.
-- Waiting for CI, Bugbot, or Autofix should not block unrelated local progress. Continue the next local module task in a separate branch/worktree when safe, and use a read-only subagent to monitor PR state.
+- Automated review tools are optional accelerators. When Bugbot or Autofix is unavailable because of quota or service state, Codex review plus the complete module gate replaces that review cycle without blocking local progress.
+- Continue the next local module task in a separate branch or worktree while remote checks run. Use a read-only monitor subagent only when active remote automation has a result worth waiting for.
 
 ## Current module
 
-Monitor Draft PR [#1](https://github.com/Ailian0206/evidence-graph/pull/1), review any Cursor Autofix output, and start local `feat/research-domain` work without opening a PR until that module is complete.
+Finish Draft PR [#1](https://github.com/Ailian0206/evidence-graph/pull/1) with CI and Codex review, without waiting for the exhausted Bugbot quota. Keep later module work local until each module reaches its exit gate.
