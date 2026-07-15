@@ -28,9 +28,12 @@ Do not add ProjectPilot AI, generic chat, billing, teams, browser extensions, OC
 5. Run focused verification, then refactor while green.
 6. Before each commit, run `git diff --check`, inspect the diff, and stage only module files.
 7. Use Chinese Conventional Commits.
-8. At the module milestone, run the complete gate, push the branch, and create a Draft PR.
-9. Read CI and bot findings before merging. Fix valid findings on the same branch.
-10. Merge with `gh pr merge <number> --merge --delete-branch` only after checks are green.
+8. Keep pull requests at module granularity. Do not create PRs for intermediate tasks, review-only cleanups, or every small commit.
+9. At the module milestone, run the complete gate, push the branch, and create one Draft PR for that module.
+10. When Cursor Bugbot Autofix is enabled, let Autofix attempt the first code fix for Bugbot findings. Do not race it by manually fixing the same finding unless Autofix fails, stalls, or produces an incorrect patch.
+11. Review Autofix output before accepting it: fetch the branch, inspect the diff, run focused tests for the finding, then run the module gate before merging or continuing.
+12. While CI, Bugbot, or Autofix is pending, continue non-overlapping local work for the next module when possible. A subagent may monitor PR checks and Autofix branches, but it must stay read-only unless explicitly assigned an implementation task.
+13. Merge with `gh pr merge <number> --merge --delete-branch` only after checks are green and valid bot feedback has been reviewed.
 
 ## Cost and external-write gates
 
