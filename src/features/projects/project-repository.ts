@@ -1,14 +1,23 @@
-import type {
-  Claim,
-  ClaimRelation,
-  EvidenceLink,
-  Project,
-  ResearchRun,
-  Source,
-  SourceChunk,
+import {
+  claimRelationSchema,
+  claimSchema,
+  evidenceLinkSchema,
+  projectSchema,
+  researchRunSchema,
+  sourceChunkSchema,
+  sourceSchema,
+  type Claim,
+  type ClaimRelation,
+  type EvidenceLink,
+  type Project,
+  type ResearchRun,
+  type Source,
+  type SourceChunk,
 } from "@/features/research/domain";
 import type { DemoResearchFixture } from "@/features/research/fixtures";
 import { validateExactQuote } from "@/features/claims/claim-utils";
+
+const cloneValue = <T>(value: T): T => structuredClone(value);
 
 export type InMemoryProjectRepository = {
   listProjects: (ownerId: string) => Project[];
@@ -33,15 +42,38 @@ export type InMemoryProjectRepository = {
 export const createInMemoryProjectRepository = (
   fixture: DemoResearchFixture,
 ): InMemoryProjectRepository => {
-  const projects = new Map(fixture.projects.map((project) => [project.id, project]));
-  const researchRuns = new Map(fixture.researchRuns.map((run) => [run.id, run]));
+  const projects = new Map<string, Project>();
+  const researchRuns = new Map<string, ResearchRun>();
   const sources = new Map<string, Source>();
-  const chunks = new Map(fixture.chunks.map((chunk) => [chunk.id, chunk]));
+  const chunks = new Map<string, SourceChunk>();
   const claims = new Map<string, Claim>();
   const evidenceLinks = new Map<string, EvidenceLink>();
-  const claimRelations = new Map(
-    fixture.claimRelations.map((relation) => [relation.id, relation]),
-  );
+  const claimRelations = new Map<string, ClaimRelation>();
+
+  for (const input of fixture.projects) {
+    const project = projectSchema.parse(input);
+
+    if (projects.has(project.id)) {
+      throw new Error("PROJECT_ALREADY_EXISTS");
+    }
+
+    projects.set(project.id, cloneValue(project));
+  }
+
+  for (const input of fixture.researchRuns) {
+    const run = researchRunSchema.parse(input);
+    const project = projects.get(run.projectId);
+
+    if (researchRuns.has(run.id)) {
+      throw new Error("RUN_ALREADY_EXISTS");
+    }
+
+    if (!project || project.ownerId !== run.ownerId) {
+      throw new Error("RUN_PROJECT_MISMATCH");
+    }
+
+    researchRuns.set(run.id, cloneValue(run));
+  }
 
   const canAccessProject = (ownerId: string, projectId: string) => {
     const project = projects.get(projectId);
@@ -117,66 +149,138 @@ export const createInMemoryProjectRepository = (
     }
   };
 
-  for (const source of fixture.sources) {
+  for (const input of fixture.sources) {
+    const source = sourceSchema.parse(input);
+
+    if (!projects.has(source.projectId)) {
+      throw new Error("SOURCE_PROJECT_NOT_FOUND");
+    }
+
     assertUniqueSource(source);
-    sources.set(source.id, source);
+    sources.set(source.id, cloneValue(source));
   }
 
-  for (const claim of fixture.claims) {
+  for (const input of fixture.chunks) {
+    const chunk = sourceChunkSchema.parse(input);
+    const source = sources.get(chunk.sourceId);
+    const duplicate =
+      chunks.has(chunk.id) ||
+      Array.from(chunks.values()).some(
+        (current) =>
+          current.sourceId === chunk.sourceId && current.chunkIndex === chunk.chunkIndex,
+      );
+
+    if (duplicate) {
+      throw new Error("CHUNK_ALREADY_EXISTS");
+    }
+
+    if (!source || source.projectId !== chunk.projectId) {
+      throw new Error("CHUNK_SOURCE_MISMATCH");
+    }
+
+    chunks.set(chunk.id, cloneValue(chunk));
+  }
+
+  for (const input of fixture.claims) {
+    const claim = claimSchema.parse(input);
+
+    if (!projects.has(claim.projectId)) {
+      throw new Error("CLAIM_PROJECT_NOT_FOUND");
+    }
+
     assertUniqueClaim(claim);
-    claims.set(claim.id, claim);
+    claims.set(claim.id, cloneValue(claim));
   }
 
-  for (const link of fixture.evidenceLinks) {
+  for (const input of fixture.evidenceLinks) {
+    const link = evidenceLinkSchema.parse(input);
     assertValidEvidenceLink(link);
     assertUniqueEvidenceLink(link);
-    evidenceLinks.set(link.id, link);
+    evidenceLinks.set(link.id, cloneValue(link));
+  }
+
+  for (const input of fixture.claimRelations) {
+    const relation = claimRelationSchema.parse(input);
+    const fromClaim = claims.get(relation.fromClaimId);
+    const toClaim = claims.get(relation.toClaimId);
+    const duplicate =
+      claimRelations.has(relation.id) ||
+      Array.from(claimRelations.values()).some(
+        (current) =>
+          current.fromClaimId === relation.fromClaimId &&
+          current.toClaimId === relation.toClaimId &&
+          current.relation === relation.relation,
+      );
+
+    if (duplicate) {
+      throw new Error("CLAIM_RELATION_ALREADY_EXISTS");
+    }
+
+    if (
+      !fromClaim ||
+      !toClaim ||
+      fromClaim.projectId !== relation.projectId ||
+      toClaim.projectId !== relation.projectId
+    ) {
+      throw new Error("CLAIM_RELATION_TARGET_NOT_FOUND");
+    }
+
+    claimRelations.set(relation.id, cloneValue(relation));
   }
 
   return {
     listProjects: (ownerId) =>
       Array.from(projects.values()).filter(
         (project) => project.ownerId === ownerId && project.status !== "deleted",
-      ),
+      ).map(cloneValue),
     listSources: ({ ownerId, projectId }) =>
       canAccessProject(ownerId, projectId)
-        ? Array.from(sources.values()).filter((source) => source.projectId === projectId)
+        ? Array.from(sources.values())
+            .filter((source) => source.projectId === projectId)
+            .map(cloneValue)
         : [],
     listChunks: ({ ownerId, projectId, sourceId }) =>
       canAccessProject(ownerId, projectId)
         ? Array.from(chunks.values()).filter(
             (chunk) => chunk.projectId === projectId && chunk.sourceId === sourceId,
-          )
+          ).map(cloneValue)
         : [],
     listClaims: ({ ownerId, projectId }) =>
       canAccessProject(ownerId, projectId)
-        ? Array.from(claims.values()).filter((claim) => claim.projectId === projectId)
+        ? Array.from(claims.values())
+            .filter((claim) => claim.projectId === projectId)
+            .map(cloneValue)
         : [],
     listResearchRuns: ({ ownerId, projectId }) =>
       canAccessProject(ownerId, projectId)
-        ? Array.from(researchRuns.values()).filter((run) => run.projectId === projectId)
+        ? Array.from(researchRuns.values())
+            .filter((run) => run.projectId === projectId)
+            .map(cloneValue)
         : [],
     listClaimRelations: ({ ownerId, projectId }) =>
       canAccessProject(ownerId, projectId)
         ? Array.from(claimRelations.values()).filter(
             (relation) => relation.projectId === projectId,
-          )
+          ).map(cloneValue)
         : [],
-    addSource: ({ ownerId, source }) => {
+    addSource: ({ ownerId, source: input }) => {
+      const source = sourceSchema.parse(input);
       requireOwnedProject(ownerId, source.projectId);
       assertUniqueSource(source);
-      sources.set(source.id, source);
+      sources.set(source.id, cloneValue(source));
     },
-    addClaim: ({ ownerId, claim }) => {
+    addClaim: ({ ownerId, claim: input }) => {
+      const claim = claimSchema.parse(input);
       requireOwnedProject(ownerId, claim.projectId);
       assertUniqueClaim(claim);
-      claims.set(claim.id, claim);
+      claims.set(claim.id, cloneValue(claim));
     },
-    addEvidenceLink: ({ ownerId, link }) => {
+    addEvidenceLink: ({ ownerId, link: input }) => {
+      const link = evidenceLinkSchema.parse(input);
       requireOwnedProject(ownerId, link.projectId);
       assertValidEvidenceLink(link);
       assertUniqueEvidenceLink(link);
-      evidenceLinks.set(link.id, link);
+      evidenceLinks.set(link.id, cloneValue(link));
     },
     deleteProject: ({ ownerId, projectId }) => {
       const project = projects.get(projectId);

@@ -130,20 +130,21 @@ describe("source utilities", () => {
     expect(chunks[1].embeddingModel).toBe("text-embedding-3-small");
   });
 
-  it("splits long paragraphs into 800 to 1200 character chunks", () => {
-    const text = "A".repeat(2401);
+  it.each([
+    [1200, [1200]],
+    [1201, [1201]],
+    [1599, [1599]],
+    [1600, [800, 800]],
+    [2400, [1200, 1200]],
+    [2401, [801, 800, 800]],
+  ])("chunks a %i-character paragraph without a degenerate tail", (length, expectedSizes) => {
+    const text = "A".repeat(length);
     const chunks = chunkSourceText({ sourceId: "source_long", projectId: "project_demo", text });
 
-    expect(chunks).toHaveLength(3);
-    expect(chunks.every((chunk) => chunk.text.length >= 800 && chunk.text.length <= 1200)).toBe(
-      true,
-    );
+    expect(chunks.map((chunk) => chunk.text.length)).toEqual(expectedSizes);
     expect(chunks.map((chunk) => chunk.text).join("")).toBe(text);
-    expect(chunks.map((chunk) => [chunk.startChar, chunk.endChar])).toEqual([
-      [0, 801],
-      [801, 1601],
-      [1601, 2401],
-    ]);
+    expect(chunks[0].startChar).toBe(0);
+    expect(chunks.at(-1)?.endChar).toBe(length);
   });
 });
 
@@ -153,7 +154,10 @@ describe("claim utilities", () => {
       "evidence graph stores exact source quotes",
     );
     expect(createClaimKey("C++ is memory-safe")).not.toBe(
-      createClaimKey("C is memorysafe"),
+      createClaimKey("C is memory-safe"),
+    );
+    expect(createClaimKey("C++ is memory-safe")).not.toBe(
+      createClaimKey("C++ is memorysafe"),
     );
   });
 
@@ -170,6 +174,10 @@ describe("claim utilities", () => {
       reason: "QUOTE_NOT_FOUND",
     });
     expect(validateExactQuote({ chunkText, quote: "" })).toEqual({
+      ok: false,
+      reason: "QUOTE_NOT_FOUND",
+    });
+    expect(validateExactQuote({ chunkText, quote: " " })).toEqual({
       ok: false,
       reason: "QUOTE_NOT_FOUND",
     });
@@ -225,6 +233,56 @@ describe("project repository boundary", () => {
     );
   });
 
+  it("validates IDs and project ownership for all initialized records", () => {
+    const projectFixture = createDemoResearchFixture();
+    projectFixture.projects.push({
+      ...projectFixture.projects[0],
+      ownerId: "user_other",
+    });
+    expect(() => createInMemoryProjectRepository(projectFixture)).toThrow(
+      "PROJECT_ALREADY_EXISTS",
+    );
+
+    const runFixture = createDemoResearchFixture();
+    runFixture.researchRuns[0].ownerId = "user_other";
+    expect(() => createInMemoryProjectRepository(runFixture)).toThrow("RUN_PROJECT_MISMATCH");
+
+    const chunkFixture = createDemoResearchFixture();
+    chunkFixture.chunks.push({
+      ...chunkFixture.chunks[0],
+      text: "Duplicate chunk ID",
+    });
+    expect(() => createInMemoryProjectRepository(chunkFixture)).toThrow(
+      "CHUNK_ALREADY_EXISTS",
+    );
+
+    const relationFixture = createDemoResearchFixture();
+    const otherProject = {
+      ...relationFixture.projects[0],
+      id: "project_relation_other",
+      slug: "relation-other",
+    };
+    const otherClaim = {
+      ...relationFixture.claims[0],
+      id: "claim_relation_other",
+      projectId: otherProject.id,
+      normalizedKey: "other relation claim",
+    };
+    relationFixture.projects.push(otherProject);
+    relationFixture.claims.push(otherClaim);
+    relationFixture.claimRelations.push({
+      id: "relation_cross_project",
+      projectId: relationFixture.projects[0].id,
+      fromClaimId: relationFixture.claims[0].id,
+      toClaimId: otherClaim.id,
+      relation: "depends_on",
+      rationale: "Cross-project relations must be rejected.",
+    });
+    expect(() => createInMemoryProjectRepository(relationFixture)).toThrow(
+      "CLAIM_RELATION_TARGET_NOT_FOUND",
+    );
+  });
+
   it("rejects source ID overwrites and duplicate normalized claims", () => {
     const repository = createInMemoryProjectRepository(createDemoResearchFixture());
     const projectId = repository.listProjects("user_ailian")[0].id;
@@ -266,6 +324,27 @@ describe("project repository boundary", () => {
         },
       }),
     ).toThrow("PROJECT_NOT_FOUND");
+  });
+
+  it("does not expose mutable repository records", () => {
+    const fixture = createDemoResearchFixture();
+    const repository = createInMemoryProjectRepository(fixture);
+    const project = repository.listProjects("user_ailian")[0];
+    const [source] = repository.listSources({
+      ownerId: "user_ailian",
+      projectId: project.id,
+    });
+    const originalTitle = source.title;
+
+    fixture.projects[0].ownerId = "user_other";
+    project.ownerId = "user_other";
+    source.title = "Mutated outside the repository";
+
+    expect(repository.listProjects("user_ailian")).toHaveLength(1);
+    expect(repository.listProjects("user_other")).toHaveLength(0);
+    expect(
+      repository.listSources({ ownerId: "user_ailian", projectId: project.id })[0].title,
+    ).toBe(originalTitle);
   });
 
   it("rejects evidence links with missing or cross-project targets", () => {

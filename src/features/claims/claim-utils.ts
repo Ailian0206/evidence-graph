@@ -17,7 +17,7 @@ export const validateExactQuote = ({
   chunkText: string;
   quote: string;
 }): ExactQuoteValidationResult => {
-  if (quote.length === 0) {
+  if (quote.trim().length === 0) {
     return { ok: false, reason: "QUOTE_NOT_FOUND" };
   }
 

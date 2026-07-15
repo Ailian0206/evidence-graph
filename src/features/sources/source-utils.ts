@@ -65,9 +65,8 @@ export const chunkSourceText = ({
         sizes.push(balancedSize + (index < remainder ? 1 : 0));
       }
     } else {
-      for (let offset = 0; offset < paragraph.length; offset += MAX_CHUNK_CHARACTERS) {
-        sizes.push(Math.min(MAX_CHUNK_CHARACTERS, paragraph.length - offset));
-      }
+      // Keep indivisible paragraphs whole instead of creating a sub-800 character tail.
+      sizes.push(paragraph.length);
     }
 
     let localOffset = 0;
