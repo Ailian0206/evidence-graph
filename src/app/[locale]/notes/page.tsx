@@ -5,9 +5,17 @@ import { NoteRows } from "@/components/portfolio/note-rows";
 import { notes } from "@/content/notes";
 import type { AppLocale } from "@/i18n/routing";
 
-export const metadata: Metadata = {
-  title: "Notes",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: AppLocale }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+
+  return {
+    title: locale === "zh" ? "工程笔记" : "Notes",
+  };
+}
 
 export default async function NotesPage({
   params,

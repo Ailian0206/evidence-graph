@@ -27,6 +27,7 @@ describe("public portfolio content", () => {
     expect(
       publicProjects.some((project) => project.slug.includes("projectpilot")),
     ).toBe(false);
+    expect(publicProjects.every((project) => !("href" in project))).toBe(true);
   });
 
   it("keeps all public project and note copy bilingual", () => {

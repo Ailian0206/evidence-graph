@@ -15,7 +15,6 @@ export type PortfolioProject = {
   approach: LocalizedText;
   proof: LocalizedText;
   tags: string[];
-  href: string;
   repositoryUrl: string;
 };
 

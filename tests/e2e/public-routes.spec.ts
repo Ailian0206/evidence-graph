@@ -49,6 +49,7 @@ test("evidence preview exposes inspectable source state", async ({ page }) => {
 test("Chinese public pages localize metadata and secondary labels", async ({ page }) => {
   await page.goto("/zh/notes");
 
+  await expect(page).toHaveTitle("工程笔记 | Ailian");
   await expect(page.locator('meta[name="description"]')).toHaveAttribute(
     "content",
     "我把复杂的 AI 工作流做成可理解、可验证、可持续维护的产品。当前重点是 Evidence Graph：让研究结论回到原文证据。",
@@ -64,6 +65,9 @@ test("Chinese public pages localize metadata and secondary labels", async ({ pag
   await expect(page.locator(".evidence-canvas-workspace .canvas-status")).toContainText(
     "运行 01 / 证据审核",
   );
+
+  await page.goto("/zh/work");
+  await expect(page).toHaveTitle("精选作品 | Ailian");
 });
 
 test("evidence preview keeps hover and focus state aligned", async ({ page }) => {

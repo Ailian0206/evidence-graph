@@ -5,9 +5,17 @@ import { ProjectRows } from "@/components/portfolio/project-rows";
 import { publicProjects } from "@/content/projects";
 import type { AppLocale } from "@/i18n/routing";
 
-export const metadata: Metadata = {
-  title: "Work",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: AppLocale }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+
+  return {
+    title: locale === "zh" ? "精选作品" : "Work",
+  };
+}
 
 export default async function WorkPage({
   params,
