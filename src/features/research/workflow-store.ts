@@ -3,6 +3,7 @@ import {
   claimRelationSchema,
   claimSchema,
   evidenceLinkSchema,
+  researchRunSchema,
   sourceChunkSchema,
   sourceSchema,
   type Claim,
@@ -28,6 +29,7 @@ import {
 
 export type InMemoryResearchWorkflowStore = {
   requireRun: (input: { runId: string; ownerId: string }) => ResearchRun;
+  updateRun: (run: ResearchRun) => ResearchRun;
   upsertSource: (source: Source) => Source;
   upsertChunk: (chunk: SourceChunk) => SourceChunk;
   upsertClaim: (claim: Claim) => Claim;
@@ -88,6 +90,21 @@ export const createInMemoryResearchWorkflowStore = (
         throw new Error("RUN_NOT_FOUND");
       }
 
+      return cloneValue(run);
+    },
+    updateRun: (input) => {
+      const run = researchRunSchema.parse(input);
+      const current = runs.get(run.id);
+
+      if (
+        !current ||
+        current.ownerId !== run.ownerId ||
+        current.projectId !== run.projectId
+      ) {
+        throw new Error("RUN_NOT_FOUND");
+      }
+
+      runs.set(run.id, cloneValue(run));
       return cloneValue(run);
     },
     upsertSource: (input) => {

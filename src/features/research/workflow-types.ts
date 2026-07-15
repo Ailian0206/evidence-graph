@@ -7,6 +7,10 @@ import {
   evidenceStrengthSchema,
 } from "@/features/research/domain";
 
+export const searchPlanSchema = z.object({
+  queries: z.array(z.string().min(1)).min(3).max(5),
+});
+
 export const claimCandidatesSchema = z.object({
   claims: z.array(
     z.object({

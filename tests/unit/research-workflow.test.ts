@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import { createDemoResearchFixture } from "@/features/research/fixtures";
+import { runResearchWorkflow } from "@/features/research/run-research-workflow";
 import { createInMemoryResearchWorkflowStore } from "@/features/research/workflow-store";
 import {
   claimCandidatesSchema,
@@ -280,5 +281,42 @@ describe("research workflow store", () => {
     store.saveEmbedding(embedding);
 
     expect(store.getEmbedding(embedding.chunkId)).toEqual(embedding);
+  });
+});
+
+describe("research workflow", () => {
+  it("runs the deterministic workflow to a fully cited report", async () => {
+    const providers = createFixtureResearchProviders();
+    const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+
+    expect(result.run).toMatchObject({ status: "ready", step: "ready" });
+    expect(
+      result.report.sections.every(
+        (section) => !section.factual || section.citationIds.length > 0,
+      ),
+    ).toBe(true);
+    expect(result.report.citations.every((citation) => citation.quote.length > 0)).toBe(true);
+    expect(result.evidenceLinks.map((link) => link.relation)).toEqual(
+      expect.arrayContaining(["supports", "rebuts"]),
+    );
+    expect(result.completedSteps).toEqual([
+      "planning",
+      "searching",
+      "collecting",
+      "indexing",
+      "extracting_claims",
+      "linking_evidence",
+      "detecting_conflicts",
+      "drafting_report",
+    ]);
   });
 });

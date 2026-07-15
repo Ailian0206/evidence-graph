@@ -67,7 +67,8 @@ const STRUCTURED_OUTPUTS: Partial<Record<ResearchModelOperation, unknown>> = {
       {
         claimCandidateId: "claim_links_unnecessary",
         sourceUrl: "https://docs.example.com/evidence-graph",
-        quote: "Ordinary AI summaries can omit saved source excerpts unless evidence links are persisted",
+        quote:
+          "A cited report should use only claims with stored evidence links and preserved source excerpts",
         relation: "rebuts",
         strength: "strong",
         rationale: "The product notes state why persisted evidence links are required.",
