@@ -8,7 +8,7 @@ Development is split into module branches and Draft PRs so CI and the configured
 | ---: | --- | --- | --- |
 | 1 | `feat/foundation-portfolio` | Next.js, bilingual portfolio, design system, tests, CI | Complete; PR [#1](https://github.com/Ailian0206/evidence-graph/pull/1) merged |
 | 2 | `feat/research-domain` | Research entities, fixtures, project lifecycle, persistence boundary | Complete; PR [#3](https://github.com/Ailian0206/evidence-graph/pull/3) merged |
-| 3 | `feat/research-workflow` | Search/LLM provider interfaces, deterministic workflow, exact citations | Local gate complete: 60 unit and 18 E2E tests passed; final Codex review pending |
+| 3 | `feat/research-workflow` | Search/LLM provider interfaces, deterministic workflow, exact citations | Local gate and final Codex review complete: 65 unit and 18 E2E tests passed |
 | 4 | `feat/evidence-workspace` | Claim list, graph, source viewer, review actions, responsive app | Desktop/mobile e2e and graph interaction tests pass |
 | 5 | `feat/managed-deployment` | Supabase Auth/RLS/pgvector, Inngest, Sentry, Vercel | Local gate plus authorized production smoke |
 
@@ -25,4 +25,4 @@ Development is split into module branches and Draft PRs so CI and the configured
 
 ## Current module
 
-Finish the final read-only Codex review for `feat/research-workflow`, then push and open its single Draft PR. Monitor CI without waiting for Bugbot while its quota is exhausted.
+Push `feat/research-workflow` and open its single Draft PR. Monitor CI without waiting for Bugbot while its quota is exhausted.

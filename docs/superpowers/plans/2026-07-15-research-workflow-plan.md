@@ -413,4 +413,4 @@ git commit -m "docs: 记录研究工作流模块结果"
 
 Do not push or open a PR until the foundation and research-domain module PR sequence is settled. Before the eventual module PR, merge accepted predecessor branches with merge commits, rerun `npm run test:ci`, then create exactly one Draft PR for `feat/research-workflow`.
 
-Result on 2026-07-15: the predecessor modules are merged, 33 focused workflow tests pass, and the complete gate passes with 60 unit and 18 E2E tests. Provider safety scans found no credentials, real provider endpoints, network implementations, or provider SDK dependencies. Final read-only Codex review remains before the single Draft PR.
+Result on 2026-07-15: the predecessor modules are merged, 38 focused workflow tests pass, and the complete gate passes with 65 unit and 18 E2E tests. Provider safety scans found no credentials, real provider endpoints, network implementations, or provider SDK dependencies. Final read-only Codex review found no unresolved Critical or Important issues, so the branch is ready for its single Draft PR.
