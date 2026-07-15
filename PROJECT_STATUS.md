@@ -34,14 +34,14 @@ Updated: 2026-07-15
 
 ## Verification summary
 
-- Post-review `npm run test:ci`: passed on `feat/research-domain` with 25 unit and 18 E2E tests.
+- Post-review `npm run test:ci`: passed on `feat/research-domain` with 27 unit and 18 E2E tests.
 - Visual screenshots cover 390x844, 1024x768, and 1440x1000.
 - Route screenshots cover `/zh`, `/en`, `/zh/work`, `/zh/evidence`, `/zh/notes`, and case-study pages.
 - `git diff --check`: passed.
 - Secret scan: no real secrets found; one false positive from the documented phrase `task-by-task`.
 - Placeholder scan: no unfinished placeholders found; hits were explanatory documentation such as `no placeholder demos`.
 - Environment note: local shell must use Node 22. Node 16 fails ESLint because `structuredClone` is unavailable.
-- Review note: two Codex review rounds found and fixed owner-isolation, evidence-integrity, chunk-boundary, uniqueness, cascade, immutable-record, and semantic claim-key gaps. A final read-only follow-up review is in progress.
+- Review note: Codex review rounds found and fixed owner-isolation, evidence-integrity, chunk-boundary, uniqueness, cascade, immutable-record, semantic claim-key, chunk-offset, and relation-self-reference gaps. A final targeted read-only review is in progress.
 - Automation note: Cursor Bugbot's monthly quota is exhausted, so it is no longer a merge gate. Codex review and complete local and CI gates are the temporary fallback until a replacement is selected.
 - Research-domain note: schemas, source utilities, claim quote validation, deterministic fixtures, and the in-memory repository use local fixtures only and make no provider calls.
 
