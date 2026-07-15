@@ -4,8 +4,9 @@ Updated: 2026-07-15
 
 ## Current phase
 
-- Phase: foundation and portfolio closure.
+- Phase: foundation and portfolio review.
 - Branch: `feat/foundation-portfolio`.
+- Pull request: [#1](https://github.com/Ailian0206/evidence-graph/pull/1) Draft.
 - Active module: foundation and portfolio shell.
 - External provider calls: disabled.
 - Production deployment: not configured.
@@ -24,7 +25,7 @@ Updated: 2026-07-15
 | Module | Status | Exit gate |
 | --- | --- | --- |
 | Repository baseline | Complete | Plans, workflow docs, GitHub remote, clean `main` |
-| Foundation and portfolio | Local complete | Local app, bilingual public pages, CI, visual QA, Draft PR |
+| Foundation and portfolio | Draft PR open | Local app, bilingual public pages, CI, visual QA, Draft PR |
 | Research domain foundation | Pending | Project/Source/Claim/Evidence schemas and deterministic fixtures |
 | Research workflow | Pending | Idempotent mock workflow with exact-quote validation |
 | Evidence workspace | Pending | Three-pane desktop and tabbed mobile workflow |
@@ -43,4 +44,4 @@ Updated: 2026-07-15
 
 ## Next action
 
-Push `feat/foundation-portfolio`, create the Draft PR, and then start `feat/research-domain` after review feedback is addressed.
+Watch PR #1 CI and review-bot feedback, then start `feat/research-domain` after valid findings are addressed.

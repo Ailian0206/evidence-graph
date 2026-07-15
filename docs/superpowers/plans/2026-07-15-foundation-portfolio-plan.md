@@ -109,5 +109,5 @@
 - [x] Run `npm run test:ci` and require a clean exit.
 - [x] Run `git diff --check`, secret scan, and placeholder scan.
 - [x] Update status with the branch, verification output, and next module.
-- [ ] Commit as `docs: 记录作品集基础模块结果`.
-- [ ] Push `feat/foundation-portfolio` and create a Draft PR with summary, verification, screenshots, risk, and follow-up sections.
+- [x] Commit as `docs: 记录作品集基础模块结果`.
+- [x] Push `feat/foundation-portfolio` and create a Draft PR with summary, verification, screenshots, risk, and follow-up sections.
