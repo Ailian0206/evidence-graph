@@ -24,7 +24,7 @@ export default defineConfig({
   ],
   webServer: {
     command: `npm run dev -- --hostname 127.0.0.1 --port ${port}`,
-    url: baseURL,
+    url: `${baseURL}/favicon.ico`,
     reuseExistingServer: false,
     timeout: 120_000,
     env: {
