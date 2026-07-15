@@ -52,6 +52,7 @@ export function EvidenceCanvas({
   const [activeNode, setActiveNode] = useState<EvidenceNode>("evidence");
   const copy = canvasCopy[locale];
   const activateNode = (node: EvidenceNode) => () => setActiveNode(node);
+  const clearActiveNode = () => setActiveNode("evidence");
 
   return (
     <div className={`evidence-canvas evidence-canvas-${mode}`}>
@@ -64,7 +65,11 @@ export function EvidenceCanvas({
       </div>
       <p className="canvas-query">{copy.query}</p>
 
-      <div className="graph-plane" data-active-node={activeNode}>
+      <div
+        className="graph-plane"
+        data-active-node={activeNode}
+        onPointerLeave={clearActiveNode}
+      >
         <span className="graph-edge edge-claim-evidence" aria-hidden="true" />
         <span className="graph-edge edge-evidence-source" aria-hidden="true" />
         <button
@@ -73,6 +78,7 @@ export function EvidenceCanvas({
           aria-pressed={activeNode === "claim"}
           onClick={activateNode("claim")}
           onFocus={activateNode("claim")}
+          onBlur={clearActiveNode}
           onPointerEnter={activateNode("claim")}
         >
           <span>{copy.labels.claim}</span>
@@ -84,6 +90,7 @@ export function EvidenceCanvas({
           aria-pressed={activeNode === "evidence"}
           onClick={activateNode("evidence")}
           onFocus={activateNode("evidence")}
+          onBlur={clearActiveNode}
           onPointerEnter={activateNode("evidence")}
         >
           <Quote aria-hidden="true" size={16} />
@@ -96,6 +103,7 @@ export function EvidenceCanvas({
           aria-pressed={activeNode === "source"}
           onClick={activateNode("source")}
           onFocus={activateNode("source")}
+          onBlur={clearActiveNode}
           onPointerEnter={activateNode("source")}
         >
           <FileText aria-hidden="true" size={16} />
