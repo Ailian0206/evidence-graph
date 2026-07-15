@@ -75,11 +75,23 @@ test("evidence preview keeps hover and focus state aligned", async ({ page }) =>
 
   const claimNode = page.locator(".evidence-canvas-workspace .graph-node-claim");
   const evidenceNode = page.locator(".evidence-canvas-workspace .graph-node-evidence");
+  const backLink = page.getByRole("link", { name: "返回作品集" });
   const inspector = page.locator(".canvas-inspector");
 
   await claimNode.hover();
   await expect(claimNode).toHaveAttribute("aria-pressed", "true");
   await expect(inspector).toContainText("待审核主张 · 2 条支持证据");
+
+  await page.mouse.move(4, 4);
+  await expect(claimNode).toHaveAttribute("aria-pressed", "false");
+  await expect(inspector).toContainText("精确匹配 · 第 18 段");
+
+  await claimNode.focus();
+  await expect(claimNode).toHaveAttribute("aria-pressed", "true");
+
+  await backLink.focus();
+  await expect(claimNode).toHaveAttribute("aria-pressed", "false");
+  await expect(inspector).toContainText("精确匹配 · 第 18 段");
 
   await evidenceNode.focus();
   await expect(evidenceNode).toHaveAttribute("aria-pressed", "true");
