@@ -19,9 +19,10 @@ export async function generateMetadata({
   params,
 }: Pick<LocaleLayoutProps, "params">): Promise<Metadata> {
   const { locale } = await params;
-  const metadataLocale = hasLocale(routing.locales, locale)
-    ? locale
-    : routing.defaultLocale;
+
+  if (!hasLocale(routing.locales, locale)) {
+    notFound();
+  }
 
   return {
     metadataBase: new URL("https://evidence-graph.vercel.app"),
@@ -29,7 +30,7 @@ export async function generateMetadata({
       default: "Ailian | Evidence Graph",
       template: "%s | Ailian",
     },
-    description: profile.summary[metadataLocale],
+    description: profile.summary[locale],
   };
 }
 
