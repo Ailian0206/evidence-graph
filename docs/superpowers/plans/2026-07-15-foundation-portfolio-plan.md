@@ -20,11 +20,11 @@
 - Create: `next.config.ts`
 - Create: `eslint.config.mjs`
 
-- [ ] Create a Next.js App Router project with TypeScript, Tailwind, ESLint, `src/`, and npm.
-- [ ] Pin Node 22 in `.nvmrc` and `package.json#engines`.
-- [ ] Install `next-intl`, `lucide-react`, `zod`, Vitest, Testing Library, jsdom, and Playwright.
-- [ ] Run `npm run lint`, `npm run typecheck`, and `npm run build`; record the clean scaffold baseline.
-- [ ] Commit as `chore: 初始化 Evidence Graph 工程`.
+- [x] Create a Next.js App Router project with TypeScript, Tailwind, ESLint, `src/`, and npm.
+- [x] Pin Node 22 in `.nvmrc` and `package.json#engines`.
+- [x] Install `next-intl`, `lucide-react`, `zod`, Vitest, Testing Library, jsdom, and Playwright.
+- [x] Run `npm run lint`, `npm run typecheck`, and `npm run build`; record the clean scaffold baseline.
+- [x] Commit as `chore: 初始化 Evidence Graph 工程`.
 
 ### Task 2: Establish tests and CI
 
@@ -36,19 +36,19 @@
 - Create: `.github/workflows/ci.yml`
 - Modify: `package.json`
 
-- [ ] Add a Playwright test expecting `/zh` to show `Ailian` and navigation to `/zh/work`.
-- [ ] Run the test and verify RED because locale routes do not exist.
-- [ ] Add scripts for `lint`, `typecheck`, `test:unit`, `test:e2e`, and `test:ci`.
-- [ ] Configure CI on pull requests and `main` pushes with read-only contents permission, Node 22, npm cache, Chromium, and the full gate.
-- [ ] Keep the navigation test RED until Task 4; verify unit infrastructure independently.
-- [ ] Commit as `ci: 建立项目质量门禁`.
+- [x] Add a Playwright test expecting `/zh` to show `Ailian` and navigation to `/zh/work`.
+- [x] Run the test and verify RED because locale routes do not exist.
+- [x] Add scripts for `lint`, `typecheck`, `test:unit`, `test:e2e`, and `test:ci`.
+- [x] Configure CI on pull requests and `main` pushes with read-only contents permission, Node 22, npm cache, Chromium, and the full gate.
+- [x] Keep the navigation test RED until Task 4; verify unit infrastructure independently.
+- [x] Commit as `ci: 建立项目质量门禁`.
 
 ### Task 3: Add locale and typed portfolio content
 
 **Files:**
 - Create: `src/i18n/routing.ts`
 - Create: `src/i18n/request.ts`
-- Create: `src/middleware.ts`
+- Create: `src/proxy.ts`
 - Create: `src/content/profile.ts`
 - Create: `src/content/projects.ts`
 - Create: `src/content/notes.ts`
@@ -56,11 +56,11 @@
 - Create: `messages/zh.json`
 - Create: `messages/en.json`
 
-- [ ] Write unit tests requiring locales `zh` and `en`, Ailian's email, exactly two public projects, and no ProjectPilot entry.
-- [ ] Run the focused test and verify RED because content modules do not exist.
-- [ ] Implement typed bilingual content and next-intl locale routing.
-- [ ] Run the focused test and verify GREEN.
-- [ ] Commit as `feat: 增加双语作品集内容模型`.
+- [x] Write unit tests requiring locales `zh` and `en`, Ailian's email, exactly two public projects, and no ProjectPilot entry.
+- [x] Run the focused test and verify RED because content modules do not exist.
+- [x] Implement typed bilingual content and next-intl locale routing.
+- [x] Run the focused test and verify GREEN.
+- [x] Commit as `feat: 增加双语作品集内容模型`.
 
 ### Task 4: Build the public portfolio pages
 
@@ -78,12 +78,12 @@
 - Create: `src/components/portfolio/practice-notes.tsx`
 - Create: `src/components/portfolio/profile-band.tsx`
 
-- [ ] Run the existing public navigation Playwright test and confirm RED with missing pages.
-- [ ] Implement the locale layout, public pages, accessible navigation, language switcher, and mail/GitHub links.
-- [ ] Use a full-bleed hero whose primary visual is a functional sample evidence graph built from semantic HTML/CSS, not a decorative SVG.
-- [ ] Present Evidence Graph first and AI Photo Studio CN second; use honest `Building` and `In development` states.
-- [ ] Run the navigation test and verify GREEN.
-- [ ] Commit as `feat: 实现双语个人作品集页面`.
+- [x] Run the existing public navigation Playwright test and confirm RED with missing pages.
+- [x] Implement the locale layout, public pages, accessible navigation, language switcher, and mail/GitHub links.
+- [x] Use a full-bleed hero whose primary visual is a functional sample evidence graph built from semantic HTML/CSS, not a decorative SVG.
+- [x] Present Evidence Graph first and AI Photo Studio CN second; use honest `Building` and `In development` states.
+- [x] Run the navigation test and verify GREEN.
+- [x] Commit as `feat: 实现双语个人作品集页面`.
 
 ### Task 5: Create the responsive visual system
 
@@ -91,12 +91,12 @@
 - Modify: `src/app/globals.css`
 - Create: `tests/e2e/public-visual.spec.ts`
 
-- [ ] Add Playwright assertions for no horizontal overflow at 390, 1024, and 1440 widths; verify RED before responsive styles are complete.
-- [ ] Implement stable header, hero, graph, project rows, notes, footer, focus, reduced-motion, and mobile styles.
-- [ ] Use zero letter-spacing, fixed control dimensions, radius no larger than 6px, and no nested cards or purple/blue gradient theme.
-- [ ] Verify text wrapping with the longest Chinese/English labels and preserve a visible hint of Selected Work below the hero.
-- [ ] Run the visual test and verify GREEN.
-- [ ] Commit as `style: 完成作品集响应式视觉基线`.
+- [x] Add Playwright assertions for no horizontal overflow at 390, 1024, and 1440 widths; verify RED before responsive styles are complete.
+- [x] Implement stable header, hero, graph, project rows, notes, footer, focus, reduced-motion, and mobile styles.
+- [x] Use zero letter-spacing, fixed control dimensions, radius no larger than 6px, and no nested cards or purple/blue gradient theme.
+- [x] Verify text wrapping with the longest Chinese/English labels and preserve a visible hint of Selected Work below the hero.
+- [x] Run the visual test and verify GREEN.
+- [x] Commit as `style: 完成作品集响应式视觉基线`.
 
 ### Task 6: Document and close the module
 
@@ -105,9 +105,9 @@
 - Modify: `PROJECT_STATUS.md`
 - Modify: `docs/development-plan.md`
 
-- [ ] Start the local server and verify `/zh`, `/en`, `/zh/work`, and `/zh/evidence` with browser screenshots.
-- [ ] Run `npm run test:ci` and require a clean exit.
-- [ ] Run `git diff --check`, secret scan, and placeholder scan.
-- [ ] Update status with the branch, verification output, and next module.
-- [ ] Commit as `docs: 记录作品集基础模块结果`.
-- [ ] Push `feat/foundation-portfolio` and create a Draft PR with summary, verification, screenshots, risk, and follow-up sections.
+- [x] Start the local server and verify `/zh`, `/en`, `/zh/work`, and `/zh/evidence` with browser screenshots.
+- [x] Run `npm run test:ci` and require a clean exit.
+- [x] Run `git diff --check`, secret scan, and placeholder scan.
+- [x] Update status with the branch, verification output, and next module.
+- [x] Commit as `docs: 记录作品集基础模块结果`.
+- [x] Push `feat/foundation-portfolio` and create a Draft PR with summary, verification, screenshots, risk, and follow-up sections.
