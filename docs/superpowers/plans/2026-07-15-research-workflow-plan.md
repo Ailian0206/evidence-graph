@@ -128,7 +128,7 @@ export type EmbeddingProvider = {
 
 `SearchResult` must contain URL, title, body, source type, and optional author and publication time. `ResearchModelOperation` is exactly `plan`, `extract_claims`, `link_evidence`, `detect_conflicts`, or `draft_report`.
 
-`createFixtureResearchProviders` must return the three providers plus a shared `calls` array. Fixture outputs and usage are fixed. The factory accepts optional `failOnceAt`, `invalidQuote`, `searchResultCount`, and per-operation cost overrides so later tests can exercise failures and source caps without network access.
+`createFixtureResearchProviders` must return the three providers plus a shared `calls` array. This task supplies fixed search results, a valid three-query `plan` output, and deterministic 1536-dimensional embeddings. Task 2 adds the remaining structured model outputs after their schemas exist; Task 4 adds controlled failure, invalid-quote, source-count, and cost options.
 
 - [ ] **Step 4: Run the focused test and verify GREEN**
 
@@ -151,6 +151,7 @@ git commit -m "feat: 建立研究 Provider 夹具边界"
 
 - Create: `src/features/research/workflow-types.ts`
 - Create: `src/features/research/workflow-store.ts`
+- Modify: `src/providers/fixtures/research-providers.ts`
 - Modify: `tests/unit/research-workflow.test.ts`
 
 - [ ] **Step 1: Write failing store tests**
@@ -209,6 +210,8 @@ Define Zod-backed types for:
 
 The store must enforce owner isolation through `requireRun`, preserve one checkpoint per run and step, use deterministic entity IDs, and expose immutable snapshots for tests. It must reuse `validateExactQuote` before saving evidence and reject a factual report section whose citation list is empty or references a missing evidence link.
 
+Extend the Fixture LanguageModel with schema-validated outputs for `extract_claims`, `link_evidence`, `detect_conflicts`, and `draft_report`. The evidence fixture must include both `supports` and `rebuts` relations so the workflow cannot silently discard rebutting evidence.
+
 - [ ] **Step 4: Run focused tests and verify GREEN**
 
 ```bash
@@ -218,7 +221,7 @@ npm run test:unit -- tests/unit/research-workflow.test.ts --reporter=dot
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/features/research/workflow-types.ts src/features/research/workflow-store.ts tests/unit/research-workflow.test.ts
+git add src/features/research/workflow-types.ts src/features/research/workflow-store.ts src/providers/fixtures/research-providers.ts tests/unit/research-workflow.test.ts
 git commit -m "feat: 增加研究工作流幂等存储"
 ```
 
@@ -340,6 +343,7 @@ npm run test:unit -- tests/unit/research-workflow.test.ts --reporter=dot
 - [ ] **Step 4: Implement failure and resume semantics**
 
 - Convert known validation and limit errors into a failed run with a stable error code and failed log entry.
+- Add Fixture Provider options for `failOnceAt`, `invalidQuote`, `searchResultCount`, and per-operation cost overrides; keep their outputs deterministic.
 - Never delete completed checkpoints after failure.
 - On retry, append `skipped` logs for completed steps and resume at the first missing checkpoint.
 - Allow at most three attempts for one failed provider step; the fourth request returns `STEP_RETRY_LIMIT_EXCEEDED` without another provider call.
