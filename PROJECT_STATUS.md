@@ -41,7 +41,7 @@ Updated: 2026-07-15
 - Secret scan: no real secrets found; one false positive from the documented phrase `task-by-task`.
 - Placeholder scan: no unfinished placeholders found; hits were explanatory documentation such as `no placeholder demos`.
 - Environment note: local shell must use Node 22. Node 16 fails ESLint because `structuredClone` is unavailable.
-- Review note: Cursor Bugbot localization and evidence-canvas interaction feedback addressed on PR #1.
+- Review note: Cursor Bugbot localization, metadata title, mobile navigation, and evidence-canvas interaction feedback addressed on PR #1.
 
 ## Next action
 

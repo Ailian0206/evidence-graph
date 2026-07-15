@@ -14,6 +14,12 @@ for (const viewport of viewports) {
     await page.goto("/zh");
 
     await expect(page.getByRole("heading", { name: "Ailian", exact: true })).toBeVisible();
+    await expect(
+      page
+        .getByRole("navigation")
+        .getByRole("link", { name: "Evidence Graph", exact: true }),
+    ).toBeVisible();
+    await expect(page.locator(".evidence-canvas-hero .canvas-inspector")).toBeVisible();
 
     const metrics = await page.evaluate(() => {
       const header = document.querySelector<HTMLElement>(".site-header");

@@ -959,6 +959,10 @@ button {
     gap: 4px;
   }
 
+  .header-actions .icon-action:last-child {
+    display: none;
+  }
+
   .icon-action {
     width: 36px;
     height: 36px;
@@ -1018,6 +1022,16 @@ button {
   .evidence-canvas-hero .canvas-toolbar,
   .evidence-canvas-hero .canvas-query {
     display: none;
+  }
+
+  .evidence-canvas-hero .canvas-inspector {
+    right: 14px;
+    bottom: 72px;
+    max-width: 220px;
+    min-height: 34px;
+    padding: 0 10px;
+    font-size: 10px;
+    opacity: 0.78;
   }
 
   .evidence-canvas-hero .graph-plane {
