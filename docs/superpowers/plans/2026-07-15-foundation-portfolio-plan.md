@@ -105,9 +105,9 @@
 - Modify: `PROJECT_STATUS.md`
 - Modify: `docs/development-plan.md`
 
-- [ ] Start the local server and verify `/zh`, `/en`, `/zh/work`, and `/zh/evidence` with browser screenshots.
-- [ ] Run `npm run test:ci` and require a clean exit.
-- [ ] Run `git diff --check`, secret scan, and placeholder scan.
-- [ ] Update status with the branch, verification output, and next module.
+- [x] Start the local server and verify `/zh`, `/en`, `/zh/work`, and `/zh/evidence` with browser screenshots.
+- [x] Run `npm run test:ci` and require a clean exit.
+- [x] Run `git diff --check`, secret scan, and placeholder scan.
+- [x] Update status with the branch, verification output, and next module.
 - [ ] Commit as `docs: 记录作品集基础模块结果`.
 - [ ] Push `feat/foundation-portfolio` and create a Draft PR with summary, verification, screenshots, risk, and follow-up sections.

@@ -1,14 +1,16 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const port = 3100;
+// Use a project-specific default port to avoid collisions with sibling apps.
+const port = Number(process.env.PLAYWRIGHT_PORT ?? 3217);
 const baseURL = `http://127.0.0.1:${port}`;
 
 export default defineConfig({
   testDir: "./tests/e2e",
-  fullyParallel: true,
+  // Next dev can race while compiling locale routes, so keep smoke/visual checks serial.
+  fullyParallel: false,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
-  workers: process.env.CI ? 2 : undefined,
+  workers: 1,
   reporter: process.env.CI ? [["html", { open: "never" }], ["list"]] : "list",
   use: {
     baseURL,

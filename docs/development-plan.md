@@ -6,7 +6,7 @@ Development is split into module branches and Draft PRs so CI and the configured
 
 | Order | Branch | Scope | Local exit gate |
 | ---: | --- | --- | --- |
-| 1 | `feat/foundation-portfolio` | Next.js, bilingual portfolio, design system, tests, CI | Public pages run locally; complete static gate and visual QA |
+| 1 | `feat/foundation-portfolio` | Next.js, bilingual portfolio, design system, tests, CI | Local gate complete; Draft PR pending |
 | 2 | `feat/research-domain` | Research entities, fixtures, project lifecycle, persistence boundary | Domain and integration tests pass without network |
 | 3 | `feat/research-workflow` | Search/LLM provider interfaces, deterministic workflow, exact citations | Full mock research run produces a valid report |
 | 4 | `feat/evidence-workspace` | Claim list, graph, source viewer, review actions, responsive app | Desktop/mobile e2e and graph interaction tests pass |
@@ -23,4 +23,4 @@ Development is split into module branches and Draft PRs so CI and the configured
 
 ## Current module
 
-Execute `docs/superpowers/plans/2026-07-15-foundation-portfolio-plan.md`.
+Close `docs/superpowers/plans/2026-07-15-foundation-portfolio-plan.md` by pushing `feat/foundation-portfolio` and opening a Draft PR.
