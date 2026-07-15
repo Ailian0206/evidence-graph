@@ -10,6 +10,13 @@ export type FixtureProviderCall = {
   idempotencyKey: string;
 };
 
+export type FixtureResearchProviderOptions = {
+  costOverrides?: Partial<Record<FixtureProviderCall["operation"], number>>;
+  failOnceAt?: FixtureProviderCall["operation"];
+  invalidQuote?: boolean;
+  searchResultCount?: number;
+};
+
 const SEARCH_RESULTS = [
   {
     url: "https://example.com/research",
@@ -105,16 +112,55 @@ const STRUCTURED_OUTPUTS: Partial<Record<ResearchModelOperation, unknown>> = {
   },
 };
 
-export const createFixtureResearchProviders = () => {
+const createSearchResults = (count: number) =>
+  Array.from({ length: count }, (_, index) => {
+    if (index < SEARCH_RESULTS.length) {
+      return SEARCH_RESULTS[index];
+    }
+
+    return {
+      url: `https://sources.example.com/research-${index}`,
+      title: `Additional research source ${index}`,
+      body: `Additional deterministic research evidence ${index}.`,
+      sourceType: "article" as const,
+    };
+  });
+
+export const createFixtureResearchProviders = (
+  options: FixtureResearchProviderOptions = {},
+) => {
   const calls: FixtureProviderCall[] = [];
+  const failedOperations = new Set<FixtureProviderCall["operation"]>();
+  const failOnce = (operation: FixtureProviderCall["operation"]) => {
+    if (options.failOnceAt === operation && !failedOperations.has(operation)) {
+      failedOperations.add(operation);
+      throw new Error("FIXTURE_PROVIDER_FAILED");
+    }
+  };
+  const createStructuredOutput = (operation: ResearchModelOperation) => {
+    const output = structuredClone(STRUCTURED_OUTPUTS[operation]);
+
+    if (options.invalidQuote && operation === "link_evidence") {
+      const evidenceOutput = output as { evidence: Array<{ quote: string }> };
+      evidenceOutput.evidence[0].quote = "This quote is not present in the saved chunk";
+    }
+
+    return output;
+  };
+  const getCost = (operation: FixtureProviderCall["operation"], fallback: number) =>
+    options.costOverrides?.[operation] ?? fallback;
   const search: SearchProvider = {
     search: async ({ maxResults, idempotencyKey }) => {
       calls.push({ operation: "search", idempotencyKey });
+      failOnce("search");
 
       return {
-        data: SEARCH_RESULTS.slice(0, maxResults),
+        data: createSearchResults(options.searchResultCount ?? SEARCH_RESULTS.length).slice(
+          0,
+          maxResults,
+        ),
         usage: {
-          estimatedCostUsd: 0.01,
+          estimatedCostUsd: getCost("search", 0.01),
           searchCount: 1,
           tokenCount: 0,
         },
@@ -124,11 +170,12 @@ export const createFixtureResearchProviders = () => {
   const languageModel: LanguageModel = {
     generateStructured: async ({ operation, schema, idempotencyKey }) => {
       calls.push({ operation, idempotencyKey });
+      failOnce(operation);
 
       return {
-        data: schema.parse(STRUCTURED_OUTPUTS[operation]),
+        data: schema.parse(createStructuredOutput(operation)),
         usage: {
-          estimatedCostUsd: 0.01,
+          estimatedCostUsd: getCost(operation, 0.01),
           searchCount: 0,
           tokenCount: 120,
         },
@@ -138,11 +185,12 @@ export const createFixtureResearchProviders = () => {
   const embedding: EmbeddingProvider = {
     embed: async ({ texts, idempotencyKey }) => {
       calls.push({ operation: "embed", idempotencyKey });
+      failOnce("embed");
 
       return {
         data: texts.map(() => Array<number>(1536).fill(0)),
         usage: {
-          estimatedCostUsd: 0.001,
+          estimatedCostUsd: getCost("embed", 0.001),
           searchCount: 0,
           tokenCount: texts.reduce((total, text) => total + text.length, 0),
         },

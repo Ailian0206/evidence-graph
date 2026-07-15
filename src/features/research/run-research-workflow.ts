@@ -44,7 +44,7 @@ type RunResearchWorkflowInput = {
 
 type ResearchWorkflowResult = {
   run: ResearchRun;
-  report: ResearchReport;
+  report: ResearchReport | undefined;
   evidenceLinks: EvidenceLink[];
   completedSteps: WorkflowStep[];
 };
@@ -55,13 +55,34 @@ const chunkOutputSchema = z.object({ chunkIds: z.array(z.string().min(1)) });
 const evidenceOutputSchema = z.object({ evidenceLinkIds: z.array(z.string().min(1)) });
 const relationOutputSchema = z.object({ claimRelationIds: z.array(z.string().min(1)) });
 const reportOutputSchema = z.object({ reportId: z.string().min(1) });
+const WORKFLOW_STEPS: WorkflowStep[] = [
+  "planning",
+  "searching",
+  "collecting",
+  "indexing",
+  "extracting_claims",
+  "linking_evidence",
+  "detecting_conflicts",
+  "drafting_report",
+];
+const KNOWN_WORKFLOW_ERRORS = new Set([
+  "CONTENT_LIMIT_EXCEEDED",
+  "MANUAL_URL_LIMIT_EXCEEDED",
+  "PROJECT_NOT_FOUND",
+  "QUOTE_NOT_FOUND",
+  "REPORT_CITATION_INVALID",
+  "REPORT_NOT_FOUND",
+  "RUN_COST_LIMIT_EXCEEDED",
+  "SOURCE_NOT_FOUND",
+  "STEP_RETRY_LIMIT_EXCEEDED",
+]);
 
 const createSourceId = (contentHash: string) =>
   `source_${contentHash.replace("sha256_", "").slice(0, 20)}`;
 
 const roundCost = (cost: number) => Math.round(cost * 1_000_000) / 1_000_000;
 
-export const runResearchWorkflow = async ({
+const runResearchWorkflowAttempt = async ({
   runId,
   ownerId,
   manualSources,
@@ -71,6 +92,28 @@ export const runResearchWorkflow = async ({
 }: RunResearchWorkflowInput): Promise<ResearchWorkflowResult> => {
   let run = store.requireRun({ runId, ownerId });
   const completedSteps: WorkflowStep[] = [];
+
+  if (run.status === "ready") {
+    const report = store.getReport(runId);
+
+    if (!report) {
+      throw new Error("REPORT_NOT_FOUND");
+    }
+
+    return {
+      run,
+      report,
+      evidenceLinks: store
+        .getSnapshot()
+        .evidenceLinks.filter((link) => link.projectId === run.projectId),
+      completedSteps: WORKFLOW_STEPS.filter((step) => store.getCheckpoint(runId, step)),
+    };
+  }
+
+  if (manualSources.length > run.manualUrlLimit) {
+    throw new Error("MANUAL_URL_LIMIT_EXCEEDED");
+  }
+
   const project = store
     .getSnapshot()
     .projects.find((candidate) => candidate.id === run.projectId);
@@ -89,19 +132,41 @@ export const runResearchWorkflow = async ({
     });
   };
 
+  const assertProviderBudget = () => {
+    if (run.estimatedCostUsd >= 1) {
+      throw new Error("RUN_COST_LIMIT_EXCEEDED");
+    }
+  };
+
   const executeStep = async <T>(
     step: WorkflowStep,
     schema: z.ZodType<T>,
     execute: (idempotencyKey: string) => Promise<T>,
   ): Promise<T> => {
     const checkpoint = store.getCheckpoint(runId, step);
+    const stepLogs = store.listRunLogs(runId).filter((entry) => entry.step === step);
 
     if (checkpoint) {
+      const skippedAttempt = stepLogs.filter((entry) => entry.status === "skipped").length + 1;
+      store.appendRunLog({
+        id: `${runId}:${step}:${skippedAttempt}:skipped`,
+        runId,
+        step,
+        status: "skipped",
+        attempt: skippedAttempt,
+        timestamp: now(),
+      });
       completedSteps.push(step);
       return schema.parse(checkpoint.output);
     }
 
     const idempotencyKey = `${runId}:${step}`;
+    const attempt = stepLogs.filter((entry) => entry.status === "started").length + 1;
+
+    if (attempt > 3) {
+      throw new Error("STEP_RETRY_LIMIT_EXCEEDED");
+    }
+
     run = store.updateRun({
       ...run,
       status: "running",
@@ -110,11 +175,11 @@ export const runResearchWorkflow = async ({
       updatedAt: now(),
     });
     store.appendRunLog({
-      id: `${idempotencyKey}:1:0_started`,
+      id: `${idempotencyKey}:${attempt}:0_started`,
       runId,
       step,
       status: "started",
-      attempt: 1,
+      attempt,
       timestamp: now(),
     });
 
@@ -127,11 +192,11 @@ export const runResearchWorkflow = async ({
       completedAt: now(),
     });
     store.appendRunLog({
-      id: `${idempotencyKey}:1:1_completed`,
+      id: `${idempotencyKey}:${attempt}:1_completed`,
       runId,
       step,
       status: "completed",
-      attempt: 1,
+      attempt,
       timestamp: now(),
     });
     completedSteps.push(step);
@@ -139,6 +204,7 @@ export const runResearchWorkflow = async ({
   };
 
   const plan = await executeStep("planning", searchPlanSchema, async (idempotencyKey) => {
+    assertProviderBudget();
     const result = await providers.languageModel.generateStructured({
       operation: "plan",
       schema: searchPlanSchema,
@@ -156,6 +222,7 @@ export const runResearchWorkflow = async ({
       const results: SearchResult[] = [];
 
       for (const [queryIndex, query] of plan.queries.entries()) {
+        assertProviderBudget();
         const result = await providers.search.search({
           query,
           maxResults: run.sourceLimit,
@@ -209,6 +276,18 @@ export const runResearchWorkflow = async ({
         }
       }
 
+      const sourceById = new Map(
+        store.getSnapshot().sources.map((source) => [source.id, source]),
+      );
+      const contentCharacters = sourceIds.reduce(
+        (total, sourceId) => total + (sourceById.get(sourceId)?.body.length ?? 0),
+        0,
+      );
+
+      if (contentCharacters > run.maxContentChars) {
+        throw new Error("CONTENT_LIMIT_EXCEEDED");
+      }
+
       return { sourceIds };
     },
   );
@@ -238,6 +317,7 @@ export const runResearchWorkflow = async ({
     const missingEmbeddings = chunks.filter((chunk) => !store.getEmbedding(chunk.id));
 
     if (missingEmbeddings.length > 0) {
+      assertProviderBudget();
       const result = await providers.embedding.embed({
         texts: missingEmbeddings.map((chunk) => chunk.text),
         idempotencyKey,
@@ -267,6 +347,7 @@ export const runResearchWorkflow = async ({
     async (idempotencyKey) => {
       const snapshot = store.getSnapshot();
       const chunks = snapshot.chunks.filter((chunk) => indexed.chunkIds.includes(chunk.id));
+      assertProviderBudget();
       const result = await providers.languageModel.generateStructured({
         operation: "extract_claims",
         schema: claimCandidatesSchema,
@@ -298,6 +379,7 @@ export const runResearchWorkflow = async ({
     "linking_evidence",
     evidenceOutputSchema,
     async (idempotencyKey) => {
+      assertProviderBudget();
       const result = await providers.languageModel.generateStructured({
         operation: "link_evidence",
         schema: evidenceCandidatesSchema,
@@ -341,6 +423,7 @@ export const runResearchWorkflow = async ({
     "detecting_conflicts",
     relationOutputSchema,
     async (idempotencyKey) => {
+      assertProviderBudget();
       const result = await providers.languageModel.generateStructured({
         operation: "detect_conflicts",
         schema: conflictCandidatesSchema,
@@ -368,6 +451,7 @@ export const runResearchWorkflow = async ({
     "drafting_report",
     reportOutputSchema,
     async (idempotencyKey) => {
+      assertProviderBudget();
       const result = await providers.languageModel.generateStructured({
         operation: "draft_report",
         schema: reportDraftSchema,
@@ -456,4 +540,53 @@ export const runResearchWorkflow = async ({
       .evidenceLinks.filter((link) => link.projectId === run.projectId),
     completedSteps,
   };
+};
+
+export const runResearchWorkflow = async (
+  input: RunResearchWorkflowInput,
+): Promise<ResearchWorkflowResult> => {
+  try {
+    return await runResearchWorkflowAttempt(input);
+  } catch (error) {
+    let run = input.store.requireRun({ runId: input.runId, ownerId: input.ownerId });
+    const activeStep = WORKFLOW_STEPS.find((step) => step === run.step);
+    const errorMessage = error instanceof Error ? error.message : "";
+    const errorCode = KNOWN_WORKFLOW_ERRORS.has(errorMessage)
+      ? errorMessage
+      : "WORKFLOW_FAILED";
+
+    if (activeStep) {
+      const attempt = input.store
+        .listRunLogs(input.runId)
+        .filter((entry) => entry.step === activeStep && entry.status === "started").length;
+      input.store.appendRunLog({
+        id: `${input.runId}:${activeStep}:${attempt}:2_failed`,
+        runId: input.runId,
+        step: activeStep,
+        status: "failed",
+        attempt: Math.max(attempt, 1),
+        timestamp: input.now(),
+        errorCode,
+      });
+    }
+
+    run = input.store.updateRun({
+      ...run,
+      status: "failed",
+      step: "failed",
+      errorMessage: errorCode,
+      updatedAt: input.now(),
+    });
+
+    return {
+      run,
+      report: undefined,
+      evidenceLinks: input.store
+        .getSnapshot()
+        .evidenceLinks.filter((link) => link.projectId === run.projectId),
+      completedSteps: WORKFLOW_STEPS.filter((step) =>
+        input.store.getCheckpoint(input.runId, step),
+      ),
+    };
+  }
 };

@@ -300,11 +300,11 @@ describe("research workflow", () => {
 
     expect(result.run).toMatchObject({ status: "ready", step: "ready" });
     expect(
-      result.report.sections.every(
+      result.report?.sections.every(
         (section) => !section.factual || section.citationIds.length > 0,
       ),
     ).toBe(true);
-    expect(result.report.citations.every((citation) => citation.quote.length > 0)).toBe(true);
+    expect(result.report?.citations.every((citation) => citation.quote.length > 0)).toBe(true);
     expect(result.evidenceLinks.map((link) => link.relation)).toEqual(
       expect.arrayContaining(["supports", "rebuts"]),
     );
@@ -318,5 +318,265 @@ describe("research workflow", () => {
       "detecting_conflicts",
       "drafting_report",
     ]);
+  });
+
+  it("returns an already-ready run without provider calls or duplicate entities", async () => {
+    const providers = createFixtureResearchProviders();
+    const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
+    const input = {
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    };
+
+    await runResearchWorkflow(input);
+    const callsAfterFirstRun = providers.calls.length;
+    const snapshotAfterFirstRun = store.getSnapshot();
+    const second = await runResearchWorkflow({
+      ...input,
+      manualSources: Array.from({ length: 6 }, (_, index) => ({
+        url: `https://ignored.example.com/source-${index}`,
+        title: `Ignored source ${index}`,
+        body: `Ignored source body ${index}`,
+        sourceType: "article" as const,
+      })),
+    });
+    const snapshotAfterSecondRun = store.getSnapshot();
+
+    expect(second.run).toMatchObject({ status: "ready", step: "ready" });
+    expect(providers.calls).toHaveLength(callsAfterFirstRun);
+    expect(snapshotAfterSecondRun.sources).toHaveLength(snapshotAfterFirstRun.sources.length);
+    expect(snapshotAfterSecondRun.claims).toHaveLength(snapshotAfterFirstRun.claims.length);
+    expect(snapshotAfterSecondRun.evidenceLinks).toHaveLength(
+      snapshotAfterFirstRun.evidenceLinks.length,
+    );
+  });
+
+  it("resumes from the first missing checkpoint after a provider failure", async () => {
+    const providers = createFixtureResearchProviders({ failOnceAt: "extract_claims" });
+    const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
+    const input = {
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    };
+
+    const failed = await runResearchWorkflow(input);
+    const resumed = await runResearchWorkflow(input);
+    const operations = providers.calls.map((call) => call.operation);
+
+    expect(failed.run).toMatchObject({
+      status: "failed",
+      step: "failed",
+      errorMessage: "WORKFLOW_FAILED",
+    });
+    expect(failed.report).toBeUndefined();
+    expect(resumed.run).toMatchObject({ status: "ready", step: "ready" });
+    expect(operations.filter((operation) => operation === "plan")).toHaveLength(1);
+    expect(operations.filter((operation) => operation === "search")).toHaveLength(3);
+    expect(operations.filter((operation) => operation === "embed")).toHaveLength(1);
+    expect(operations.filter((operation) => operation === "extract_claims")).toHaveLength(2);
+    expect(
+      store
+        .listRunLogs("run_demo")
+        .filter((entry) => entry.status === "skipped")
+        .map((entry) => entry.step),
+    ).toEqual(["planning", "searching", "collecting", "indexing"]);
+  });
+
+  it("fails without a report when evidence contains a non-exact quote", async () => {
+    const providers = createFixtureResearchProviders({ invalidQuote: true });
+    const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+
+    expect(result.run).toMatchObject({
+      status: "failed",
+      step: "failed",
+      errorMessage: "QUOTE_NOT_FOUND",
+    });
+    expect(result.report).toBeUndefined();
+    expect(providers.calls.some((call) => call.operation === "draft_report")).toBe(false);
+  });
+
+  it("stops before the next provider call when the run reaches its USD 1 limit", async () => {
+    const providers = createFixtureResearchProviders({
+      costOverrides: { embed: 0.96 },
+    });
+    const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+
+    expect(result.run).toMatchObject({
+      status: "failed",
+      errorMessage: "RUN_COST_LIMIT_EXCEEDED",
+      estimatedCostUsd: 1,
+    });
+    expect(providers.calls.some((call) => call.operation === "extract_claims")).toBe(false);
+  });
+
+  it("rejects manual sources above the run limit before provider calls", async () => {
+    const providers = createFixtureResearchProviders();
+    const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
+    const manualSources = Array.from({ length: 6 }, (_, index) => ({
+      url: `https://manual.example.com/source-${index}`,
+      title: `Manual source ${index}`,
+      body: `Manual source body ${index}`,
+      sourceType: "article" as const,
+    }));
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources,
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+
+    expect(result.run).toMatchObject({
+      status: "failed",
+      errorMessage: "MANUAL_URL_LIMIT_EXCEEDED",
+    });
+    expect(providers.calls).toEqual([]);
+  });
+
+  it("rejects collected source text above the run content limit", async () => {
+    const fixture = createDemoResearchFixture();
+    fixture.researchRuns[0].maxContentChars = 50;
+    const providers = createFixtureResearchProviders();
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+
+    expect(result.run).toMatchObject({
+      status: "failed",
+      errorMessage: "CONTENT_LIMIT_EXCEEDED",
+    });
+    expect(providers.calls.some((call) => call.operation === "embed")).toBe(false);
+  });
+
+  it("caps deduplicated search sources at the run source limit", async () => {
+    const fixture = createDemoResearchFixture();
+    fixture.researchRuns[0].sourceLimit = 3;
+    const providers = createFixtureResearchProviders({ searchResultCount: 8 });
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+    const collecting = store.getCheckpoint("run_demo", "collecting");
+
+    expect(result.run.status).toBe("ready");
+    expect(collecting?.output).toMatchObject({
+      sourceIds: expect.arrayContaining([
+        "source_primary_interview",
+        "source_official_notes",
+      ]),
+    });
+    expect((collecting?.output as { sourceIds: string[] }).sourceIds).toHaveLength(3);
+    expect(store.getSnapshot().sources).toHaveLength(3);
+  });
+
+  it("blocks a fourth provider attempt for the same failed step", async () => {
+    const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
+    const providersByAttempt = Array.from({ length: 4 }, () =>
+      createFixtureResearchProviders({ failOnceAt: "extract_claims" }),
+    );
+    let lastResult: Awaited<ReturnType<typeof runResearchWorkflow>> | undefined;
+
+    for (const providers of providersByAttempt) {
+      lastResult = await runResearchWorkflow({
+        runId: "run_demo",
+        ownerId: "user_ailian",
+        manualSources: [],
+        providers,
+        store,
+        now: () => "2026-07-15T01:00:00.000Z",
+      });
+    }
+
+    expect(lastResult?.run).toMatchObject({
+      status: "failed",
+      errorMessage: "STEP_RETRY_LIMIT_EXCEEDED",
+    });
+    expect(
+      providersByAttempt
+        .slice(0, 3)
+        .flatMap((providers) => providers.calls)
+        .filter((call) => call.operation === "extract_claims"),
+    ).toHaveLength(3);
+    expect(providersByAttempt[3].calls).toEqual([]);
+  });
+
+  it("does not leak unknown provider errors into run logs", async () => {
+    const providers = createFixtureResearchProviders();
+    const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
+    providers.languageModel.generateStructured = async () => {
+      throw new Error("Private source text from a provider response");
+    };
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+    const serializedLogs = JSON.stringify(store.listRunLogs("run_demo"));
+
+    expect(result.run.errorMessage).toBe("WORKFLOW_FAILED");
+    expect(serializedLogs).not.toContain("Private source text");
+    expect(serializedLogs).toContain("WORKFLOW_FAILED");
+  });
+
+  it("rejects a run owner mismatch without provider calls", async () => {
+    const providers = createFixtureResearchProviders();
+    const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
+
+    await expect(
+      runResearchWorkflow({
+        runId: "run_demo",
+        ownerId: "user_other",
+        manualSources: [],
+        providers,
+        store,
+        now: () => "2026-07-15T01:00:00.000Z",
+      }),
+    ).rejects.toThrow("RUN_NOT_FOUND");
+    expect(providers.calls).toEqual([]);
   });
 });

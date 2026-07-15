@@ -342,12 +342,14 @@ export const createInMemoryResearchWorkflowStore = (
     },
     listRunLogs: (runId) =>
       Array.from(runLogs.values())
-        .filter((entry) => entry.runId === runId)
+        .map((entry, insertionIndex) => ({ entry, insertionIndex }))
+        .filter(({ entry }) => entry.runId === runId)
         .sort(
           (left, right) =>
-            left.timestamp.localeCompare(right.timestamp) || left.id.localeCompare(right.id),
+            left.entry.timestamp.localeCompare(right.entry.timestamp) ||
+            left.insertionIndex - right.insertionIndex,
         )
-        .map(cloneValue),
+        .map(({ entry }) => cloneValue(entry)),
     getEmbedding: (chunkId) => {
       const embedding = embeddings.get(chunkId);
       return embedding ? cloneValue(embedding) : undefined;
