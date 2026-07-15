@@ -46,6 +46,19 @@ test("evidence preview exposes inspectable source state", async ({ page }) => {
   );
 });
 
+test("evidence preview keeps a clicked selection after pointer leave", async ({ page }) => {
+  await page.goto("/zh/evidence");
+
+  const sourceNode = page.locator(".evidence-canvas-workspace .graph-node-source");
+  await sourceNode.click();
+  await page.mouse.move(4, 4);
+
+  await expect(sourceNode).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".canvas-inspector")).toContainText(
+    "2026-07-12 获取 · 一手访谈",
+  );
+});
+
 test("Chinese public pages localize metadata and secondary labels", async ({ page }) => {
   await page.goto("/zh/notes");
 
