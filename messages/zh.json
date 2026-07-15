@@ -1,0 +1,29 @@
+{
+  "Navigation": {
+    "home": "首页",
+    "work": "作品",
+    "notes": "笔记",
+    "evidence": "Evidence Graph",
+    "language": "English"
+  },
+  "Portfolio": {
+    "eyebrow": "AI 产品工程",
+    "selectedWork": "精选作品",
+    "selectedWorkDescription": "两个正在真实推进的项目，不展示占位 Demo。",
+    "practiceNotes": "工程笔记",
+    "practiceNotesDescription": "记录决策依据、失败路径和验证方法。",
+    "about": "关于",
+    "viewProject": "查看项目",
+    "viewRepository": "查看源码",
+    "contact": "联系我"
+  },
+  "Evidence": {
+    "title": "Evidence Graph",
+    "status": "正在构建",
+    "description": "把研究结论连接回可以检查的原文证据。",
+    "sample": "示例工作台将在研究领域模块完成后开放。"
+  },
+  "Footer": {
+    "statement": "以证据和可运行结果为准。"
+  }
+}
