@@ -15,14 +15,23 @@ type LocaleLayoutProps = {
   params: Promise<{ locale: string }>;
 };
 
-export const metadata: Metadata = {
-  metadataBase: new URL("https://evidence-graph.vercel.app"),
-  title: {
-    default: "Ailian | Evidence Graph",
-    template: "%s | Ailian",
-  },
-  description: profile.summary.en,
-};
+export async function generateMetadata({
+  params,
+}: Pick<LocaleLayoutProps, "params">): Promise<Metadata> {
+  const { locale } = await params;
+  const metadataLocale = hasLocale(routing.locales, locale)
+    ? locale
+    : routing.defaultLocale;
+
+  return {
+    metadataBase: new URL("https://evidence-graph.vercel.app"),
+    title: {
+      default: "Ailian | Evidence Graph",
+      template: "%s | Ailian",
+    },
+    description: profile.summary[metadataLocale],
+  };
+}
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));

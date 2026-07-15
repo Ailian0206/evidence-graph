@@ -14,6 +14,10 @@ const canvasCopy = {
     evidence: "研究者可以从结论直接回到保存的原文片段。",
     source: "来源 03 / 产品研究访谈",
     labels: { claim: "主张", evidence: "证据", source: "来源" },
+    toolbar: {
+      hero: "研究运行 01",
+      workspace: "运行 01 / 证据审核",
+    },
     detail: {
       claim: "待审核主张 · 2 条支持证据",
       evidence: "精确匹配 · 第 18 段",
@@ -26,6 +30,10 @@ const canvasCopy = {
     evidence: "Researchers can move directly from a conclusion to the saved source excerpt.",
     source: "Source 03 / Product research interview",
     labels: { claim: "Claim", evidence: "Evidence", source: "Source" },
+    toolbar: {
+      hero: "Research run 01",
+      workspace: "Run 01 / Evidence review",
+    },
     detail: {
       claim: "Proposed claim · 2 supporting excerpts",
       evidence: "Exact match · Paragraph 18",
@@ -43,13 +51,14 @@ export function EvidenceCanvas({
 }) {
   const [activeNode, setActiveNode] = useState<EvidenceNode>("evidence");
   const copy = canvasCopy[locale];
+  const activateNode = (node: EvidenceNode) => () => setActiveNode(node);
 
   return (
     <div className={`evidence-canvas evidence-canvas-${mode}`}>
       <div className="canvas-toolbar">
         <span className="canvas-status">
           <span aria-hidden="true" />
-          {mode === "hero" ? "Research run 01" : "Run 01 / Evidence review"}
+          {copy.toolbar[mode]}
         </span>
         <Search aria-hidden="true" size={16} />
       </div>
@@ -62,7 +71,9 @@ export function EvidenceCanvas({
           className="graph-node graph-node-claim"
           type="button"
           aria-pressed={activeNode === "claim"}
-          onClick={() => setActiveNode("claim")}
+          onClick={activateNode("claim")}
+          onFocus={activateNode("claim")}
+          onPointerEnter={activateNode("claim")}
         >
           <span>{copy.labels.claim}</span>
           <strong>{copy.claim}</strong>
@@ -71,7 +82,9 @@ export function EvidenceCanvas({
           className="graph-node graph-node-evidence"
           type="button"
           aria-pressed={activeNode === "evidence"}
-          onClick={() => setActiveNode("evidence")}
+          onClick={activateNode("evidence")}
+          onFocus={activateNode("evidence")}
+          onPointerEnter={activateNode("evidence")}
         >
           <Quote aria-hidden="true" size={16} />
           <span>{copy.labels.evidence}</span>
@@ -81,7 +94,9 @@ export function EvidenceCanvas({
           className="graph-node graph-node-source"
           type="button"
           aria-pressed={activeNode === "source"}
-          onClick={() => setActiveNode("source")}
+          onClick={activateNode("source")}
+          onFocus={activateNode("source")}
+          onPointerEnter={activateNode("source")}
         >
           <FileText aria-hidden="true" size={16} />
           <span>{copy.labels.source}</span>

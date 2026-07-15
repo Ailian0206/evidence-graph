@@ -45,3 +45,39 @@ test("evidence preview exposes inspectable source state", async ({ page }) => {
     "2026-07-12 获取 · 一手访谈",
   );
 });
+
+test("Chinese public pages localize metadata and secondary labels", async ({ page }) => {
+  await page.goto("/zh/notes");
+
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+    "content",
+    "我把复杂的 AI 工作流做成可理解、可验证、可持续维护的产品。当前重点是 Evidence Graph：让研究结论回到原文证据。",
+  );
+  await expect(page.locator(".note-row").first().locator("p").first()).toHaveText(
+    "草稿",
+  );
+  await expect(page.locator("body")).not.toContainText("Research");
+  await expect(page.locator("body")).not.toContainText("Draft");
+
+  await page.goto("/zh/evidence");
+
+  await expect(page.locator(".evidence-canvas-workspace .canvas-status")).toContainText(
+    "运行 01 / 证据审核",
+  );
+});
+
+test("evidence preview keeps hover and focus state aligned", async ({ page }) => {
+  await page.goto("/zh/evidence");
+
+  const claimNode = page.locator(".evidence-canvas-workspace .graph-node-claim");
+  const evidenceNode = page.locator(".evidence-canvas-workspace .graph-node-evidence");
+  const inspector = page.locator(".canvas-inspector");
+
+  await claimNode.hover();
+  await expect(claimNode).toHaveAttribute("aria-pressed", "true");
+  await expect(inspector).toContainText("待审核主张 · 2 条支持证据");
+
+  await evidenceNode.focus();
+  await expect(evidenceNode).toHaveAttribute("aria-pressed", "true");
+  await expect(inspector).toContainText("精确匹配 · 第 18 段");
+});
