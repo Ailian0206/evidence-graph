@@ -91,12 +91,12 @@
 - Modify: `src/app/globals.css`
 - Create: `tests/e2e/public-visual.spec.ts`
 
-- [ ] Add Playwright assertions for no horizontal overflow at 390, 1024, and 1440 widths; verify RED before responsive styles are complete.
-- [ ] Implement stable header, hero, graph, project rows, notes, footer, focus, reduced-motion, and mobile styles.
-- [ ] Use zero letter-spacing, fixed control dimensions, radius no larger than 6px, and no nested cards or purple/blue gradient theme.
-- [ ] Verify text wrapping with the longest Chinese/English labels and preserve a visible hint of Selected Work below the hero.
-- [ ] Run the visual test and verify GREEN.
-- [ ] Commit as `style: 完成作品集响应式视觉基线`.
+- [x] Add Playwright assertions for no horizontal overflow at 390, 1024, and 1440 widths; verify RED before responsive styles are complete.
+- [x] Implement stable header, hero, graph, project rows, notes, footer, focus, reduced-motion, and mobile styles.
+- [x] Use zero letter-spacing, fixed control dimensions, radius no larger than 6px, and no nested cards or purple/blue gradient theme.
+- [x] Verify text wrapping with the longest Chinese/English labels and preserve a visible hint of Selected Work below the hero.
+- [x] Run the visual test and verify GREEN.
+- [x] Commit as `style: 完成作品集响应式视觉基线`.
 
 ### Task 6: Document and close the module
 
