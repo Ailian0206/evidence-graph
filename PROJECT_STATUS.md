@@ -4,9 +4,9 @@ Updated: 2026-07-15
 
 ## Current phase
 
-- Phase: research domain module review.
+- Phase: research domain Draft PR validation.
 - Branch: `feat/research-domain`.
-- Pull request: not opened; the completed module passed Codex review and is ready for its single Draft PR.
+- Pull request: Draft [#3](https://github.com/Ailian0206/evidence-graph/pull/3) is open; CI pending.
 - Active module: research domain foundation.
 - External provider calls: disabled.
 - Production deployment: not configured.
@@ -27,7 +27,7 @@ Updated: 2026-07-15
 | --- | --- | --- |
 | Repository baseline | Complete | Plans, workflow docs, GitHub remote, clean `main` |
 | Foundation and portfolio | Complete | PR #1 merged after CI, Codex review, and visual QA |
-| Research domain foundation | Local complete; Codex review passed | Project/Source/Claim/Evidence schemas, deterministic fixtures, in-memory repository |
+| Research domain foundation | Draft PR #3 open; CI pending | Project/Source/Claim/Evidence schemas, deterministic fixtures, in-memory repository |
 | Research workflow | Pending | Idempotent mock workflow with exact-quote validation |
 | Evidence workspace | Pending | Three-pane desktop and tabbed mobile workflow |
 | Managed deployment | Pending | Supabase/Inngest/Vercel configuration after account authorization |
@@ -47,4 +47,4 @@ Updated: 2026-07-15
 
 ## Next action
 
-Push and open exactly one Draft PR for the completed research-domain module. Continue `feat/research-workflow` locally while remote CI runs.
+Review PR #3 CI, merge it with a merge commit when green, and continue `feat/research-workflow` locally while CI runs.
