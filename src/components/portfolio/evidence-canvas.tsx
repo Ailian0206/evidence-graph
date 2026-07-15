@@ -50,12 +50,15 @@ export function EvidenceCanvas({
   mode: "hero" | "workspace";
 }) {
   const [selectedNode, setSelectedNode] = useState<EvidenceNode>("evidence");
-  const [previewNode, setPreviewNode] = useState<EvidenceNode | null>(null);
+  const [focusedNode, setFocusedNode] = useState<EvidenceNode | null>(null);
+  const [hoveredNode, setHoveredNode] = useState<EvidenceNode | null>(null);
   const copy = canvasCopy[locale];
-  const activeNode = previewNode ?? selectedNode;
+  const activeNode = hoveredNode ?? focusedNode ?? selectedNode;
   const selectNode = (node: EvidenceNode) => () => setSelectedNode(node);
-  const previewActiveNode = (node: EvidenceNode) => () => setPreviewNode(node);
-  const clearPreviewNode = () => setPreviewNode(null);
+  const focusNode = (node: EvidenceNode) => () => setFocusedNode(node);
+  const hoverNode = (node: EvidenceNode) => () => setHoveredNode(node);
+  const clearFocusedNode = () => setFocusedNode(null);
+  const clearHoveredNode = () => setHoveredNode(null);
 
   return (
     <div className={`evidence-canvas evidence-canvas-${mode}`}>
@@ -71,7 +74,7 @@ export function EvidenceCanvas({
       <div
         className="graph-plane"
         data-active-node={activeNode}
-        onPointerLeave={clearPreviewNode}
+        onPointerLeave={clearHoveredNode}
       >
         <span className="graph-edge edge-claim-evidence" aria-hidden="true" />
         <span className="graph-edge edge-evidence-source" aria-hidden="true" />
@@ -80,10 +83,10 @@ export function EvidenceCanvas({
           type="button"
           aria-pressed={selectedNode === "claim"}
           onClick={selectNode("claim")}
-          onFocus={previewActiveNode("claim")}
-          onBlur={clearPreviewNode}
-          onPointerEnter={previewActiveNode("claim")}
-          onPointerLeave={clearPreviewNode}
+          onFocus={focusNode("claim")}
+          onBlur={clearFocusedNode}
+          onPointerEnter={hoverNode("claim")}
+          onPointerLeave={clearHoveredNode}
         >
           <span>{copy.labels.claim}</span>
           <strong>{copy.claim}</strong>
@@ -93,10 +96,10 @@ export function EvidenceCanvas({
           type="button"
           aria-pressed={selectedNode === "evidence"}
           onClick={selectNode("evidence")}
-          onFocus={previewActiveNode("evidence")}
-          onBlur={clearPreviewNode}
-          onPointerEnter={previewActiveNode("evidence")}
-          onPointerLeave={clearPreviewNode}
+          onFocus={focusNode("evidence")}
+          onBlur={clearFocusedNode}
+          onPointerEnter={hoverNode("evidence")}
+          onPointerLeave={clearHoveredNode}
         >
           <Quote aria-hidden="true" size={16} />
           <span>{copy.labels.evidence}</span>
@@ -107,10 +110,10 @@ export function EvidenceCanvas({
           type="button"
           aria-pressed={selectedNode === "source"}
           onClick={selectNode("source")}
-          onFocus={previewActiveNode("source")}
-          onBlur={clearPreviewNode}
-          onPointerEnter={previewActiveNode("source")}
-          onPointerLeave={clearPreviewNode}
+          onFocus={focusNode("source")}
+          onBlur={clearFocusedNode}
+          onPointerEnter={hoverNode("source")}
+          onPointerLeave={clearHoveredNode}
         >
           <FileText aria-hidden="true" size={16} />
           <span>{copy.labels.source}</span>

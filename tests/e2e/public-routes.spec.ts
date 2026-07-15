@@ -114,6 +114,11 @@ test("evidence preview keeps hover and focus state aligned", async ({ page }) =>
   await expect(graphPlane).toHaveAttribute("data-active-node", "claim");
   await expect(claimNode).toHaveAttribute("aria-pressed", "false");
 
+  await claimNode.hover();
+  await graphPlane.hover({ position: { x: 8, y: 160 } });
+  await expect(graphPlane).toHaveAttribute("data-active-node", "claim");
+  await expect(inspector).toContainText("待审核主张 · 2 条支持证据");
+
   await backLink.focus();
   await expect(graphPlane).toHaveAttribute("data-active-node", "evidence");
   await expect(inspector).toContainText("精确匹配 · 第 18 段");
