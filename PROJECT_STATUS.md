@@ -4,9 +4,9 @@ Updated: 2026-07-15
 
 ## Current phase
 
-- Phase: research workflow Draft PR preparation.
+- Phase: research workflow Draft PR validation.
 - Branch: `feat/research-workflow`.
-- Pull request: not opened; the module passed final Codex review and is ready to push.
+- Pull request: Draft [#4](https://github.com/Ailian0206/evidence-graph/pull/4) is open; CI is running.
 - Active module: deterministic research workflow.
 - External provider calls: disabled.
 - Production deployment: not configured.
@@ -28,7 +28,7 @@ Updated: 2026-07-15
 | Repository baseline | Complete | Plans, workflow docs, GitHub remote, clean `main` |
 | Foundation and portfolio | Complete | PR #1 merged after CI, Codex review, and visual QA |
 | Research domain foundation | Complete | PR [#3](https://github.com/Ailian0206/evidence-graph/pull/3) merged as `3fef13c` |
-| Research workflow | Local gate and final review complete | Deterministic provider fixtures, resumable workflow, exact citations, retry and cost gates |
+| Research workflow | Draft PR [#4](https://github.com/Ailian0206/evidence-graph/pull/4) open; CI running | Deterministic provider fixtures, resumable workflow, exact citations, retry and cost gates |
 | Evidence workspace | Pending | Three-pane desktop and tabbed mobile workflow |
 | Managed deployment | Pending | Supabase/Inngest/Vercel configuration after account authorization |
 
@@ -49,4 +49,4 @@ Updated: 2026-07-15
 
 ## Next action
 
-Push `feat/research-workflow`, open the module's single Draft PR, and monitor CI without waiting for Bugbot.
+Monitor Draft PR [#4](https://github.com/Ailian0206/evidence-graph/pull/4) CI without waiting for Bugbot. Merge with a merge commit only after CI passes and no valid finding remains.
