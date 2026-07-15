@@ -6,7 +6,7 @@ Updated: 2026-07-15
 
 - Phase: research domain module review.
 - Branch: `feat/research-domain`.
-- Pull request: not opened; the completed module is in its final Codex review before its single Draft PR.
+- Pull request: not opened; the completed module passed Codex review and is ready for its single Draft PR.
 - Active module: research domain foundation.
 - External provider calls: disabled.
 - Production deployment: not configured.
@@ -27,7 +27,7 @@ Updated: 2026-07-15
 | --- | --- | --- |
 | Repository baseline | Complete | Plans, workflow docs, GitHub remote, clean `main` |
 | Foundation and portfolio | Complete | PR #1 merged after CI, Codex review, and visual QA |
-| Research domain foundation | Local complete; final review pending | Project/Source/Claim/Evidence schemas, deterministic fixtures, in-memory repository |
+| Research domain foundation | Local complete; Codex review passed | Project/Source/Claim/Evidence schemas, deterministic fixtures, in-memory repository |
 | Research workflow | Pending | Idempotent mock workflow with exact-quote validation |
 | Evidence workspace | Pending | Three-pane desktop and tabbed mobile workflow |
 | Managed deployment | Pending | Supabase/Inngest/Vercel configuration after account authorization |
@@ -41,10 +41,10 @@ Updated: 2026-07-15
 - Secret scan: no real secrets found; one false positive from the documented phrase `task-by-task`.
 - Placeholder scan: no unfinished placeholders found; hits were explanatory documentation such as `no placeholder demos`.
 - Environment note: local shell must use Node 22. Node 16 fails ESLint because `structuredClone` is unavailable.
-- Review note: Codex review rounds found and fixed owner-isolation, evidence-integrity, chunk-boundary, uniqueness, cascade, immutable-record, semantic claim-key, chunk-offset, and relation-self-reference gaps. A final targeted read-only review is in progress.
+- Review note: Codex review rounds found and fixed owner-isolation, evidence-integrity, chunk-boundary, uniqueness, cascade, immutable-record, semantic claim-key, chunk-offset, and relation-self-reference gaps. Final targeted review found no Critical or Important issues.
 - Automation note: Cursor Bugbot's monthly quota is exhausted, so it is no longer a merge gate. Codex review and complete local and CI gates are the temporary fallback until a replacement is selected.
 - Research-domain note: schemas, source utilities, claim quote validation, deterministic fixtures, and the in-memory repository use local fixtures only and make no provider calls.
 
 ## Next action
 
-Complete Codex review, then push and open exactly one Draft PR for the completed research-domain module. Continue `feat/research-workflow` locally while remote CI runs.
+Push and open exactly one Draft PR for the completed research-domain module. Continue `feat/research-workflow` locally while remote CI runs.
