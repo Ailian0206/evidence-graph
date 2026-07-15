@@ -4,13 +4,13 @@ Updated: 2026-07-15
 
 ## Current phase
 
-- Phase: research domain integration verification.
+- Phase: research domain module review.
 - Branch: `feat/research-domain`.
-- Pull request: not opened; the completed module is synchronizing merged foundation changes before its single Draft PR.
+- Pull request: not opened; the completed module is ready for Codex review before its single Draft PR.
 - Active module: research domain foundation.
 - External provider calls: disabled.
 - Production deployment: not configured.
-- Local gate: pre-merge research-domain gate passed on 2026-07-15 with Node `v22.22.1`; combined post-merge gate is pending.
+- Local gate: combined post-merge gate passed on 2026-07-15 with Node `v22.22.1`.
 - Foundation PR: [#1](https://github.com/Ailian0206/evidence-graph/pull/1) merged as `0bf85a3` after CI and Codex review passed.
 
 ## Confirmed identity and portfolio content
@@ -27,15 +27,14 @@ Updated: 2026-07-15
 | --- | --- | --- |
 | Repository baseline | Complete | Plans, workflow docs, GitHub remote, clean `main` |
 | Foundation and portfolio | Complete | PR #1 merged after CI, Codex review, and visual QA |
-| Research domain foundation | Integration gate pending | Project/Source/Claim/Evidence schemas, deterministic fixtures, in-memory repository |
+| Research domain foundation | Local complete; review pending | Project/Source/Claim/Evidence schemas, deterministic fixtures, in-memory repository |
 | Research workflow | Pending | Idempotent mock workflow with exact-quote validation |
 | Evidence workspace | Pending | Three-pane desktop and tabbed mobile workflow |
 | Managed deployment | Pending | Supabase/Inngest/Vercel configuration after account authorization |
 
 ## Verification summary
 
-- Pre-merge `npm run test:ci`: passed on `feat/research-domain` with 12 unit and 16 E2E tests.
-- Foundation `npm run test:ci`: passed with 4 unit and 18 E2E tests before PR #1 merged.
+- Combined `npm run test:ci`: passed on `feat/research-domain` with 12 unit and 18 E2E tests.
 - Visual screenshots cover 390x844, 1024x768, and 1440x1000.
 - Route screenshots cover `/zh`, `/en`, `/zh/work`, `/zh/evidence`, `/zh/notes`, and case-study pages.
 - `git diff --check`: passed.
@@ -48,4 +47,4 @@ Updated: 2026-07-15
 
 ## Next action
 
-Finish the merge commit, run the combined `npm run test:ci` gate, then push and open exactly one Draft PR for the completed research-domain module.
+Complete Codex review, then push and open exactly one Draft PR for the completed research-domain module. Continue `feat/research-workflow` locally while remote CI runs.
