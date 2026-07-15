@@ -36,12 +36,12 @@
 - Create: `.github/workflows/ci.yml`
 - Modify: `package.json`
 
-- [ ] Add a Playwright test expecting `/zh` to show `Ailian` and navigation to `/zh/work`.
-- [ ] Run the test and verify RED because locale routes do not exist.
-- [ ] Add scripts for `lint`, `typecheck`, `test:unit`, `test:e2e`, and `test:ci`.
-- [ ] Configure CI on pull requests and `main` pushes with read-only contents permission, Node 22, npm cache, Chromium, and the full gate.
-- [ ] Keep the navigation test RED until Task 4; verify unit infrastructure independently.
-- [ ] Commit as `ci: 建立项目质量门禁`.
+- [x] Add a Playwright test expecting `/zh` to show `Ailian` and navigation to `/zh/work`.
+- [x] Run the test and verify RED because locale routes do not exist.
+- [x] Add scripts for `lint`, `typecheck`, `test:unit`, `test:e2e`, and `test:ci`.
+- [x] Configure CI on pull requests and `main` pushes with read-only contents permission, Node 22, npm cache, Chromium, and the full gate.
+- [x] Keep the navigation test RED until Task 4; verify unit infrastructure independently.
+- [x] Commit as `ci: 建立项目质量门禁`.
 
 ### Task 3: Add locale and typed portfolio content
 
