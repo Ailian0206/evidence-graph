@@ -30,11 +30,11 @@ Do not add ProjectPilot AI, generic chat, billing, teams, browser extensions, OC
 7. Use Chinese Conventional Commits.
 8. Keep pull requests at module granularity. Do not create PRs for intermediate tasks, review-only cleanups, or every small commit.
 9. At the module milestone, run the complete gate, push the branch, and create one Draft PR for that module.
-10. Follow `docs/bugbot-autofix-workflow.md` for every module PR. Once Bugbot starts Autofix, Autofix owns that finding until it publishes a patch or reaches a terminal failure; Codex must not race it with the same fix.
-11. Use a read-only subagent to monitor PR checks, Autofix state, and Cursor-authored commits. The main process continues non-overlapping local work instead of waiting.
-12. Review Autofix output before accepting it: fetch the remote state, inspect the diff, run focused tests for the finding, then run the module gate.
-13. If Autofix is incorrect or incomplete, fix the verified remainder on the same module branch and update the existing module PR with one reviewed push. Do not open a follow-up PR.
-14. Merge with `gh pr merge <number> --merge --delete-branch` only after checks are green and valid bot feedback has been reviewed.
+10. Follow `docs/bugbot-autofix-workflow.md` when automated review is available. Automated review tools are optional accelerators, not merge gates; do not wait for or repeatedly trigger a tool whose quota is exhausted or whose service is unavailable.
+11. When Cursor Bugbot Autofix is available and active, let it attempt the first fix for its findings. If Autofix fails, stalls, is unavailable, or the user disables the wait, Codex takes ownership after verifying the finding.
+12. Review every automated or Codex-authored fix by inspecting the diff, running focused tests, and then running the module gate. Follow-up fixes stay on the same module branch and do not get a separate PR.
+13. Use a read-only monitor subagent only while remote automation is active. Otherwise continue the main local development task without monitoring or waiting.
+14. Merge with `gh pr merge <number> --merge --delete-branch` only after checks are green and the currently available review path has found no unresolved valid issue.
 
 ## Cost and external-write gates
 

@@ -1,5 +1,6 @@
 import type {
   Claim,
+  ClaimRelation,
   EvidenceLink,
   Project,
   ResearchRun,
@@ -18,6 +19,7 @@ export type DemoResearchFixture = {
   chunks: SourceChunk[];
   claims: Claim[];
   evidenceLinks: EvidenceLink[];
+  claimRelations: ClaimRelation[];
 };
 
 export const createDemoResearchFixture = (): DemoResearchFixture => {
@@ -112,5 +114,6 @@ export const createDemoResearchFixture = (): DemoResearchFixture => {
     chunks,
     claims,
     evidenceLinks,
+    claimRelations: [],
   };
 };

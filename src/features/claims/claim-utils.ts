@@ -4,10 +4,11 @@ export type ExactQuoteValidationResult =
 
 export const createClaimKey = (statement: string) =>
   statement
+    .normalize("NFKC")
     .trim()
     .toLowerCase()
-    .replace(/[\p{P}\p{S}]+/gu, "")
-    .replace(/\s+/g, " ");
+    .replace(/\s+/g, " ")
+    .replace(/^[.,!?;:，。！？；：]+|[.,!?;:，。！？；：]+$/gu, "");
 
 export const validateExactQuote = ({
   chunkText,
@@ -16,6 +17,10 @@ export const validateExactQuote = ({
   chunkText: string;
   quote: string;
 }): ExactQuoteValidationResult => {
+  if (quote.trim().length === 0) {
+    return { ok: false, reason: "QUOTE_NOT_FOUND" };
+  }
+
   const startChar = chunkText.indexOf(quote);
 
   if (startChar === -1) {
