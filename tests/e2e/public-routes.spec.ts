@@ -34,11 +34,33 @@ for (const route of publicRoutes) {
   });
 }
 
+test("invalid locale prefixes return 404 without redirecting", async ({ request }) => {
+  for (const path of ["/fr", "/fr/notes"]) {
+    const response = await request.get(path, { maxRedirects: 0 });
+
+    expect(response.status()).toBe(404);
+    expect(response.headers().location).toBeUndefined();
+  }
+});
+
 test("evidence preview exposes inspectable source state", async ({ page }) => {
   await page.goto("/zh/evidence");
 
   const sourceNode = page.locator(".evidence-canvas-workspace .graph-node-source");
   await sourceNode.click();
+
+  await expect(sourceNode).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".canvas-inspector")).toContainText(
+    "2026-07-12 获取 · 一手访谈",
+  );
+});
+
+test("evidence preview keeps a clicked selection after pointer leave", async ({ page }) => {
+  await page.goto("/zh/evidence");
+
+  const sourceNode = page.locator(".evidence-canvas-workspace .graph-node-source");
+  await sourceNode.click();
+  await page.mouse.move(4, 4);
 
   await expect(sourceNode).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator(".canvas-inspector")).toContainText(
@@ -75,22 +97,30 @@ test("evidence preview keeps hover and focus state aligned", async ({ page }) =>
 
   const claimNode = page.locator(".evidence-canvas-workspace .graph-node-claim");
   const evidenceNode = page.locator(".evidence-canvas-workspace .graph-node-evidence");
+  const graphPlane = page.locator(".evidence-canvas-workspace .graph-plane");
   const backLink = page.getByRole("link", { name: "返回作品集" });
   const inspector = page.locator(".canvas-inspector");
 
   await claimNode.hover();
-  await expect(claimNode).toHaveAttribute("aria-pressed", "true");
+  await expect(graphPlane).toHaveAttribute("data-active-node", "claim");
+  await expect(claimNode).toHaveAttribute("aria-pressed", "false");
   await expect(inspector).toContainText("待审核主张 · 2 条支持证据");
 
-  await page.mouse.move(4, 4);
-  await expect(claimNode).toHaveAttribute("aria-pressed", "false");
+  await graphPlane.hover({ position: { x: 8, y: 160 } });
+  await expect(graphPlane).toHaveAttribute("data-active-node", "evidence");
   await expect(inspector).toContainText("精确匹配 · 第 18 段");
 
   await claimNode.focus();
-  await expect(claimNode).toHaveAttribute("aria-pressed", "true");
+  await expect(graphPlane).toHaveAttribute("data-active-node", "claim");
+  await expect(claimNode).toHaveAttribute("aria-pressed", "false");
+
+  await claimNode.hover();
+  await graphPlane.hover({ position: { x: 8, y: 160 } });
+  await expect(graphPlane).toHaveAttribute("data-active-node", "claim");
+  await expect(inspector).toContainText("待审核主张 · 2 条支持证据");
 
   await backLink.focus();
-  await expect(claimNode).toHaveAttribute("aria-pressed", "false");
+  await expect(graphPlane).toHaveAttribute("data-active-node", "evidence");
   await expect(inspector).toContainText("精确匹配 · 第 18 段");
 
   await evidenceNode.focus();

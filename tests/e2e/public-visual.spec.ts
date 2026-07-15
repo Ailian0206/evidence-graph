@@ -27,13 +27,41 @@ for (const viewport of viewports) {
       const selectedWork = document.querySelector<HTMLElement>("#selected-work");
       const graphNode = document.querySelector<HTMLElement>(".graph-node");
       const canvas = document.querySelector<HTMLElement>(".evidence-canvas");
+      const heroContent = document.querySelector<HTMLElement>(".hero-content");
+      const heroScroll = document.querySelector<HTMLElement>(".hero-scroll");
+      const heroInspector = document.querySelector<HTMLElement>(
+        ".evidence-canvas-hero .canvas-inspector",
+      );
       const heroNodes = Array.from(
         document.querySelectorAll<HTMLElement>(".evidence-canvas-hero .graph-node"),
       );
 
-      if (!header || !hero || !selectedWork || !graphNode || !canvas) {
+      if (
+        !header ||
+        !hero ||
+        !selectedWork ||
+        !graphNode ||
+        !canvas ||
+        !heroContent ||
+        !heroScroll ||
+        !heroInspector
+      ) {
         throw new Error("visual contract elements are missing");
       }
+
+      const heroScrollBounds = heroScroll.getBoundingClientRect();
+      const heroInspectorBounds = heroInspector.getBoundingClientRect();
+      const heroCopyBounds = Array.from(heroContent.children).map((element) =>
+        element.getBoundingClientRect(),
+      );
+      const heroNodeBounds = heroNodes.map((node) => node.getBoundingClientRect());
+      const rectanglesOverlap = (left: DOMRect, right: DOMRect) =>
+        !(
+          left.right <= right.left ||
+          left.left >= right.right ||
+          left.bottom <= right.top ||
+          left.top >= right.bottom
+        );
 
       return {
         viewportHeight: window.innerHeight,
@@ -44,6 +72,10 @@ for (const viewport of viewports) {
         selectedWorkTop: selectedWork.getBoundingClientRect().top,
         graphNodePosition: getComputedStyle(graphNode).position,
         canvasBackground: getComputedStyle(canvas).backgroundColor,
+        heroControlsOverlap: rectanglesOverlap(heroScrollBounds, heroInspectorBounds),
+        heroTextOverlapsNodes: heroCopyBounds.some((copyBounds) =>
+          heroNodeBounds.some((nodeBounds) => rectanglesOverlap(copyBounds, nodeBounds)),
+        ),
         heroNodesInsideViewport: heroNodes.every((node) => {
           const bounds = node.getBoundingClientRect();
           return bounds.left >= 0 && bounds.right <= window.innerWidth;
@@ -58,6 +90,8 @@ for (const viewport of viewports) {
     expect(metrics.selectedWorkTop).toBeLessThanOrEqual(metrics.viewportHeight + 48);
     expect(metrics.graphNodePosition).toBe("absolute");
     expect(metrics.canvasBackground).not.toBe("rgba(0, 0, 0, 0)");
+    expect(metrics.heroControlsOverlap).toBe(false);
+    expect(metrics.heroTextOverlapsNodes).toBe(false);
     expect(metrics.heroNodesInsideViewport).toBe(true);
 
     await page.screenshot({

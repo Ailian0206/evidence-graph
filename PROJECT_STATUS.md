@@ -4,14 +4,14 @@ Updated: 2026-07-15
 
 ## Current phase
 
-- Phase: research domain local completion.
+- Phase: research domain integration verification.
 - Branch: `feat/research-domain`.
-- Pull request: not opened; module PR waits for foundation PR #1 state to settle.
+- Pull request: not opened; the completed module is synchronizing merged foundation changes before its single Draft PR.
 - Active module: research domain foundation.
 - External provider calls: disabled.
 - Production deployment: not configured.
-- Local gate: passed on 2026-07-15 with Node `v22.22.1`.
-- Foundation PR: [#1](https://github.com/Ailian0206/evidence-graph/pull/1) CI passed; Bugbot skipped because of Cursor usage or spend limits, with no new inline findings after `2c7f51f`.
+- Local gate: pre-merge research-domain gate passed on 2026-07-15 with Node `v22.22.1`; combined post-merge gate is pending.
+- Foundation PR: [#1](https://github.com/Ailian0206/evidence-graph/pull/1) merged as `0bf85a3` after CI and Codex review passed.
 
 ## Confirmed identity and portfolio content
 
@@ -26,27 +26,26 @@ Updated: 2026-07-15
 | Module | Status | Exit gate |
 | --- | --- | --- |
 | Repository baseline | Complete | Plans, workflow docs, GitHub remote, clean `main` |
-| Foundation and portfolio | Draft PR open | Local app, bilingual public pages, CI, visual QA, Draft PR |
-| Research domain foundation | Local complete | Project/Source/Claim/Evidence schemas, deterministic fixtures, in-memory repository |
+| Foundation and portfolio | Complete | PR #1 merged after CI, Codex review, and visual QA |
+| Research domain foundation | Integration gate pending | Project/Source/Claim/Evidence schemas, deterministic fixtures, in-memory repository |
 | Research workflow | Pending | Idempotent mock workflow with exact-quote validation |
 | Evidence workspace | Pending | Three-pane desktop and tabbed mobile workflow |
 | Managed deployment | Pending | Supabase/Inngest/Vercel configuration after account authorization |
 
 ## Verification summary
 
-- `npm run test:ci`: passed on `feat/research-domain`.
-- `npm run test:unit`: 12 passed.
-- `npm run test:e2e`: 16 passed; screenshots written to `output/playwright/`.
+- Pre-merge `npm run test:ci`: passed on `feat/research-domain` with 12 unit and 16 E2E tests.
+- Foundation `npm run test:ci`: passed with 4 unit and 18 E2E tests before PR #1 merged.
 - Visual screenshots cover 390x844, 1024x768, and 1440x1000.
 - Route screenshots cover `/zh`, `/en`, `/zh/work`, `/zh/evidence`, `/zh/notes`, and case-study pages.
 - `git diff --check`: passed.
 - Secret scan: no real secrets found; one false positive from the documented phrase `task-by-task`.
 - Placeholder scan: no unfinished placeholders found; hits were explanatory documentation such as `no placeholder demos`.
 - Environment note: local shell must use Node 22. Node 16 fails ESLint because `structuredClone` is unavailable.
-- Review note: Cursor Bugbot localization, metadata title, mobile navigation, evidence-canvas interaction, and mobile hero graph touch feedback addressed on PR #1.
-- Automation note: `docs/bugbot-autofix-workflow.md` assigns active findings to Cursor Autofix, keeps monitor subagents read-only, and requires Codex follow-ups to update the existing module PR instead of opening another PR.
+- Review note: Codex review verified direct 404 responses for invalid locale prefixes, independent hover/focus/click graph state, accurate `aria-pressed` semantics, and non-overlapping hero content across target viewports.
+- Automation note: Cursor Bugbot's monthly quota is exhausted, so it is no longer a merge gate. Codex review and complete local and CI gates are the temporary fallback until a replacement is selected.
 - Research-domain note: schemas, source utilities, claim quote validation, deterministic fixtures, and the in-memory repository use local fixtures only and make no provider calls.
 
 ## Next action
 
-Keep `feat/research-domain` local until foundation PR #1 is accepted or merged, then merge the accepted foundation branch into this worktree before pushing and opening one module PR.
+Finish the merge commit, run the combined `npm run test:ci` gate, then push and open exactly one Draft PR for the completed research-domain module.
