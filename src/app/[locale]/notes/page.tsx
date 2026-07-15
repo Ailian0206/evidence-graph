@@ -11,9 +11,10 @@ export async function generateMetadata({
   params: Promise<{ locale: AppLocale }>;
 }): Promise<Metadata> {
   const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "Portfolio" });
 
   return {
-    title: locale === "zh" ? "工程笔记" : "Notes",
+    title: t("practiceNotes"),
   };
 }
 
