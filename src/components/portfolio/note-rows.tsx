@@ -1,0 +1,26 @@
+import type { PracticeNote } from "@/content/types";
+import type { AppLocale } from "@/i18n/routing";
+
+export function NoteRows({
+  notes,
+  locale,
+}: {
+  notes: PracticeNote[];
+  locale: AppLocale;
+}) {
+  return (
+    <div className="note-rows content-width">
+      {notes.map((note, index) => (
+        <article className="note-row" key={note.slug}>
+          <span>0{index + 1}</span>
+          <div>
+            <p>{note.status === "research" ? "Research" : "Draft"}</p>
+            <h3>{note.title[locale]}</h3>
+            <p>{note.summary[locale]}</p>
+          </div>
+          <time dateTime={note.date}>{note.date}</time>
+        </article>
+      ))}
+    </div>
+  );
+}
