@@ -22,7 +22,7 @@ const SEARCH_RESULTS = [
   {
     url: "https://docs.example.com/evidence-graph",
     title: "Evidence Graph product notes",
-    body: "Cited reports use claims with persisted evidence links.",
+    body: "Ordinary AI summaries can omit saved source excerpts unless evidence links are persisted.",
     sourceType: "official_document" as const,
     publishedAt: "2026-07-15T00:00:00.000Z",
   },
@@ -34,6 +34,72 @@ const STRUCTURED_OUTPUTS: Partial<Record<ResearchModelOperation, unknown>> = {
       "traceable AI research",
       "exact quote evidence review",
       "cited research workflow",
+    ],
+  },
+  extract_claims: {
+    claims: [
+      {
+        candidateId: "claim_exact_quotes",
+        statement: "Evidence Graph keeps claims connected to exact quotes.",
+        claimType: "factual",
+        qualifiers: ["MVP"],
+        confidence: 0.86,
+      },
+      {
+        candidateId: "claim_links_unnecessary",
+        statement: "Persisted evidence links are unnecessary for cited reports.",
+        claimType: "factual",
+        qualifiers: [],
+        confidence: 0.22,
+      },
+    ],
+  },
+  link_evidence: {
+    evidence: [
+      {
+        claimCandidateId: "claim_exact_quotes",
+        sourceUrl: "https://example.com/research",
+        quote: "Evidence Graph keeps claims connected to exact quotes",
+        relation: "supports",
+        strength: "strong",
+        rationale: "The interview states the exact-quote behavior directly.",
+      },
+      {
+        claimCandidateId: "claim_links_unnecessary",
+        sourceUrl: "https://docs.example.com/evidence-graph",
+        quote: "Ordinary AI summaries can omit saved source excerpts unless evidence links are persisted",
+        relation: "rebuts",
+        strength: "strong",
+        rationale: "The product notes state why persisted evidence links are required.",
+      },
+    ],
+  },
+  detect_conflicts: {
+    relations: [
+      {
+        fromClaimCandidateId: "claim_exact_quotes",
+        toClaimCandidateId: "claim_links_unnecessary",
+        relation: "contradicts",
+        rationale: "Traceable exact quotes require persisted evidence links.",
+      },
+    ],
+  },
+  draft_report: {
+    sections: [
+      {
+        id: "section_traceability",
+        heading: "Traceability",
+        factual: true,
+        markdown: "Evidence Graph keeps claims connected to exact quotes.",
+        claimIds: ["claim_exact_quotes"],
+      },
+      {
+        id: "section_counterevidence",
+        heading: "Counterevidence",
+        factual: true,
+        markdown: "Persisted links prevent source excerpts from being omitted.",
+        claimIds: ["claim_links_unnecessary"],
+      },
     ],
   },
 };
