@@ -73,6 +73,7 @@ const KNOWN_WORKFLOW_ERRORS = new Set([
   "REPORT_CITATION_INVALID",
   "REPORT_NOT_FOUND",
   "RUN_COST_LIMIT_EXCEEDED",
+  "RUN_NOT_FOUND",
   "SOURCE_NOT_FOUND",
   "STEP_RETRY_LIMIT_EXCEEDED",
 ]);
@@ -118,8 +119,8 @@ const runResearchWorkflowAttempt = async ({
     .getSnapshot()
     .projects.find((candidate) => candidate.id === run.projectId);
 
-  if (!project) {
-    throw new Error("PROJECT_NOT_FOUND");
+  if (!project || project.ownerId !== ownerId || project.ownerId !== run.ownerId) {
+    throw new Error("RUN_NOT_FOUND");
   }
 
   const applyUsage = (usage: ProviderUsage) => {

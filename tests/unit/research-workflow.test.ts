@@ -187,6 +187,101 @@ describe("research workflow store", () => {
     expect(store.getSnapshot().claims[0].qualifiers).not.toContain("mutated");
   });
 
+  it("rejects cross-project reuse of global entity IDs", () => {
+    const fixture = createDemoResearchFixture();
+    const otherProject = {
+      ...fixture.projects[0],
+      id: "project_other",
+      slug: "other-project",
+    };
+    fixture.projects.push(otherProject);
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    expect(() =>
+      store.upsertSource({
+        ...fixture.sources[0],
+        projectId: otherProject.id,
+        canonicalUrl: "https://other.example.com/research",
+        contentHash: "sha256_other_source",
+      }),
+    ).toThrow("ENTITY_ID_CONFLICT");
+    expect(() =>
+      store.upsertClaim({
+        ...fixture.claims[0],
+        projectId: otherProject.id,
+        normalizedKey: "other claim",
+      }),
+    ).toThrow("ENTITY_ID_CONFLICT");
+  });
+
+  it("rejects report citations from another project", () => {
+    const fixture = createDemoResearchFixture();
+    const otherProject = {
+      ...fixture.projects[0],
+      id: "project_other",
+      slug: "other-project",
+    };
+    fixture.projects.push(otherProject);
+    const store = createInMemoryResearchWorkflowStore(fixture);
+    const source = store.upsertSource({
+      ...fixture.sources[0],
+      id: "source_other",
+      projectId: otherProject.id,
+      canonicalUrl: "https://other.example.com/research",
+      contentHash: "sha256_other_source",
+    });
+    const chunk = store.upsertChunk({
+      ...fixture.chunks[0],
+      id: "source_other_chunk_0",
+      sourceId: source.id,
+      projectId: otherProject.id,
+    });
+    const claim = store.upsertClaim({
+      ...fixture.claims[0],
+      id: "claim_other",
+      projectId: otherProject.id,
+      normalizedKey: "other claim",
+    });
+    const link = store.upsertEvidenceLink({
+      ...fixture.evidenceLinks[0],
+      id: "link_other",
+      projectId: otherProject.id,
+      claimId: claim.id,
+      chunkId: chunk.id,
+    });
+
+    expect(() =>
+      store.saveReport({
+        id: "report_cross_project",
+        runId: "run_demo",
+        projectId: "project_demo",
+        markdown: "## Cross-project citation\n\nThis must be rejected. [1]",
+        sections: [
+          {
+            id: "section_cross_project",
+            heading: "Cross-project citation",
+            factual: true,
+            markdown: "This must be rejected. [1]",
+            citationIds: [link.id],
+          },
+        ],
+        citations: [
+          {
+            evidenceLinkId: link.id,
+            claimId: claim.id,
+            chunkId: chunk.id,
+            sourceId: source.id,
+            quote: link.quote,
+            sourceUrl: source.canonicalUrl,
+            sourceTitle: source.title,
+          },
+        ],
+        version: 1,
+        createdAt: "2026-07-15T00:04:00.000Z",
+      }),
+    ).toThrow("REPORT_CITATION_INVALID");
+  });
+
   it("keeps one idempotent checkpoint per run step", () => {
     const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
     const checkpoint = {
@@ -577,6 +672,28 @@ describe("research workflow", () => {
         now: () => "2026-07-15T01:00:00.000Z",
       }),
     ).rejects.toThrow("RUN_NOT_FOUND");
+    expect(providers.calls).toEqual([]);
+  });
+
+  it("rejects a run whose project belongs to another owner", async () => {
+    const fixture = createDemoResearchFixture();
+    fixture.projects[0].ownerId = "user_other";
+    const providers = createFixtureResearchProviders();
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+
+    expect(result.run).toMatchObject({
+      status: "failed",
+      errorMessage: "RUN_NOT_FOUND",
+    });
     expect(providers.calls).toEqual([]);
   });
 });

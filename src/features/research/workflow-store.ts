@@ -114,8 +114,14 @@ export const createInMemoryResearchWorkflowStore = (
         throw new Error("PROJECT_NOT_FOUND");
       }
 
+      const currentById = sources.get(source.id);
+
+      if (currentById && currentById.projectId !== source.projectId) {
+        throw new Error("ENTITY_ID_CONFLICT");
+      }
+
       const current =
-        sources.get(source.id) ??
+        currentById ??
         Array.from(sources.values()).find(
           (candidate) =>
             candidate.projectId === source.projectId &&
@@ -138,8 +144,14 @@ export const createInMemoryResearchWorkflowStore = (
         throw new Error("SOURCE_NOT_FOUND");
       }
 
+      const currentById = chunks.get(chunk.id);
+
+      if (currentById && currentById.projectId !== chunk.projectId) {
+        throw new Error("ENTITY_ID_CONFLICT");
+      }
+
       const current =
-        chunks.get(chunk.id) ??
+        currentById ??
         Array.from(chunks.values()).find(
           (candidate) =>
             candidate.sourceId === chunk.sourceId && candidate.chunkIndex === chunk.chunkIndex,
@@ -159,8 +171,14 @@ export const createInMemoryResearchWorkflowStore = (
         throw new Error("PROJECT_NOT_FOUND");
       }
 
+      const currentById = claims.get(claim.id);
+
+      if (currentById && currentById.projectId !== claim.projectId) {
+        throw new Error("ENTITY_ID_CONFLICT");
+      }
+
       const current =
-        claims.get(claim.id) ??
+        currentById ??
         Array.from(claims.values()).find(
           (candidate) =>
             candidate.projectId === claim.projectId &&
@@ -178,6 +196,11 @@ export const createInMemoryResearchWorkflowStore = (
       const link = evidenceLinkSchema.parse(input);
       const claim = claims.get(link.claimId);
       const chunk = chunks.get(link.chunkId);
+      const currentById = evidenceLinks.get(link.id);
+
+      if (currentById && currentById.projectId !== link.projectId) {
+        throw new Error("ENTITY_ID_CONFLICT");
+      }
 
       if (!claim || !chunk || claim.projectId !== link.projectId || chunk.projectId !== link.projectId) {
         throw new Error("EVIDENCE_TARGET_NOT_FOUND");
@@ -190,7 +213,7 @@ export const createInMemoryResearchWorkflowStore = (
       }
 
       const current =
-        evidenceLinks.get(link.id) ??
+        currentById ??
         Array.from(evidenceLinks.values()).find(
           (candidate) =>
             candidate.claimId === link.claimId &&
@@ -209,6 +232,11 @@ export const createInMemoryResearchWorkflowStore = (
       const relation = claimRelationSchema.parse(input);
       const fromClaim = claims.get(relation.fromClaimId);
       const toClaim = claims.get(relation.toClaimId);
+      const currentById = claimRelations.get(relation.id);
+
+      if (currentById && currentById.projectId !== relation.projectId) {
+        throw new Error("ENTITY_ID_CONFLICT");
+      }
 
       if (
         !fromClaim ||
@@ -220,7 +248,7 @@ export const createInMemoryResearchWorkflowStore = (
       }
 
       const current =
-        claimRelations.get(relation.id) ??
+        currentById ??
         Array.from(claimRelations.values()).find(
           (candidate) =>
             candidate.fromClaimId === relation.fromClaimId &&
@@ -290,6 +318,7 @@ export const createInMemoryResearchWorkflowStore = (
 
       for (const citation of report.citations) {
         const link = evidenceLinks.get(citation.evidenceLinkId);
+        const claim = claims.get(citation.claimId);
         const chunk = chunks.get(citation.chunkId);
         const source = sources.get(citation.sourceId);
 
@@ -298,8 +327,13 @@ export const createInMemoryResearchWorkflowStore = (
         }
 
         if (
+          !claim ||
           !chunk ||
           !source ||
+          link.projectId !== report.projectId ||
+          claim.projectId !== report.projectId ||
+          chunk.projectId !== report.projectId ||
+          source.projectId !== report.projectId ||
           link.claimId !== citation.claimId ||
           link.chunkId !== citation.chunkId ||
           link.quote !== citation.quote ||
