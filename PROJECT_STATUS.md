@@ -34,14 +34,14 @@ Updated: 2026-07-15
 ## Verification summary
 
 - `npm run test:ci`: passed.
-- `npm run test:e2e`: 15 passed; screenshots written to `output/playwright/`.
+- `npm run test:e2e`: 16 passed; screenshots written to `output/playwright/`.
 - Visual screenshots cover 390x844, 1024x768, and 1440x1000.
 - Route screenshots cover `/zh`, `/en`, `/zh/work`, `/zh/evidence`, `/zh/notes`, and case-study pages.
 - `git diff --check`: passed.
 - Secret scan: no real secrets found; one false positive from the documented phrase `task-by-task`.
 - Placeholder scan: no unfinished placeholders found; hits were explanatory documentation such as `no placeholder demos`.
 - Environment note: local shell must use Node 22. Node 16 fails ESLint because `structuredClone` is unavailable.
-- Review note: Cursor Bugbot localization, metadata title, mobile navigation, and evidence-canvas interaction feedback addressed on PR #1.
+- Review note: Cursor Bugbot localization, metadata title, mobile navigation, evidence-canvas interaction, and mobile hero graph touch feedback addressed on PR #1.
 
 ## Next action
 

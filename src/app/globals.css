@@ -978,6 +978,12 @@ button {
     margin-left: var(--page-gutter);
     padding: 48px 0 330px;
     justify-content: flex-start;
+    /* Let graph controls receive touch input through the text column on mobile. */
+    pointer-events: none;
+  }
+
+  .hero-content > * {
+    pointer-events: auto;
   }
 
   .hero-content h1 {

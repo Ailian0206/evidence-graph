@@ -84,3 +84,15 @@ test("English portfolio copy stays inside the mobile viewport", async ({ page })
 
   expect(widths.document).toBeLessThanOrEqual(widths.viewport);
 });
+
+test("mobile hero graph nodes remain interactive", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/zh");
+
+  const sourceNode = page.locator(".evidence-canvas-hero .graph-node-source");
+  await sourceNode.click({ timeout: 2000 });
+
+  await expect(page.locator(".evidence-canvas-hero .canvas-inspector")).toContainText(
+    "2026-07-12 获取 · 一手访谈",
+  );
+});
