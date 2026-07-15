@@ -1,9 +1,11 @@
 import type { ResearchRun } from "@/features/research/domain";
 import type { DemoResearchFixture } from "@/features/research/fixtures";
 import {
+  embeddedChunkSchema,
   researchReportSchema,
   runLogEntrySchema,
   workflowCheckpointSchema,
+  type EmbeddedChunk,
   type ResearchReport,
   type RunLogEntry,
   type WorkflowCheckpoint,
@@ -18,6 +20,8 @@ export type InMemoryResearchWorkflowStore = {
   saveReport: (report: ResearchReport) => ResearchReport;
   appendRunLog: (entry: RunLogEntry) => RunLogEntry;
   listRunLogs: (runId: string) => RunLogEntry[];
+  getEmbedding: (chunkId: string) => EmbeddedChunk | undefined;
+  saveEmbedding: (embedding: EmbeddedChunk) => EmbeddedChunk;
 };
 
 export const createInMemoryResearchWorkflowStore = (
@@ -30,6 +34,7 @@ export const createInMemoryResearchWorkflowStore = (
   const checkpoints = new Map<string, WorkflowCheckpoint>();
   const reports = new Map<string, ResearchReport>();
   const runLogs = new Map<string, RunLogEntry>();
+  const embeddings = new Map<string, EmbeddedChunk>();
   const createCheckpointKey = (runId: string, step: WorkflowStep) => `${runId}:${step}`;
 
   return {
@@ -148,5 +153,22 @@ export const createInMemoryResearchWorkflowStore = (
           (left, right) =>
             left.timestamp.localeCompare(right.timestamp) || left.id.localeCompare(right.id),
         ),
+    getEmbedding: (chunkId) => embeddings.get(chunkId),
+    saveEmbedding: (input) => {
+      const embedding = embeddedChunkSchema.parse(input);
+
+      if (!chunks.has(embedding.chunkId)) {
+        throw new Error("CHUNK_NOT_FOUND");
+      }
+
+      const current = embeddings.get(embedding.chunkId);
+
+      if (current) {
+        return current;
+      }
+
+      embeddings.set(embedding.chunkId, embedding);
+      return embedding;
+    },
   };
 };

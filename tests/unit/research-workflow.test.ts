@@ -191,4 +191,19 @@ describe("research workflow store", () => {
 
     expect(store.listRunLogs("run_demo")).toEqual([entry]);
   });
+
+  it("stores one validated embedding per source chunk", () => {
+    const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
+    const embedding = {
+      chunkId: "source_primary_interview_chunk_0",
+      model: "text-embedding-3-small" as const,
+      dimensions: 1536 as const,
+      vector: Array<number>(1536).fill(0),
+    };
+
+    store.saveEmbedding(embedding);
+    store.saveEmbedding(embedding);
+
+    expect(store.getEmbedding(embedding.chunkId)).toEqual(embedding);
+  });
 });

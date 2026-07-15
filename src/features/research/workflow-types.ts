@@ -84,6 +84,13 @@ export const runLogEntrySchema = z.object({
   errorCode: z.string().min(1).optional(),
 });
 
+export const embeddedChunkSchema = z.object({
+  chunkId: z.string().min(1),
+  model: z.literal("text-embedding-3-small"),
+  dimensions: z.literal(1536),
+  vector: z.array(z.number()).length(1536),
+});
+
 export const reportSectionSchema = z.object({
   id: z.string().min(1),
   heading: z.string().min(1),
@@ -116,4 +123,5 @@ export const researchReportSchema = z.object({
 export type WorkflowStep = z.infer<typeof workflowStepSchema>;
 export type WorkflowCheckpoint = z.infer<typeof workflowCheckpointSchema>;
 export type RunLogEntry = z.infer<typeof runLogEntrySchema>;
+export type EmbeddedChunk = z.infer<typeof embeddedChunkSchema>;
 export type ResearchReport = z.infer<typeof researchReportSchema>;
