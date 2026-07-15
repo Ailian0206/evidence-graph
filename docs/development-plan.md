@@ -8,7 +8,7 @@ Development is split into module branches and Draft PRs so CI and the configured
 | ---: | --- | --- | --- |
 | 1 | `feat/foundation-portfolio` | Next.js, bilingual portfolio, design system, tests, CI | Draft PR [#1](https://github.com/Ailian0206/evidence-graph/pull/1) open |
 | 2 | `feat/research-domain` | Research entities, fixtures, project lifecycle, persistence boundary | Local gate complete; PR waits for foundation PR #1 |
-| 3 | `feat/research-workflow` | Search/LLM provider interfaces, deterministic workflow, exact citations | Full mock research run produces a valid report |
+| 3 | `feat/research-workflow` | Search/LLM provider interfaces, deterministic workflow, exact citations | Planning; inherited local baseline gate passed |
 | 4 | `feat/evidence-workspace` | Claim list, graph, source viewer, review actions, responsive app | Desktop/mobile e2e and graph interaction tests pass |
 | 5 | `feat/managed-deployment` | Supabase Auth/RLS/pgvector, Inngest, Sentry, Vercel | Local gate plus authorized production smoke |
 
@@ -25,4 +25,4 @@ Development is split into module branches and Draft PRs so CI and the configured
 
 ## Current module
 
-Keep `feat/research-domain` local, merge the accepted foundation branch after Draft PR [#1](https://github.com/Ailian0206/evidence-graph/pull/1) settles, then open one Draft PR for the completed research-domain module.
+Execute `docs/superpowers/plans/2026-07-15-research-workflow-plan.md` on local `feat/research-workflow` with fixture providers only. Keep the branch local and do not open another PR while predecessor module PRs remain unsettled.
