@@ -17,7 +17,9 @@ import {
 import type { DemoResearchFixture } from "@/features/research/fixtures";
 import {
   providerUsageSchema,
+  searchResultSchema,
   type ProviderUsage,
+  type SearchResult,
 } from "@/providers/contracts";
 import {
   embeddedChunkSchema,
@@ -47,6 +49,8 @@ export type InMemoryResearchWorkflowStore = {
   listRunLogs: (runId: string) => RunLogEntry[];
   getEmbedding: (chunkId: string) => EmbeddedChunk | undefined;
   saveEmbedding: (embedding: EmbeddedChunk) => EmbeddedChunk;
+  getSearchResults: (idempotencyKey: string) => SearchResult[] | undefined;
+  saveSearchResults: (idempotencyKey: string, results: SearchResult[]) => SearchResult[];
   saveProviderUsage: (idempotencyKey: string, usage: ProviderUsage) => boolean;
   getSnapshot: () => ResearchWorkflowSnapshot;
 };
@@ -96,6 +100,7 @@ export const createInMemoryResearchWorkflowStore = (
   const reports = new Map<string, ResearchReport>();
   const runLogs = new Map<string, RunLogEntry>();
   const embeddings = new Map<string, EmbeddedChunk>();
+  const searchResults = new Map<string, SearchResult[]>();
   const providerUsages = new Map<string, ProviderUsage>();
   const createCheckpointKey = (runId: string, step: WorkflowStep) => `${runId}:${step}`;
 
@@ -211,6 +216,10 @@ export const createInMemoryResearchWorkflowStore = (
         );
 
       if (current) {
+        if (currentById && currentById.normalizedKey !== claim.normalizedKey) {
+          throw new Error("ENTITY_ID_CONFLICT");
+        }
+
         return cloneValue(current);
       }
 
@@ -433,6 +442,21 @@ export const createInMemoryResearchWorkflowStore = (
 
       embeddings.set(embedding.chunkId, cloneValue(embedding));
       return cloneValue(embedding);
+    },
+    getSearchResults: (idempotencyKey) => {
+      const results = searchResults.get(idempotencyKey);
+      return results ? cloneValue(results) : undefined;
+    },
+    saveSearchResults: (idempotencyKey, input) => {
+      const results = searchResultSchema.array().parse(input);
+      const current = searchResults.get(idempotencyKey);
+
+      if (current) {
+        return cloneValue(current);
+      }
+
+      searchResults.set(idempotencyKey, cloneValue(results));
+      return cloneValue(results);
     },
     saveProviderUsage: (idempotencyKey, input) => {
       const usage = providerUsageSchema.parse(input);

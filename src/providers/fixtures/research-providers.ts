@@ -13,7 +13,9 @@ export type FixtureProviderCall = {
 
 export type FixtureResearchProviderOptions = {
   additionalSupportingEvidence?: boolean;
+  combinedReportParagraphs?: boolean;
   costOverrides?: Partial<Record<FixtureProviderCall["operation"], number>>;
+  duplicateClaimCandidateId?: boolean;
   evidenceCount?: number;
   failOnceAt?: FixtureProviderCall["operation"];
   failSearchAtCall?: number;
@@ -103,15 +105,23 @@ const STRUCTURED_OUTPUTS: Partial<Record<ResearchModelOperation, unknown>> = {
         id: "section_traceability",
         heading: "Traceability",
         factual: true,
-        markdown: "Evidence Graph keeps claims connected to exact quotes.",
-        claimIds: ["claim_exact_quotes"],
+        paragraphs: [
+          {
+            markdown: "Evidence Graph keeps claims connected to exact quotes.",
+            claimIds: ["claim_exact_quotes"],
+          },
+        ],
       },
       {
         id: "section_counterevidence",
         heading: "Counterevidence",
         factual: true,
-        markdown: "Persisted links prevent source excerpts from being omitted.",
-        claimIds: ["claim_links_unnecessary"],
+        paragraphs: [
+          {
+            markdown: "Persisted links prevent source excerpts from being omitted.",
+            claimIds: ["claim_links_unnecessary"],
+          },
+        ],
       },
     ],
   },
@@ -152,6 +162,11 @@ export const createFixtureResearchProviders = (
       evidenceOutput.evidence[0].quote = "This quote is not present in the saved chunk";
     }
 
+    if (options.duplicateClaimCandidateId && operation === "extract_claims") {
+      const claimsOutput = output as { claims: Array<{ candidateId: string }> };
+      claimsOutput.claims[1].candidateId = claimsOutput.claims[0].candidateId;
+    }
+
     if (options.additionalSupportingEvidence && operation === "link_evidence") {
       const evidenceOutput = output as { evidence: unknown[] };
       evidenceOutput.evidence.push({
@@ -171,8 +186,29 @@ export const createFixtureResearchProviders = (
     }
 
     if (options.mixedUnsupportedReportClaim && operation === "draft_report") {
-      const reportOutput = output as { sections: Array<{ claimIds: string[] }> };
-      reportOutput.sections[0].claimIds.push("claim_links_unnecessary");
+      const reportOutput = output as {
+        sections: Array<{ paragraphs: Array<{ claimIds: string[] }> }>;
+      };
+      reportOutput.sections[0].paragraphs[0].claimIds.push("claim_links_unnecessary");
+    }
+
+    if (options.combinedReportParagraphs && operation === "draft_report") {
+      const reportOutput = output as {
+        sections: Array<{
+          id: string;
+          heading: string;
+          factual: boolean;
+          paragraphs: Array<{ markdown: string; claimIds: string[] }>;
+        }>;
+      };
+      reportOutput.sections = [
+        {
+          id: "section_combined",
+          heading: "Evidence findings",
+          factual: true,
+          paragraphs: reportOutput.sections.flatMap((section) => section.paragraphs),
+        },
+      ];
     }
 
     return output;

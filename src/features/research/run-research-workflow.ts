@@ -86,6 +86,24 @@ const createClaimId = (projectId: string, candidateId: string) =>
 
 const roundCost = (cost: number) => Math.round(cost * 1_000_000) / 1_000_000;
 
+const getRunEvidenceLinks = ({
+  store,
+  projectId,
+  evidenceLinkIds,
+}: {
+  store: InMemoryResearchWorkflowStore;
+  projectId: string;
+  evidenceLinkIds: string[];
+}) => {
+  const evidenceLinkIdSet = new Set(evidenceLinkIds);
+
+  return store
+    .getSnapshot()
+    .evidenceLinks.filter(
+      (link) => link.projectId === projectId && evidenceLinkIdSet.has(link.id),
+    );
+};
+
 const runResearchWorkflowAttempt = async ({
   runId,
   ownerId,
@@ -106,17 +124,22 @@ const runResearchWorkflowAttempt = async ({
 
   if (run.status === "ready") {
     const report = store.getReport(runId);
+    const linkingCheckpoint = store.getCheckpoint(runId, "linking_evidence");
 
-    if (!report) {
+    if (!report || !linkingCheckpoint) {
       throw new Error("REPORT_NOT_FOUND");
     }
+
+    const linkedEvidence = evidenceOutputSchema.parse(linkingCheckpoint.output);
 
     return {
       run,
       report,
-      evidenceLinks: store
-        .getSnapshot()
-        .evidenceLinks.filter((link) => link.projectId === run.projectId),
+      evidenceLinks: getRunEvidenceLinks({
+        store,
+        projectId: run.projectId,
+        evidenceLinkIds: linkedEvidence.evidenceLinkIds,
+      }),
       completedSteps: WORKFLOW_STEPS.filter((step) => store.getCheckpoint(runId, step)),
     };
   }
@@ -248,14 +271,24 @@ const runResearchWorkflowAttempt = async ({
       const results: SearchResult[] = [];
 
       for (const [queryIndex, query] of plan.queries.entries()) {
+        const queryIdempotencyKey = `${idempotencyKey}:${queryIndex}`;
+        const savedResults = store.getSearchResults(queryIdempotencyKey);
+
+        if (savedResults) {
+          results.push(...savedResults);
+          continue;
+        }
+
         assertProviderBudget();
         const result = await providers.search.search({
           query,
           maxResults: run.sourceLimit,
-          idempotencyKey: `${idempotencyKey}:${queryIndex}`,
+          idempotencyKey: queryIdempotencyKey,
         });
-        applyUsage(`${idempotencyKey}:${queryIndex}`, result.usage);
-        results.push(...searchResultSchema.array().parse(result.data));
+        applyUsage(queryIdempotencyKey, result.usage);
+        const parsedResults = searchResultSchema.array().parse(result.data);
+        store.saveSearchResults(queryIdempotencyKey, parsedResults);
+        results.push(...parsedResults);
       }
 
       return { results };
@@ -499,9 +532,10 @@ const runResearchWorkflowAttempt = async ({
     async (idempotencyKey) => {
       const snapshot = store.getSnapshot();
       const evidenceByClaim = new Map<string, EvidenceLink[]>();
+      const linkedEvidenceIdSet = new Set(linkedEvidence.evidenceLinkIds);
 
       for (const link of snapshot.evidenceLinks) {
-        if (link.projectId !== run.projectId) {
+        if (link.projectId !== run.projectId || !linkedEvidenceIdSet.has(link.id)) {
           continue;
         }
 
@@ -523,26 +557,26 @@ const runResearchWorkflowAttempt = async ({
       });
       applyUsage(idempotencyKey, result.usage);
       const output = reportDraftSchema.parse(result.data);
+      const sections = output.sections.flatMap((section) => {
+        const paragraphs = section.paragraphs.flatMap((paragraph) => {
+          const hasSupportedClaim = paragraph.claimIds.some((claimId) =>
+            supportedClaimIds.has(claimId),
+          );
+          const hasUnsupportedClaim = paragraph.claimIds.some(
+            (claimId) => !supportedClaimIds.has(claimId),
+          );
 
-      for (const section of output.sections) {
-        const hasSupportedClaim = section.claimIds.some((claimId) =>
-          supportedClaimIds.has(claimId),
-        );
-        const hasUnsupportedClaim = section.claimIds.some(
-          (claimId) => !supportedClaimIds.has(claimId),
-        );
+          if (hasSupportedClaim && hasUnsupportedClaim) {
+            throw new Error("REPORT_CITATION_INVALID");
+          }
 
-        if (hasSupportedClaim && hasUnsupportedClaim) {
-          throw new Error("REPORT_CITATION_INVALID");
-        }
-      }
+          if (!hasSupportedClaim) {
+            return [];
+          }
 
-      const sections = output.sections
-        .filter((section) => section.claimIds.some((claimId) => supportedClaimIds.has(claimId)))
-        .map((section) => {
           const citationIds = Array.from(
             new Set(
-              section.claimIds.flatMap((claimId) =>
+              paragraph.claimIds.flatMap((claimId) =>
                 (
                   evidenceByClaim.get(extractedClaims.claimIdsByCandidate[claimId]) ?? []
                 ).map((link) => link.id),
@@ -550,21 +584,33 @@ const runResearchWorkflowAttempt = async ({
             ),
           );
           const citationMarkers = citationIds.map((citationId) => `[${citationId}]`).join(" ");
-          const markdown = section.factual
-            ? section.markdown
-                .split(/\n\n+/)
-                .map((paragraph) => `${paragraph} ${citationMarkers}`)
-                .join("\n\n")
-            : section.markdown;
 
-          return {
+          return [
+            {
+              markdown: section.factual
+                ? `${paragraph.markdown} ${citationMarkers}`
+                : paragraph.markdown,
+              citationIds,
+            },
+          ];
+        });
+
+        if (paragraphs.length === 0) {
+          return [];
+        }
+
+        return [
+          {
             id: section.id,
             heading: section.heading,
             factual: section.factual,
-            markdown,
-            citationIds,
-          };
-        });
+            markdown: paragraphs.map((paragraph) => paragraph.markdown).join("\n\n"),
+            citationIds: Array.from(
+              new Set(paragraphs.flatMap((paragraph) => paragraph.citationIds)),
+            ),
+          },
+        ];
+      });
       const citationLinkIds = new Set(sections.flatMap((section) => section.citationIds));
       const chunkById = new Map(snapshot.chunks.map((chunk) => [chunk.id, chunk]));
       const sourceById = new Map(snapshot.sources.map((source) => [source.id, source]));
@@ -622,9 +668,11 @@ const runResearchWorkflowAttempt = async ({
   return {
     run,
     report,
-    evidenceLinks: store
-      .getSnapshot()
-      .evidenceLinks.filter((link) => link.projectId === run.projectId),
+    evidenceLinks: getRunEvidenceLinks({
+      store,
+      projectId: run.projectId,
+      evidenceLinkIds: linkedEvidence.evidenceLinkIds,
+    }),
     completedSteps,
   };
 };

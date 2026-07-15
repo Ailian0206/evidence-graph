@@ -11,17 +11,33 @@ export const searchPlanSchema = z.object({
   queries: z.array(z.string().min(1)).min(3).max(5),
 });
 
-export const claimCandidatesSchema = z.object({
-  claims: z.array(
-    z.object({
-      candidateId: z.string().min(1),
-      statement: z.string().min(1),
-      claimType: claimTypeSchema,
-      qualifiers: z.array(z.string()),
-      confidence: z.number().min(0).max(1),
-    }),
-  ),
-});
+export const claimCandidatesSchema = z
+  .object({
+    claims: z.array(
+      z.object({
+        candidateId: z.string().min(1),
+        statement: z.string().min(1),
+        claimType: claimTypeSchema,
+        qualifiers: z.array(z.string()),
+        confidence: z.number().min(0).max(1),
+      }),
+    ),
+  })
+  .superRefine(({ claims }, context) => {
+    const candidateIds = new Set<string>();
+
+    for (const [index, claim] of claims.entries()) {
+      if (candidateIds.has(claim.candidateId)) {
+        context.addIssue({
+          code: "custom",
+          message: "CLAIM_CANDIDATE_ID_CONFLICT",
+          path: ["claims", index, "candidateId"],
+        });
+      }
+
+      candidateIds.add(claim.candidateId);
+    }
+  });
 
 export const extractedClaimsOutputSchema = claimCandidatesSchema.extend({
   claimIdsByCandidate: z.record(z.string().min(1), z.string().min(1)),
@@ -57,8 +73,14 @@ export const reportDraftSchema = z.object({
       id: z.string().min(1),
       heading: z.string().min(1),
       factual: z.boolean(),
-      markdown: z.string().min(1),
-      claimIds: z.array(z.string().min(1)).min(1),
+      paragraphs: z
+        .array(
+          z.object({
+            markdown: z.string().min(1),
+            claimIds: z.array(z.string().min(1)).min(1),
+          }),
+        )
+        .min(1),
     }),
   ),
 });
