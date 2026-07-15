@@ -15,6 +15,7 @@ import {
   extractDomain,
 } from "@/features/sources/source-utils";
 import { createClaimKey, validateExactQuote } from "@/features/claims/claim-utils";
+import { createDemoResearchFixture } from "@/features/research/fixtures";
 
 describe("research domain schemas", () => {
   it("validates the core research entities", () => {
@@ -148,5 +149,20 @@ describe("claim utilities", () => {
       ok: false,
       reason: "QUOTE_NOT_FOUND",
     });
+  });
+});
+
+describe("research fixtures", () => {
+  it("creates deterministic provider-free research fixtures", () => {
+    const first = createDemoResearchFixture();
+    const second = createDemoResearchFixture();
+
+    expect(first).toEqual(second);
+    expect(first.projects).toHaveLength(1);
+    expect(first.sources).toHaveLength(2);
+    expect(first.claims.map((claim) => claim.normalizedKey)).toContain(
+      "evidence graph keeps claims connected to exact quotes",
+    );
+    expect(first.evidenceLinks.every((link) => link.quote.length > 0)).toBe(true);
   });
 });
