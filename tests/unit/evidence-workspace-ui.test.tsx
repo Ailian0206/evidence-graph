@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -68,6 +68,27 @@ describe("evidence workspace claim review", () => {
 
     expect(screen.queryByRole("button", { name: supportedClaim.statement })).toBeNull();
     expect(screen.getByRole("checkbox", { name: "支持" })).not.toBeChecked();
+  });
+});
+
+describe("evidence workspace graph keyboard navigation", () => {
+  it("applies consecutive key presses to the latest focused graph node", () => {
+    const workspace = createEvidenceWorkspaceFixture("zh");
+    renderWorkspace();
+    const graph = screen.getByRole("application", {
+      name: "证据关系图，使用方向键浏览节点，按回车选择",
+    });
+
+    act(() => {
+      graph.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowRight" }));
+      graph.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowRight" }));
+      graph.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter" }));
+    });
+
+    expect(screen.getByRole("button", { name: workspace.claims[1].statement })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   });
 });
 
