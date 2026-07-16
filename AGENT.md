@@ -30,12 +30,11 @@ MVP 不增加 ProjectPilot AI、通用聊天、计费、团队、浏览器扩展
 7. 使用中文 Conventional Commits。
 8. PR 保持模块粒度；中间任务、单纯审核清理或每个小提交都不单独开 PR。
 9. 模块达到里程碑后先跑完整门禁，再推送分支并只创建一个 Draft PR。
-10. 创建或更新 Draft PR 后必须触发独立 Claude 审核。所有调用都必须带 `--setting-sources project,local`，防止用户级同名 skill 覆盖仓库 reviewer。普通 PR 在当前 PR 分支工作区根目录运行 `claude --setting-sources project,local --permission-mode auto --model sonnet -p "/pr-review"`；任何触及审核协议的 PR 必须从准确 `baseRefOid` detached worktree 运行 `/pr-review --trusted-base <PR编号>`。完整编排见 `~/.codex/skills/pr-review/SKILL.md` 和 `docs/bugbot-autofix-workflow.md` 第 7 节。
-11. 审核进程可交给一个只读监控子代理，主进程继续不冲突任务；没有子代理时以前台方式运行。合并前必须取得当前 head SHA 的审核终态。
-12. Cursor Bugbot 可用时只是附加审核。额度耗尽或服务不可用时不等待、不重复触发；Claude 审核始终是有效门禁。
-13. Bugbot Autofix 活跃时由它先处理自己的问题；Autofix 失败、终止或不可用后，Codex 验证问题并接管。不得并发修复同一个问题。
-14. 所有 Cursor Autofix 或 Codex 代码修复都必须检查差异、跑聚焦测试和完整模块门禁。修复留在原模块分支，不新开 PR；任何推送改变 head SHA 后必须重新运行第 10 步。Codex 判定 finding 无效且无需改代码时，发布带证据的结构化回复并触发同 SHA `--recheck`，不得手工改 Claude 标签。
-15. CI 通过、存在 `claude-reviewed` 标签、最新 `CLAUDE_REVIEWED_SHA` 等于当前 head、没有 `claude-changes-requested` 且没有未解决的有效阻塞问题后，Codex 无需人工批准即可执行 `gh pr merge <PR编号> --merge --delete-branch`。PR #6 是用户批准的唯一一次流程引导；它合并后，协议 PR 不再有人工审核例外，必须使用可信基线模式。
+10. 创建或更新 Draft PR 后，运行独立 Claude Code：`claude --permission-mode auto --model sonnet -p "/codex-independent-pr-review <PR编号>"`。Claude 只审核和评论，不修改代码、不提交、不推送、不合并。
+11. Claude 发现问题时，Codex 验证评论，在原分支按 TDD 修复，跑聚焦测试和完整门禁，直接提交并 push，然后重新运行第 10 步；不创建新 PR。
+12. Claude 对当前 head SHA 返回 `pass` 且 GitHub CI 通过后，Codex 无需人工批准，直接执行 `gh pr merge <PR编号> --merge --delete-branch`。
+13. Cursor Bugbot 可用时只做附加审核。Autofix 活跃时由它先处理自己的 finding，Codex 不抢修同一个问题；Bugbot 不可用时不等待。
+14. 审核和 CI 等待可交给一个只读子代理，主进程继续其它不冲突任务。
 
 ## 成本与外部写入门禁
 

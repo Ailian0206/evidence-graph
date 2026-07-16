@@ -45,7 +45,7 @@ PATH=/Users/ailian/.nvm/versions/node/v22.22.1/bin:$PATH \
 2. 运行完整 `npm run test:ci`。
 3. 更新 `PROJECT_STATUS.md` 并使用中文 Conventional Commit 提交。
 4. 模块目标全部完成后只创建一个 Draft PR。
-5. 从 PR 分支运行普通 `/pr-review`，自动处理有效 finding；当前 SHA 的 CI、marker 和标签门禁通过后使用 merge commit 自动合并。
+5. 运行 `/codex-independent-pr-review <PR编号>`；有 finding 时由 Codex 在原 PR 修复并重审，无问题且 CI 通过后使用 merge commit 自动合并。
 
 ## 完成标准
 

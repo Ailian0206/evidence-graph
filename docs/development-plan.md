@@ -9,7 +9,7 @@
 | 1 | `feat/foundation-portfolio` | Next.js、双语作品集、设计系统、测试和 CI | 已完成；PR [#1](https://github.com/Ailian0206/evidence-graph/pull/1) 已合并 |
 | 2 | `feat/research-domain` | 研究实体、fixtures、项目生命周期和持久化边界 | 已完成；PR [#3](https://github.com/Ailian0206/evidence-graph/pull/3) 已合并 |
 | 3 | `feat/research-workflow` | 搜索/LLM Provider 接口、确定性工作流和精确引文 | 已完成；PR [#4](https://github.com/Ailian0206/evidence-graph/pull/4) 已合并 |
-| 4 | `chore/pr-review-skill-setup` | 普通/可信基线 Claude 审核、自动修复、复审和自动合并 | PR [#6](https://github.com/Ailian0206/evidence-graph/pull/6) 的完整门禁和 CI 通过 |
+| 4 | `chore/pr-review-skill-setup` | 独立 Claude Code PR 审核流程 | PR [#6](https://github.com/Ailian0206/evidence-graph/pull/6) 已合并；PR [#8](https://github.com/Ailian0206/evidence-graph/pull/8) 正在简化流程 |
 | 5 | `fix/source-hash-project-scope-v2` | 来源内容哈希限制为项目内唯一 | RED-GREEN 证据、完整模块门禁和全自动 PR 审核通过 |
 | 6 | `feat/evidence-workspace` | 主张列表、图谱、来源查看器、审核动作和响应式应用 | 桌面/移动端 E2E 和图谱交互测试通过 |
 | 7 | `feat/managed-deployment` | Supabase Auth/RLS/pgvector、Inngest、Sentry 和 Vercel | 本地门禁加上授权后的生产冒烟测试 |
@@ -28,4 +28,4 @@
 
 ## 当前模块
 
-完成 PR [#6](https://github.com/Ailian0206/evidence-graph/pull/6) 的全自动审核门禁并合并；随后立即进入 `fix/source-hash-project-scope-v2`，按 TDD 修复跨项目来源哈希冲突。
+完成 PR [#8](https://github.com/Ailian0206/evidence-graph/pull/8) 的独立 Claude Code 审核流程简化，然后进入 `feat/evidence-workspace` 模块。
