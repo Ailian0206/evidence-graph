@@ -31,7 +31,56 @@
     "claims": "Claims",
     "sources": "Sources",
     "searches": "Searches",
+    "tokens": "Tokens",
     "estimatedCost": "Estimated cost",
+    "claimCount": "{count} claims",
+    "evidenceCount": "{count} evidence links",
+    "reviewFilter": "Filter by human review status",
+    "currentStatus": "Current review status",
+    "relationFilter": "Filter by evidence relation",
+    "graphTitle": "Claim and evidence relations",
+    "graphPreparing": "Graph interaction connects in the next step",
+    "graphElementCount": "The current model contains {count} graph elements",
+    "emptyClaims": "No claims match the current filters.",
+    "noSource": "Select a claim to inspect its source",
+    "openSource": "Open original page",
+    "run": {
+      "ready": "Run complete"
+    },
+    "panels": {
+      "claims": "Claims",
+      "graph": "Graph",
+      "source": "Source"
+    },
+    "status": {
+      "all": "All",
+      "pending": "Pending",
+      "accepted": "Accepted",
+      "rejected": "Rejected"
+    },
+    "relation": {
+      "supports": "Supports",
+      "rebuts": "Rebuts",
+      "qualifies": "Qualifies",
+      "context": "Context"
+    },
+    "strength": {
+      "weak": "Weak",
+      "moderate": "Moderate",
+      "strong": "Strong"
+    },
+    "actions": {
+      "accept": "Accept claim",
+      "reject": "Reject claim",
+      "reset": "Reset to pending"
+    },
+    "sourceMeta": {
+      "title": "Source title",
+      "author": "Author",
+      "retrieved": "Retrieved",
+      "url": "Original URL",
+      "unknown": "Not provided"
+    },
     "loadingTitle": "Loading research workspace",
     "loadingDescription": "Preparing claims, evidence relations, and saved source text.",
     "errorTitle": "Research workspace failed to load",

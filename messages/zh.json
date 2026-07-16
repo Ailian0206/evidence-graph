@@ -31,7 +31,56 @@
     "claims": "主张",
     "sources": "来源",
     "searches": "搜索",
+    "tokens": "Token",
     "estimatedCost": "估算成本",
+    "claimCount": "{count} 条主张",
+    "evidenceCount": "{count} 条证据",
+    "reviewFilter": "按人工审核状态筛选",
+    "currentStatus": "当前审核状态",
+    "relationFilter": "按证据关系筛选",
+    "graphTitle": "主张与证据关系",
+    "graphPreparing": "图谱交互将在下一步接入",
+    "graphElementCount": "当前模型包含 {count} 个图谱元素",
+    "emptyClaims": "当前筛选条件下没有主张。",
+    "noSource": "选择主张后查看关联来源",
+    "openSource": "打开原网页",
+    "run": {
+      "ready": "运行完成"
+    },
+    "panels": {
+      "claims": "Claims",
+      "graph": "Graph",
+      "source": "Source"
+    },
+    "status": {
+      "all": "全部",
+      "pending": "待审核",
+      "accepted": "已接受",
+      "rejected": "已拒绝"
+    },
+    "relation": {
+      "supports": "支持",
+      "rebuts": "反驳",
+      "qualifies": "限定",
+      "context": "上下文"
+    },
+    "strength": {
+      "weak": "弱",
+      "moderate": "中",
+      "strong": "强"
+    },
+    "actions": {
+      "accept": "接受主张",
+      "reject": "拒绝主张",
+      "reset": "恢复待审核"
+    },
+    "sourceMeta": {
+      "title": "来源标题",
+      "author": "作者",
+      "retrieved": "获取时间",
+      "url": "原始 URL",
+      "unknown": "未提供"
+    },
     "loadingTitle": "正在载入研究工作台",
     "loadingDescription": "正在准备主张、证据关系和保存的原文。",
     "errorTitle": "研究工作台载入失败",

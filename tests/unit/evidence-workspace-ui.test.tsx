@@ -1,0 +1,71 @@
+import { cleanup, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { NextIntlClientProvider } from "next-intl";
+import { afterEach, describe, expect, it } from "vitest";
+
+import messages from "../../messages/zh.json";
+import { EvidenceWorkspace } from "@/components/evidence-workspace/evidence-workspace";
+import { createEvidenceWorkspaceFixture } from "@/features/research/evidence-workspace-fixture";
+
+const renderWorkspace = () =>
+  render(
+    <NextIntlClientProvider locale="zh" messages={messages}>
+      <EvidenceWorkspace initialData={createEvidenceWorkspaceFixture("zh")} />
+    </NextIntlClientProvider>,
+  );
+
+afterEach(cleanup);
+
+describe("evidence workspace claim review", () => {
+  it("filters the claim list by human review status", async () => {
+    const user = userEvent.setup();
+    const workspace = createEvidenceWorkspaceFixture("zh");
+    const acceptedClaim = workspace.claims.find(
+      (claim) => claim.reviewStatus === "accepted",
+    );
+    const pendingClaim = workspace.claims.find(
+      (claim) => claim.reviewStatus === "pending",
+    );
+    renderWorkspace();
+
+    await user.click(screen.getByRole("button", { name: "已接受" }));
+
+    expect(screen.getByRole("button", { name: acceptedClaim?.statement })).toBeVisible();
+    expect(screen.queryByRole("button", { name: pendingClaim?.statement })).toBeNull();
+  });
+
+  it("accepts and rejects a claim without changing the model statement", async () => {
+    const user = userEvent.setup();
+    const workspace = createEvidenceWorkspaceFixture("zh");
+    const targetClaim = workspace.claims[0];
+    renderWorkspace();
+
+    await user.click(screen.getByRole("button", { name: targetClaim.statement }));
+    await user.click(screen.getByRole("button", { name: "接受主张" }));
+
+    const selectedClaim = screen.getByTestId("selected-claim");
+    expect(within(selectedClaim).getByText(targetClaim.statement)).toBeVisible();
+    expect(
+      within(selectedClaim).getByRole("status", { name: "当前审核状态" }),
+    ).toHaveTextContent("已接受");
+
+    await user.click(screen.getByRole("button", { name: "拒绝主张" }));
+
+    expect(within(selectedClaim).getByText(targetClaim.statement)).toBeVisible();
+    expect(
+      within(selectedClaim).getByRole("status", { name: "当前审核状态" }),
+    ).toHaveTextContent("已拒绝");
+  });
+
+  it("hides claims when their only evidence relation is disabled", async () => {
+    const user = userEvent.setup();
+    const workspace = createEvidenceWorkspaceFixture("zh");
+    const supportedClaim = workspace.claims[0];
+    renderWorkspace();
+
+    await user.click(screen.getByRole("checkbox", { name: "支持" }));
+
+    expect(screen.queryByRole("button", { name: supportedClaim.statement })).toBeNull();
+    expect(screen.getByRole("checkbox", { name: "支持" })).not.toBeChecked();
+  });
+});
