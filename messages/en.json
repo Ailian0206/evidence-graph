@@ -124,6 +124,8 @@
     },
     "loadingTitle": "Loading research workspace",
     "loadingDescription": "Preparing claims, evidence relations, and saved source text.",
+    "emptyTitle": "No claims are ready for review",
+    "emptyDescription": "Claims and linked evidence will appear here after extraction completes.",
     "errorTitle": "Research workspace failed to load",
     "errorDescription": "No data was changed. You can reload the current research project.",
     "retry": "Reload workspace",

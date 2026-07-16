@@ -4,6 +4,49 @@
   color: #1d211d;
 }
 
+.workspaceState {
+  display: grid;
+  min-height: calc(100svh - var(--header-height));
+  padding: 48px 24px;
+  place-content: center;
+  place-items: center;
+  background: #e9ebe6;
+  color: #1d211d;
+  gap: 10px;
+  text-align: center;
+}
+
+.workspaceState > svg {
+  color: var(--vermilion-dark);
+}
+
+.workspaceState[data-workspace-state="loading"] > svg {
+  color: var(--teal);
+  animation: workspace-spin 900ms linear infinite;
+}
+
+.workspaceState h1 {
+  max-width: 520px;
+  margin: 5px 0 0;
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.workspaceState p {
+  max-width: 520px;
+  margin: 0 0 12px;
+  color: #5e655d;
+  font-size: 13px;
+}
+
+@keyframes workspace-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .projectBar {
   display: flex;
   min-height: 116px;

@@ -177,6 +177,20 @@ export function WorkspaceGraph({
     }
 
     const graph = cytoscape(options);
+    let resizeFrame = 0;
+    const resizeObserver = headless
+      ? undefined
+      : new ResizeObserver(() => {
+          cancelAnimationFrame(resizeFrame);
+          resizeFrame = requestAnimationFrame(() => {
+            if (container.clientWidth === 0 || container.clientHeight === 0) {
+              return;
+            }
+
+            graph.resize();
+            graph.fit(graph.elements(), 42);
+          });
+        });
     graphRef.current = graph;
     graph.on("tap", "node", (event) => {
       const data = event.target.data() as EvidenceGraphElementData;
@@ -184,8 +198,11 @@ export function WorkspaceGraph({
       onSelectRef.current(data);
     });
     graph.ready(() => setIsReady(true));
+    resizeObserver?.observe(container);
 
     return () => {
+      resizeObserver?.disconnect();
+      cancelAnimationFrame(resizeFrame);
       graph.destroy();
       graphRef.current = null;
     };

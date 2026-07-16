@@ -1,10 +1,11 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NextIntlClientProvider } from "next-intl";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import messages from "../../messages/zh.json";
 import { EvidenceWorkspace } from "@/components/evidence-workspace/evidence-workspace";
+import { WorkspaceState } from "@/components/evidence-workspace/workspace-state";
 import { createEvidenceWorkspaceFixture } from "@/features/research/evidence-workspace-fixture";
 
 const renderWorkspace = () =>
@@ -67,5 +68,56 @@ describe("evidence workspace claim review", () => {
 
     expect(screen.queryByRole("button", { name: supportedClaim.statement })).toBeNull();
     expect(screen.getByRole("checkbox", { name: "支持" })).not.toBeChecked();
+  });
+});
+
+describe("evidence workspace states", () => {
+  it("renders an empty state when a project has no reviewable claims", () => {
+    const workspace = createEvidenceWorkspaceFixture("zh");
+
+    render(
+      <NextIntlClientProvider locale="zh" messages={messages}>
+        <EvidenceWorkspace
+          initialData={{
+            ...workspace,
+            claims: [],
+            evidenceLinks: [],
+            claimRelations: [],
+          }}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    expect(screen.getByTestId("workspace-state")).toHaveAttribute(
+      "data-workspace-state",
+      "empty",
+    );
+    expect(
+      screen.getByRole("heading", { name: "还没有可审核的主张" }),
+    ).toBeVisible();
+  });
+
+  it("renders loading and recoverable failure states", async () => {
+    const user = userEvent.setup();
+    const retry = vi.fn();
+    const { rerender } = render(
+      <NextIntlClientProvider locale="zh" messages={messages}>
+        <WorkspaceState state="loading" />
+      </NextIntlClientProvider>,
+    );
+
+    expect(screen.getByTestId("workspace-state")).toHaveAttribute(
+      "data-workspace-state",
+      "loading",
+    );
+
+    rerender(
+      <NextIntlClientProvider locale="zh" messages={messages}>
+        <WorkspaceState state="failed" onAction={retry} />
+      </NextIntlClientProvider>,
+    );
+    await user.click(screen.getByRole("button", { name: "重新载入" }));
+
+    expect(retry).toHaveBeenCalledTimes(1);
   });
 });

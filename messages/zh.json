@@ -124,6 +124,8 @@
     },
     "loadingTitle": "正在载入研究工作台",
     "loadingDescription": "正在准备主张、证据关系和保存的原文。",
+    "emptyTitle": "还没有可审核的主张",
+    "emptyDescription": "研究运行完成提取后，主张和关联证据会显示在这里。",
     "errorTitle": "研究工作台载入失败",
     "errorDescription": "数据没有被修改，可以重新载入当前研究项目。",
     "retry": "重新载入",

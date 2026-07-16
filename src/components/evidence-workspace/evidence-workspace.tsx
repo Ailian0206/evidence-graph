@@ -26,6 +26,7 @@ import { WorkspaceClaimList } from "./workspace-claim-list";
 import { WorkspaceGraph } from "./workspace-graph";
 import { WorkspaceRunLog } from "./workspace-run-log";
 import { WorkspaceSourceViewer } from "./workspace-source-viewer";
+import { WorkspaceState } from "./workspace-state";
 
 const reviewFilters: ClaimReviewFilter[] = [
   "all",
@@ -37,6 +38,14 @@ const mobileTabs = ["claims", "graph", "source", "log"] as const;
 type MobileTab = (typeof mobileTabs)[number];
 
 export function EvidenceWorkspace({ initialData }: { initialData: EvidenceWorkspaceData }) {
+  if (initialData.claims.length === 0) {
+    return <WorkspaceState state="empty" />;
+  }
+
+  return <EvidenceWorkspaceReady initialData={initialData} />;
+}
+
+function EvidenceWorkspaceReady({ initialData }: { initialData: EvidenceWorkspaceData }) {
   const t = useTranslations("Workspace");
   const [claims, setClaims] = useState(initialData.claims);
   const [reviewFilter, setReviewFilter] = useState<ClaimReviewFilter>("all");
