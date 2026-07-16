@@ -1,0 +1,1 @@
+-- Deterministic public snapshots will be added after the persistent adapters exist.

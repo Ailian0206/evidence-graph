@@ -109,13 +109,13 @@ git commit -m "build(deploy): 建立托管环境契约"
 - 创建：`supabase/tests/01_schema_constraints.sql`
 - 修改：`package.json`
 
-- [ ] **步骤 1：初始化本地 Supabase 配置**
+- [x] **步骤 1：初始化本地 Supabase 配置**
 
 运行：`npx supabase init`
 
 保留 CLI 生成的本地端口配置，不连接远端项目。
 
-- [ ] **步骤 2：先写数据库约束 RED 测试**
+- [x] **步骤 2：先写数据库约束 RED 测试**
 
 pgTAP 必须验证：
 
@@ -126,33 +126,33 @@ pgTAP 必须验证：
 5. 删除项目级联删除所有来源、Chunk、Claim、关系、报告、运行日志和审计事件。
 6. 每个 owner 只能存在一个 `queued/running` 运行。
 
-- [ ] **步骤 3：运行数据库测试确认 RED**
+- [x] **步骤 3：运行数据库测试确认 RED**
 
 运行：
 
 ```bash
-npx supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor
-npx supabase test db supabase/tests/01_schema_constraints.sql
+npx supabase start -x studio,imgproxy,edge-runtime,gotrue,kong,logflare,mailpit,postgres-meta,postgrest,realtime,storage-api,supavisor,vector
+npx supabase test db --local supabase/tests/01_schema_constraints.sql
 ```
 
 预期：目标表或约束不存在，测试失败。
 
-- [ ] **步骤 4：实现迁移**
+- [x] **步骤 4：实现迁移**
 
 迁移创建 `profiles`、`projects`、`research_runs`、`sources`、`source_chunks`、`claims`、`evidence_links`、`claim_relations`、`workflow_checkpoints`、`run_logs`、`reports`、`usage_monthly`、`audit_events`。所有子表包含可验证的 `project_id` 复合外键；`sources` 使用 `(project_id, content_hash)` 唯一约束；Evidence Link 触发器验证精确 Quote；向量索引使用 HNSW `vector_cosine_ops`。
 
-- [ ] **步骤 5：验证 GREEN**
+- [x] **步骤 5：验证 GREEN**
 
 运行：
 
 ```bash
 npx supabase db reset
-npx supabase test db supabase/tests/01_schema_constraints.sql
+npx supabase test db --local supabase/tests/01_schema_constraints.sql
 ```
 
 预期：全部 pgTAP 用例通过。
 
-- [ ] **步骤 6：提交**
+- [x] **步骤 6：提交**
 
 ```bash
 git add package.json supabase
