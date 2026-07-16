@@ -4,10 +4,11 @@
 
 Evidence Graph 是一个可追溯的 AI 研究工作台，也是 Ailian 作品集中的主项目。MVP 把研究问题转换为持久化的来源、主张、证据关系、冲突和带引文的公开报告。
 
-作品集只包含两个真实项目：
+作品集包含三个真实项目：
 
 - Evidence Graph：本仓库开发的主项目。
-- AI Photo Studio CN：已有的公开工程案例。
+- AI Photo Studio CN：多模态写真 SaaS 工程案例。
+- MCP Guardian：MCP 工具调用前的策略与审批网关（MVP 已本地可演示）。
 
 MVP 不增加 ProjectPilot AI、通用聊天、计费、团队、浏览器扩展、OCR 导入或自托管模型。
 

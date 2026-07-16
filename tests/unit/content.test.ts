@@ -19,10 +19,11 @@ describe("public portfolio content", () => {
     expect(profile.role.en).toContain("Senior frontend engineer");
   });
 
-  it("publishes exactly the two confirmed projects", () => {
+  it("publishes exactly the three confirmed projects", () => {
     expect(publicProjects.map((project) => project.slug)).toEqual([
       "evidence-graph",
       "ai-photo-studio-cn",
+      "mcp-guardian",
     ]);
     expect(
       publicProjects.some((project) => project.slug.includes("projectpilot")),
