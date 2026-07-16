@@ -7,7 +7,7 @@
 - 阶段：托管部署里程碑开发中。
 - 分支：`feat/managed-deployment`，在隔离 worktree 中开发。
 - PR：[#11](https://github.com/Ailian0206/evidence-graph/pull/11) 已通过独立 Claude 审核和 GitHub CI，并以 merge commit `74c3b49` 合并。
-- 当前任务：Supabase 数据模型、RLS 和 GitHub 登录边界已完成，下一步实现项目持久化、Dashboard 和新建研究。
+- 当前任务：项目持久化、Dashboard 和新建研究已完成，下一步接入 Inngest 事件和确定性工作流入口。
 - 外部 Provider 调用：已禁用。
 - 生产部署：未配置。
 - Node.js：本地和 CI 使用 `v22.22.1`。
@@ -64,9 +64,13 @@
 - Supabase Auth 会话单测 4 个、Auth 与工作台聚焦 E2E 11 个通过；当前全量 85 个单元测试、类型检查、lint 和生产构建通过。
 - 登录页已覆盖 390x844、1024x768 和 1440x1000 三种尺寸，无横向溢出、文字裁切或异常重叠。
 - 图谱连续键盘导航竞态已增加确定性回归测试，目标 E2E 连续运行 10 次通过。
+- 项目 Store、Supabase query adapter、Server Actions、Dashboard 和新建研究表单已完成；所有读写都重新携带当前 `ownerId`，创建前检查每月 3 次上限。
+- 本地 Supabase 真实登录态下，项目列表、RLS 创建和归档操作通过；PostgREST `timestamptz` 偏移格式已在映射边界标准化。
+- 项目工作区门禁通过 99 个单元测试、13 个 Auth/工作台/项目 E2E、类型检查、lint 和生产构建。
+- Dashboard 和新建研究页已覆盖 390x844、1024x768 和 1440x1000 三种尺寸，无横向溢出、裁切或控件重叠。
 
 ## 下一步
 
-1. 按 TDD 实现项目持久化、Dashboard 和新建研究，不触发真实 Provider。
-2. 继续完成 Inngest、Sentry、Vercel 的本地集成边界和部署文档。
+1. 按 TDD 接入 Inngest 事件、所有权复核和确定性工作流入口，不触发真实 Provider。
+2. 继续完成 Sentry、Vercel 的本地集成边界和部署文档。
 3. 创建账号资源、写入密钥和运行生产冒烟测试前取得明确授权。

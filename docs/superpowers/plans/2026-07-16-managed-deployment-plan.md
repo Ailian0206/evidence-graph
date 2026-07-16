@@ -276,25 +276,25 @@ git commit -m "feat(auth): 接入 Supabase GitHub 登录"
 - 修改：`messages/zh.json`
 - 修改：`messages/en.json`
 
-- [ ] **步骤 1：编写 Repository RED 测试**
+- [x] **步骤 1：编写 Repository RED 测试**
 
 使用可注入的 Supabase query adapter 验证：所有 list/get/update/delete 都携带当前 `ownerId`；数据库返回空结果统一映射为 `PROJECT_NOT_FOUND`；创建项目使用 Zod 校验标题、问题和语言；月度次数达到 3 时在写入前返回 `MONTHLY_RUN_LIMIT_EXCEEDED`。
 
-- [ ] **步骤 2：运行测试确认 RED**
+- [x] **步骤 2：运行测试确认 RED**
 
 运行：`npm run test:unit -- tests/unit/supabase-project-repository.test.ts`
 
 预期：持久化适配器不存在。
 
-- [ ] **步骤 3：实现最小持久化边界**
+- [x] **步骤 3：实现最小持久化边界**
 
 定义与现有内存仓库一致的异步 `ProjectStore` 接口。Supabase adapter 将 snake_case 数据显式映射到领域类型，不把数据库 row 直接泄漏给组件；每个 mutation 在 Server Action 内重新执行 `requireUser` 和 Zod 解析，再调用 adapter。
 
-- [ ] **步骤 4：实现 Dashboard 和新建研究页面**
+- [x] **步骤 4：实现 Dashboard 和新建研究页面**
 
 Dashboard 展示当前用户项目、状态和最近更新时间；新建研究只收集标题、问题、语言及最多 5 个 URL，不触发真实 Provider。中英文文案都进入 messages 文件。表单错误、空状态和 pending 状态必须可访问。
 
-- [ ] **步骤 5：验证 GREEN**
+- [x] **步骤 5：验证 GREEN**
 
 运行：
 
@@ -305,7 +305,7 @@ npx playwright test tests/e2e/project-dashboard.spec.ts
 
 预期：项目 CRUD、跨用户 404、月度限制和双语页面通过。
 
-- [ ] **步骤 6：提交**
+- [x] **步骤 6：提交**
 
 ```bash
 git add src/features/projects src/app/[locale]/app src/components/projects messages tests

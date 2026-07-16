@@ -32,6 +32,57 @@
     "unconfigured": "Managed sign-in is not configured",
     "error": "Sign-in did not complete. Try again."
   },
+  "Projects": {
+    "newResearch": "New research",
+    "projectListLabel": "Research projects",
+    "dashboard": {
+      "eyebrow": "Managed workspace",
+      "title": "Research projects",
+      "description": "Review project status and recent updates, or start a traceable research project."
+    },
+    "empty": {
+      "title": "No research projects yet",
+      "description": "Your first research project will appear here after it is created."
+    },
+    "status": {
+      "active": "Active",
+      "archived": "Archived",
+      "deleted": "Deleted"
+    },
+    "language": {
+      "zh": "Chinese",
+      "en": "English"
+    },
+    "updated": "Updated {date}",
+    "archive": "Archive {title}",
+    "delete": "Delete {title}",
+    "deleteConfirm": "Delete “{title}”? This action cannot be undone.",
+    "form": {
+      "eyebrow": "New research",
+      "title": "Define the research question",
+      "description": "Save the research scope, core question, and sources to review.",
+      "fields": {
+        "title": "Project title",
+        "question": "Research question",
+        "language": "Research language",
+        "manualUrls": "Source links (optional, up to 5)"
+      },
+      "addUrl": "Add source link",
+      "urlLabel": "Source link {index}",
+      "removeUrl": "Remove source link {index}",
+      "back": "Back to projects",
+      "submit": "Create research",
+      "submitting": "Creating...",
+      "errors": {
+        "title": "Enter a project title between 1 and 120 characters.",
+        "question": "Enter a research question between 1 and 2,000 characters.",
+        "language": "Select a supported research language.",
+        "manualUrls": "Source links must be valid URLs, with no more than 5 entries.",
+        "invalid": "Check the errors in the form.",
+        "monthlyLimit": "The monthly limit of 3 research runs has been reached."
+      }
+    }
+  },
   "Workspace": {
     "eyebrow": "Research run / Evidence review",
     "backToPreview": "Back to product entry",
