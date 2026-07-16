@@ -63,14 +63,14 @@ export const publicProjects: PortfolioProject[] = [
       en: "Trace platforms observe after the fact, but cannot stop a dangerous shell command, path escape, or secrets in HTTP args.",
     },
     approach: {
-      zh: "YAML 策略引擎 + 本地 Gateway 代理 tools/call，默认 fail-closed，并提供 CLI 与 Web 两条审批路径。",
-      en: "YAML policy engine plus a local gateway proxying tools/call, fail-closed by default, with CLI and web approval paths.",
+      zh: "本地 Gateway 作为 MCP 中间层代理 tools/call；YAML fail-closed 策略；一键写入 Cursor/Codex。Web 仅可选演示与回放，日常审批走 CLI。",
+      en: "A local gateway sits in front of tools/call with fail-closed YAML policies and one-command Cursor/Codex install. Web is optional; day-to-day approvals use the CLI.",
     },
     proof: {
-      zh: "A1–A8 与 6 个红队场景脚本可重复通过；公开 /demo 与 Playwright smoke 已覆盖。",
-      en: "Repeatable A1–A8 and six red-team scenarios; public /demo and Playwright smoke are green.",
+      zh: "bash scripts/install.sh 一键接入；A1–A8 与红队脚本可重复；作品集见本站 Work → MCP Guardian。",
+      en: "One-shot bash scripts/install.sh; repeatable A1–A8 and red-team scripts; listed on this portfolio Work page.",
     },
-    tags: ["TypeScript", "MCP", "Policy", "Playwright"],
+    tags: ["TypeScript", "MCP", "Policy", "Cursor", "Codex"],
     repositoryUrl: "https://github.com/Ailian0206/mcp-guardian",
   },
 ];
