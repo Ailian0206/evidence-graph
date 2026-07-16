@@ -7,7 +7,7 @@
 - 阶段：托管部署里程碑开发中。
 - 分支：`feat/managed-deployment`，在隔离 worktree 中开发。
 - PR：[#11](https://github.com/Ailian0206/evidence-graph/pull/11) 已通过独立 Claude 审核和 GitHub CI，并以 merge commit `74c3b49` 合并。
-- 当前任务：Inngest 事件和确定性工作流入口已完成，下一步增加 Sentry、Analytics 和安全响应头。
+- 当前任务：Sentry、Analytics 和安全响应头已完成，下一步把数据库与 Provider 门禁接入 CI。
 - 外部 Provider 调用：已禁用。
 - 生产部署：未配置。
 - Node.js：本地和 CI 使用 `v22.22.1`。
@@ -73,9 +73,13 @@
 - `/api/inngest` 已通过官方 Next App Router 适配器导出 `GET/POST/PUT`；本地健康响应只返回能力布尔值，不泄露环境变量。
 - Inngest 任务门禁通过 108 个单元测试、14 个 Auth/工作台/项目/Inngest E2E、类型检查、lint、生产构建和真实 Provider 扫描。
 - 当前函数执行器只使用 fixture providers 和内存 workflow store，不调用真实 OpenAI/Tavily；尚未连接外部 Inngest，也未发送真实事件。
+- Next.js 16 服务端和客户端 instrumentation 已接入可选 Sentry；缺少 DSN 时不初始化，完整上传凭据缺失时不启用 source map 上传。
+- Sentry `beforeSend` 递归移除 email、GitHub 用户名、研究问题、来源正文、quote 和 Provider payload；Vercel Analytics 不接收自定义研究数据。
+- 全站已增加 nosniff、严格 Referrer Policy、受限 Permissions Policy、`DENY` frame 和稳定 `frame-ancestors` 防护。
+- 监控与安全门禁的完整 `npm run test:ci` 通过 lint、typecheck、111 个单元测试、生产构建和 36 个 E2E。
 
 ## 下一步
 
-1. 按 TDD 增加 Sentry、Vercel Analytics 和安全响应头，缺少 DSN 时保持无网络行为。
-2. 继续完成 CI 数据库门禁和部署文档。
+1. 把本地 Supabase 数据库测试和 Provider 边界扫描接入 GitHub CI。
+2. 完成部署、回滚、备份和生产冒烟确认门禁文档。
 3. 创建账号资源、写入密钥和运行生产冒烟测试前取得明确授权。

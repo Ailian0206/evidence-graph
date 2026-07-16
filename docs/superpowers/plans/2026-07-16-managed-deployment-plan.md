@@ -375,25 +375,25 @@ git commit -m "feat(workflow): 接入 Inngest 运行入口"
 - 创建：`tests/unit/observability-config.test.ts`
 - 创建：`tests/e2e/security-headers.spec.ts`
 
-- [ ] **步骤 1：编写可选监控 RED 测试**
+- [x] **步骤 1：编写可选监控 RED 测试**
 
 验证缺少 DSN 时初始化函数不发送事件且 build 不失败；设置测试 DSN 时 Sentry 只接收脱敏后的错误上下文；Analytics 组件存在但不采集用户研究问题、来源正文和运行成本。
 
-- [ ] **步骤 2：运行测试确认 RED**
+- [x] **步骤 2：运行测试确认 RED**
 
 运行：`npm run test:unit -- tests/unit/observability-config.test.ts`
 
 预期：监控配置不存在。
 
-- [ ] **步骤 3：实现 Next 16 instrumentation**
+- [x] **步骤 3：实现 Next 16 instrumentation**
 
 按仓库内 Next 16 文档使用 `src/instrumentation.ts` 和 `src/instrumentation-client.ts`；Node/Edge 配置按 `NEXT_RUNTIME` 条件导入。Sentry `beforeSend` 删除 email、GitHub 用户名、研究问题、正文、quote 和 Provider payload。`withSentryConfig` 不在缺少 auth token 时上传 source map。
 
-- [ ] **步骤 4：增加 Analytics 和安全 Header**
+- [x] **步骤 4：增加 Analytics 和安全 Header**
 
 在根 layout 添加 Vercel Analytics。`next.config.ts` 添加 `X-Content-Type-Options`、`Referrer-Policy`、`Permissions-Policy` 和 `frame-ancestors` 等稳定 Header；不得用会破坏 Next hydration 的临时 CSP。
 
-- [ ] **步骤 5：验证 GREEN**
+- [x] **步骤 5：验证 GREEN**
 
 运行：
 
@@ -405,7 +405,7 @@ npm run build
 
 预期：无真实 DSN 的 CI 通过，安全 Header 可观测，公开页面无回归。
 
-- [ ] **步骤 6：提交**
+- [x] **步骤 6：提交**
 
 ```bash
 git add src/instrumentation.ts src/instrumentation-client.ts sentry.*.config.ts src/app next.config.ts tests
