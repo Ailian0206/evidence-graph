@@ -4,10 +4,10 @@
 
 ## 当前阶段
 
-- 阶段：证据工作台本地里程碑已完成，等待唯一 Draft PR 闭环。
+- 阶段：证据工作台里程碑 PR 自动审核中。
 - 分支：`feat/evidence-workspace`。
-- PR：尚未创建；本地里程碑完成后只创建一个 Draft PR。
-- 当前任务：本地完整门禁已通过，下一步创建本模块唯一 Draft PR 并执行独立 Claude 审核。
+- PR：Draft [#11](https://github.com/Ailian0206/evidence-graph/pull/11) 已创建，等待独立 Claude 审核和 GitHub CI。
+- 当前任务：当前进程完成 PR #11 的独立审核、必要修复、重审、CI 和 merge commit。
 - 外部 Provider 调用：已禁用。
 - 生产部署：未配置。
 - Node.js：本地和 CI 使用 `v22.22.1`。
@@ -32,7 +32,7 @@
 | 确定性研究工作流 | 已完成 | PR [#4](https://github.com/Ailian0206/evidence-graph/pull/4) 已通过 merge commit `2c8b90d` 合并 |
 | 全自动 PR 审核 | 已完成 | PR [#6](https://github.com/Ailian0206/evidence-graph/pull/6)、[#8](https://github.com/Ailian0206/evidence-graph/pull/8) 和 [#10](https://github.com/Ailian0206/evidence-graph/pull/10) 已合并；当前进程串行完成 PR 闭环 |
 | Source hash 项目隔离 | 已完成 | PR [#7](https://github.com/Ailian0206/evidence-graph/pull/7) 已通过 merge commit `8bc6f39` 合并 |
-| 证据工作台 | 本地已完成 | 桌面三栏、移动端四标签、Claim 审核、Cytoscape 图谱、来源查看和 Run Log 已通过完整门禁 |
+| 证据工作台 | PR 审核中 | Draft PR [#11](https://github.com/Ailian0206/evidence-graph/pull/11) 覆盖完整里程碑，桌面/移动端及完整门禁已通过 |
 | 托管部署 | 待开始 | 获得账号授权后完成 Supabase、Inngest、Vercel 配置和生产冒烟测试 |
 
 ## 验证摘要
@@ -61,6 +61,6 @@
 
 ## 下一步
 
-1. 推送 `feat/evidence-workspace` 并创建本模块唯一 Draft PR。
-2. 当前进程运行独立 Claude 审核；有问题就在原 PR 修复并重审。
+1. 当前进程对 PR #11 运行独立 Claude 审核。
+2. 有问题就在 PR #11 修复、验证、提交并重审，不创建新 PR。
 3. 当前 head 审核通过且 CI 成功后使用 merge commit 合并。
