@@ -433,26 +433,77 @@
   color: #f3f2ea;
 }
 
-.graphPlaceholder {
+.graphExperience {
   position: absolute;
   inset: 0;
   display: grid;
-  place-content: center;
-  place-items: center;
+  grid-template-rows: minmax(0, 1fr) auto auto;
+}
+
+.cytoscapeCanvas {
+  position: relative;
+  min-width: 0;
+  min-height: 390px;
   background-image: linear-gradient(#242a24 1px, transparent 1px),
     linear-gradient(90deg, #242a24 1px, transparent 1px);
   background-size: 48px 48px;
-  gap: 7px;
-  text-align: center;
 }
 
-.graphPlaceholder strong {
-  font-size: 12px;
+.keyboardHint {
+  margin: 0;
+  padding: 7px 12px;
+  border-top: 1px solid #343b35;
+  color: #8f988f;
+  font-size: 9px;
 }
 
-.graphPlaceholder span {
-  color: #9da59d;
-  font-size: 10px;
+.nodeNavigator {
+  display: flex;
+  min-width: 0;
+  padding: 8px 10px 10px;
+  overflow-x: auto;
+  border-top: 1px solid #343b35;
+  gap: 6px;
+}
+
+.nodeNavigator button {
+  display: inline-flex;
+  max-width: 190px;
+  height: 30px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  padding: 0 9px;
+  overflow: hidden;
+  border: 1px solid #4b554c;
+  border-radius: 3px;
+  background: #222923;
+  color: #dfe4dc;
+  cursor: pointer;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nodeNavigator button[aria-pressed="true"] {
+  border-color: #f0f2eb;
+  background: #384139;
+}
+
+.nodeNavigator button > span {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: #bfc7be;
+}
+
+.nodeNavigator button[data-node-kind="evidence"] > span {
+  background: #51a797;
+}
+
+.nodeNavigator button[data-node-kind="source"] > span {
+  background: #c8a25a;
 }
 
 .sourcePanel {
@@ -471,6 +522,14 @@
 .sourceBody {
   min-width: 0;
   padding: 22px 20px;
+}
+
+.sourceDomain {
+  display: block;
+  margin-bottom: 8px;
+  color: #6f756e;
+  font-size: 10px;
+  font-weight: 700;
 }
 
 .relationBadge {

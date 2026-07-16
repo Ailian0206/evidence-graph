@@ -39,13 +39,20 @@
     "currentStatus": "当前审核状态",
     "relationFilter": "按证据关系筛选",
     "graphTitle": "主张与证据关系",
-    "graphPreparing": "图谱交互将在下一步接入",
-    "graphElementCount": "当前模型包含 {count} 个图谱元素",
     "emptyClaims": "当前筛选条件下没有主张。",
     "noSource": "选择主张后查看关联来源",
     "openSource": "打开原网页",
     "run": {
       "ready": "运行完成"
+    },
+    "graph": {
+      "ariaLabel": "证据关系图，使用方向键浏览节点，按回车选择",
+      "navigatorLabel": "图谱节点导航",
+      "keyboardHint": "方向键切换图谱节点，Enter 选择；鼠标可拖动画布和缩放。",
+      "claimNode": "主张",
+      "evidenceNode": "证据",
+      "sourceNode": "来源",
+      "labelSeparator": "："
     },
     "panels": {
       "claims": "Claims",

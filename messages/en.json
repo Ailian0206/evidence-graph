@@ -39,13 +39,20 @@
     "currentStatus": "Current review status",
     "relationFilter": "Filter by evidence relation",
     "graphTitle": "Claim and evidence relations",
-    "graphPreparing": "Graph interaction connects in the next step",
-    "graphElementCount": "The current model contains {count} graph elements",
     "emptyClaims": "No claims match the current filters.",
     "noSource": "Select a claim to inspect its source",
     "openSource": "Open original page",
     "run": {
       "ready": "Run complete"
+    },
+    "graph": {
+      "ariaLabel": "Evidence graph. Use arrow keys to browse nodes and Enter to select",
+      "navigatorLabel": "Graph node navigator",
+      "keyboardHint": "Use arrow keys to move between graph nodes and Enter to select. Drag or zoom the canvas with a pointer.",
+      "claimNode": "Claim",
+      "evidenceNode": "Evidence",
+      "sourceNode": "Source",
+      "labelSeparator": ": "
     },
     "panels": {
       "claims": "Claims",

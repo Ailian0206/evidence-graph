@@ -45,3 +45,53 @@ test.describe("evidence workspace routes", () => {
     );
   });
 });
+
+test.describe("evidence workspace graph", () => {
+  test("selects an evidence node and synchronizes its claim and source", async ({
+    page,
+  }) => {
+    await page.goto("/zh/app/research/demo");
+
+    const graph = page.getByTestId("workspace-graph");
+    await expect(graph).toHaveAttribute("data-graph-ready", "true");
+    await page
+      .getByRole("button", {
+        name: "证据：只保留页面级链接不足以证明事实段落",
+      })
+      .click();
+
+    await expect(
+      page.getByRole("button", {
+        name: "只有页面级链接也足以证明报告中的事实段落。",
+        exact: true,
+      }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("workspace-source")).toContainText(
+      "可引用报告的产品约束与反例记录",
+    );
+    await expect(page.getByTestId("workspace-source")).toContainText(
+      "只保留页面级链接不足以证明事实段落",
+    );
+  });
+
+  test("removes disabled evidence relations from the graph and claim list", async ({
+    page,
+  }) => {
+    await page.goto("/zh/app/research/demo");
+
+    const graph = page.getByTestId("workspace-graph");
+    const initialElementCount = Number(await graph.getAttribute("data-graph-elements"));
+    await page.getByRole("checkbox", { name: "反驳" }).click();
+
+    await expect(page.getByRole("checkbox", { name: "反驳" })).not.toBeChecked();
+    await expect(
+      page.getByRole("button", {
+        name: "只有页面级链接也足以证明报告中的事实段落。",
+        exact: true,
+      }),
+    ).toHaveCount(0);
+    await expect
+      .poll(async () => Number(await graph.getAttribute("data-graph-elements")))
+      .toBeLessThan(initialElementCount);
+  });
+});

@@ -3,8 +3,6 @@
 import {
   Check,
   CircleDot,
-  ExternalLink,
-  FileText,
   Network,
   RotateCcw,
   X,
@@ -19,11 +17,14 @@ import {
   reviewWorkspaceClaim,
   workspaceEvidenceRelations,
   type ClaimReviewFilter,
+  type EvidenceGraphElementData,
   type EvidenceWorkspaceData,
 } from "@/features/research/evidence-workspace";
 
 import styles from "./evidence-workspace.module.css";
 import { WorkspaceClaimList } from "./workspace-claim-list";
+import { WorkspaceGraph } from "./workspace-graph";
+import { WorkspaceSourceViewer } from "./workspace-source-viewer";
 
 const reviewFilters: ClaimReviewFilter[] = [
   "all",
@@ -40,6 +41,9 @@ export function EvidenceWorkspace({ initialData }: { initialData: EvidenceWorksp
     new Set(initialData.evidenceLinks.map((link) => link.relation)),
   );
   const [selectedClaimId, setSelectedClaimId] = useState(initialData.claims[0]?.id ?? "");
+  const [selectedEvidenceLinkId, setSelectedEvidenceLinkId] = useState(
+    initialData.evidenceLinks[0]?.id ?? "",
+  );
   const workspace = useMemo(() => ({ ...initialData, claims }), [claims, initialData]);
   const claimSummaries = useMemo(
     () => createWorkspaceClaimSummaries(workspace),
@@ -69,9 +73,10 @@ export function EvidenceWorkspace({ initialData }: { initialData: EvidenceWorksp
   const selectedSummary =
     claimSummaries.find(({ claim }) => claim.id === selectedClaimId) ?? claimSummaries[0];
   const selectedClaim = selectedSummary?.claim;
-  const selectedEvidence = selectedSummary?.evidenceLinks.find((link) =>
-    activeRelations.has(link.relation),
-  );
+  const selectedEvidence =
+    selectedSummary?.evidenceLinks.find(
+      (link) => link.id === selectedEvidenceLinkId && activeRelations.has(link.relation),
+    ) ?? selectedSummary?.evidenceLinks.find((link) => activeRelations.has(link.relation));
   const selectedChunk = selectedEvidence
     ? workspace.chunks.find((chunk) => chunk.id === selectedEvidence.chunkId)
     : undefined;
@@ -95,6 +100,42 @@ export function EvidenceWorkspace({ initialData }: { initialData: EvidenceWorksp
         reviewStatus,
       }),
     );
+  };
+  const handleSelectClaim = (claimId: string) => {
+    setSelectedClaimId(claimId);
+    const firstEvidence = workspace.evidenceLinks.find(
+      (link) => link.claimId === claimId && activeRelations.has(link.relation),
+    );
+
+    if (firstEvidence) {
+      setSelectedEvidenceLinkId(firstEvidence.id);
+    }
+  };
+  const handleSelectGraphNode = (data: EvidenceGraphElementData) => {
+    if (data.claimId) {
+      setSelectedClaimId(data.claimId);
+    }
+
+    if (data.evidenceLinkId) {
+      setSelectedEvidenceLinkId(data.evidenceLinkId);
+      return;
+    }
+
+    if (data.sourceId) {
+      const sourceChunkIds = new Set(
+        workspace.chunks
+          .filter((chunk) => chunk.sourceId === data.sourceId)
+          .map((chunk) => chunk.id),
+      );
+      const sourceEvidence = workspace.evidenceLinks.find(
+        (link) => sourceChunkIds.has(link.chunkId) && activeRelations.has(link.relation),
+      );
+
+      if (sourceEvidence) {
+        setSelectedClaimId(sourceEvidence.claimId);
+        setSelectedEvidenceLinkId(sourceEvidence.id);
+      }
+    }
   };
   const toggleRelation = (relation: (typeof workspaceEvidenceRelations)[number]) => {
     setActiveRelations((current) => {
@@ -178,7 +219,7 @@ export function EvidenceWorkspace({ initialData }: { initialData: EvidenceWorksp
             statusLabels={statusLabels}
             evidenceLabel={(count) => t("evidenceCount", { count })}
             emptyLabel={t("emptyClaims")}
-            onSelect={setSelectedClaimId}
+            onSelect={handleSelectClaim}
           />
           {selectedClaim && (
             <div className={styles.reviewDock} data-testid="selected-claim">
@@ -238,66 +279,33 @@ export function EvidenceWorkspace({ initialData }: { initialData: EvidenceWorksp
               </label>
             ))}
           </fieldset>
-          <div className={styles.graphCanvas} data-graph-elements={graphElements.length}>
-            <div className={styles.graphPlaceholder}>
-              <Network aria-hidden="true" size={34} />
-              <strong>{t("graphPreparing")}</strong>
-              <span>{t("graphElementCount", { count: graphElements.length })}</span>
-            </div>
+          <div className={styles.graphCanvas}>
+            <WorkspaceGraph
+              elements={graphElements}
+              selectedNodeId={
+                selectedEvidence
+                  ? `evidence:${selectedEvidence.id}`
+                  : `claim:${selectedClaim?.id ?? ""}`
+              }
+              labels={{
+                ariaLabel: t("graph.ariaLabel"),
+                navigatorLabel: t("graph.navigatorLabel"),
+                keyboardHint: t("graph.keyboardHint"),
+                claim: t("graph.claimNode"),
+                evidence: t("graph.evidenceNode"),
+                source: t("graph.sourceNode"),
+                separator: t("graph.labelSeparator"),
+              }}
+              onSelect={handleSelectGraphNode}
+            />
           </div>
         </section>
 
-        <aside className={`${styles.panel} ${styles.sourcePanel}`} aria-labelledby="source-title">
-          <header className={styles.panelHeader}>
-            <div>
-              <p>{t("panels.source")}</p>
-              <h2 id="source-title">{selectedSource?.domain ?? t("noSource")}</h2>
-            </div>
-            <FileText aria-hidden="true" size={19} />
-          </header>
-          {selectedEvidence && selectedSource ? (
-            <div className={styles.sourceBody}>
-              <span className={styles.relationBadge} data-relation={selectedEvidence.relation}>
-                {t(`relation.${selectedEvidence.relation}`)} · {t(`strength.${selectedEvidence.strength}`)}
-              </span>
-              <blockquote>{selectedEvidence.quote}</blockquote>
-              <p>{selectedEvidence.rationale}</p>
-              <dl>
-                <div>
-                  <dt>{t("sourceMeta.title")}</dt>
-                  <dd>{selectedSource.title}</dd>
-                </div>
-                <div>
-                  <dt>{t("sourceMeta.author")}</dt>
-                  <dd>{selectedSource.author ?? t("sourceMeta.unknown")}</dd>
-                </div>
-                <div>
-                  <dt>{t("sourceMeta.retrieved")}</dt>
-                  <dd>
-                    {new Intl.DateTimeFormat(workspace.locale, {
-                      dateStyle: "medium",
-                    }).format(new Date(selectedSource.retrievedAt))}
-                  </dd>
-                </div>
-                <div>
-                  <dt>{t("sourceMeta.url")}</dt>
-                  <dd>{selectedSource.canonicalUrl}</dd>
-                </div>
-              </dl>
-              <a
-                className={styles.sourceLink}
-                href={selectedSource.canonicalUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <ExternalLink aria-hidden="true" size={16} />
-                {t("openSource")}
-              </a>
-            </div>
-          ) : (
-            <p className={styles.emptySource}>{t("noSource")}</p>
-          )}
-        </aside>
+        <WorkspaceSourceViewer
+          locale={workspace.locale}
+          evidence={selectedEvidence}
+          source={selectedSource}
+        />
       </div>
     </section>
   );

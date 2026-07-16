@@ -37,7 +37,7 @@ export type WorkspaceClaimSummary = {
   relationCounts: Record<EvidenceLink["relation"], number>;
 };
 
-type EvidenceGraphElementData = {
+export type EvidenceGraphElementData = {
   id: string;
   label: string;
   kind:
