@@ -4,10 +4,10 @@
 
 ## 当前阶段
 
-- 阶段：来源内容哈希项目隔离已在本地完成，准备 Draft PR 和自动审核。
+- 阶段：来源内容哈希项目隔离 Draft PR 自动审核。
 - 分支：`fix/source-hash-project-scope-v2`。
-- PR：尚未创建；达到本地完整门禁后只创建一个 Draft PR。
-- 当前任务：创建一个 Draft PR，运行普通 Claude 审核并自动处理结果。
+- PR：Draft [#7](https://github.com/Ailian0206/evidence-graph/pull/7) 已创建，等待 Claude 审核和 CI。
+- 当前任务：运行普通 Claude 审核，自动处理 finding，并在门禁通过后合并。
 - 外部 Provider 调用：已禁用。
 - 生产部署：未配置。
 - Node.js：本地和 CI 使用 `v22.22.1`。
@@ -31,7 +31,7 @@
 | 研究领域基础 | 已完成 | PR [#3](https://github.com/Ailian0206/evidence-graph/pull/3) 已合并为 `3fef13c` |
 | 确定性研究工作流 | 已完成 | PR [#4](https://github.com/Ailian0206/evidence-graph/pull/4) 已通过 merge commit `2c8b90d` 合并 |
 | 全自动 PR 审核 | 已完成 | PR [#6](https://github.com/Ailian0206/evidence-graph/pull/6) 已通过 merge commit `c1daf16` 合并 |
-| Source hash 项目隔离 | 本地完成 | RED-GREEN 已确认，完整门禁通过；等待 Draft PR、Claude 审核和 CI |
+| Source hash 项目隔离 | Draft PR [#7](https://github.com/Ailian0206/evidence-graph/pull/7) | RED-GREEN 和完整门禁通过；等待 Claude 审核和 CI |
 | 证据工作台 | 待开始 | 桌面三栏、移动端标签页和图谱交互测试通过 |
 | 托管部署 | 待开始 | 获得账号授权后完成 Supabase、Inngest、Vercel 配置和生产冒烟测试 |
 
@@ -54,6 +54,6 @@
 
 ## 下一步
 
-1. 提交 source hash 项目隔离修复并创建一个 Draft PR。
-2. 从 PR 分支运行普通 `/pr-review`。
-3. 自动处理有效 finding，并在审核和 CI 通过后 merge commit 合并。
+1. 从 PR #7 分支运行普通 `/pr-review`。
+2. 自动处理有效 finding，并在 head SHA 改变后重新审核。
+3. Claude marker、标签和 CI 通过后 merge commit 合并。
