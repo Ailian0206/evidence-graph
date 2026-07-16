@@ -99,7 +99,10 @@ export const createInMemoryProjectRepository = (
         throw new Error("SOURCE_ALREADY_EXISTS");
       }
 
-      if (current.contentHash === source.contentHash) {
+      if (
+        current.projectId === source.projectId &&
+        current.contentHash === source.contentHash
+      ) {
         throw new Error("SOURCE_ALREADY_EXISTS");
       }
     }

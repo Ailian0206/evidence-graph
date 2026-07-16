@@ -4,15 +4,15 @@
 
 ## 当前阶段
 
-- 阶段：建立全自动 PR 审核门禁，并准备修复来源哈希的项目隔离问题。
-- 分支：`chore/pr-review-skill-setup`。
-- PR：[#6](https://github.com/Ailian0206/evidence-graph/pull/6) 正在补齐可信基线审核流程；当前分支验证完成后合并。
-- 当前任务：完成 PR #6，然后由 Codex 从最新 `main` 重新实现 source hash 项目隔离修复。
+- 阶段：来源内容哈希项目隔离 Draft PR 自动审核。
+- 分支：`fix/source-hash-project-scope-v2`。
+- PR：Draft [#7](https://github.com/Ailian0206/evidence-graph/pull/7) 已创建，等待 Claude 审核和 CI。
+- 当前任务：运行普通 Claude 审核，自动处理 finding，并在门禁通过后合并。
 - 外部 Provider 调用：已禁用。
 - 生产部署：未配置。
 - Node.js：本地和 CI 使用 `v22.22.1`。
 - Cursor Bugbot：本月额度已耗尽，不等待、不重复触发，也不作为当前合并门禁。
-- 独立 Claude 审核：PR #6 是用户批准的唯一一次流程引导；合并后所有 PR 都必须自动审核，协议 PR 使用可信基线模式。
+- 独立 Claude 审核：PR #6 已完成唯一一次流程引导；后续所有 PR 都必须自动审核，协议 PR 使用可信基线模式。
 
 ## 已确认的身份与作品集内容
 
@@ -30,8 +30,8 @@
 | 基础与作品集 | 已完成 | PR [#1](https://github.com/Ailian0206/evidence-graph/pull/1) 在 CI、Codex 审核和视觉验证通过后合并 |
 | 研究领域基础 | 已完成 | PR [#3](https://github.com/Ailian0206/evidence-graph/pull/3) 已合并为 `3fef13c` |
 | 确定性研究工作流 | 已完成 | PR [#4](https://github.com/Ailian0206/evidence-graph/pull/4) 已通过 merge commit `2c8b90d` 合并 |
-| 全自动 PR 审核 | 进行中 | PR [#6](https://github.com/Ailian0206/evidence-graph/pull/6) 建立普通/可信基线 Claude 审核、自动修复和自动合并流程 |
-| Source hash 项目隔离 | 待重新实现 | 已关闭 PR [#5](https://github.com/Ailian0206/evidence-graph/pull/5)；有效问题由 Codex 在新分支按 TDD 重做，不复用作废提交 |
+| 全自动 PR 审核 | 已完成 | PR [#6](https://github.com/Ailian0206/evidence-graph/pull/6) 已通过 merge commit `c1daf16` 合并 |
+| Source hash 项目隔离 | Draft PR [#7](https://github.com/Ailian0206/evidence-graph/pull/7) | RED-GREEN 和完整门禁通过；等待 Claude 审核和 CI |
 | 证据工作台 | 待开始 | 桌面三栏、移动端标签页和图谱交互测试通过 |
 | 托管部署 | 待开始 | 获得账号授权后完成 Supabase、Inngest、Vercel 配置和生产冒烟测试 |
 
@@ -46,10 +46,14 @@
 - 本地 shell 必须使用 Node 22；Node 16 因缺少 `structuredClone` 无法运行 ESLint。
 - 研究领域和研究工作流的最终审核没有未解决的 Critical 或 Important 问题。
 - PR #5 已关闭，其 reviewer 越权提交 `d0d297d` 明确作废；不得 cherry-pick。问题本身有效：`contentHash` 目前跨项目全局唯一，会阻止不同用户保存同一公开内容，并形成跨租户探测信道。
+- PR #6 本地完整门禁和 GitHub CI 通过后已合并；全自动普通/可信基线 Claude 审核流程现已生效。
+- Source hash 修复分支基线聚焦测试：`tests/unit/research-domain.test.ts` 23 个测试通过。
+- Source hash RED：跨 owner/project 相同 `contentHash` 在 repository 初始化时抛出 `SOURCE_ALREADY_EXISTS`。
+- Source hash GREEN：聚焦测试 25 个通过；不同 owner/project 可保存相同内容，同一项目仍拒绝重复哈希。
+- Source hash 完整门禁：lint、typecheck、67 个单元测试、build 和 18 个 E2E 测试通过。
 
 ## 下一步
 
-1. 完成 PR #6 的中文流程文档和完整门禁，推送后等待 CI，并使用用户已批准的一次性引导例外通过 merge commit 合并。
-2. 从更新后的 `main` 创建 `fix/source-hash-project-scope-v2` worktree。
-3. 先用失败测试复现跨项目相同 `contentHash` 冲突，再实现项目内唯一约束。
-4. 完整门禁通过后创建一个 Draft PR，运行新的全自动 Claude 审核流程，并在审核和 CI 通过后自动合并。
+1. 从 PR #7 分支运行普通 `/pr-review`。
+2. 自动处理有效 finding，并在 head SHA 改变后重新审核。
+3. Claude marker、标签和 CI 通过后 merge commit 合并。

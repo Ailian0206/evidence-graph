@@ -211,6 +211,49 @@ describe("project repository boundary", () => {
     expect(() => createInMemoryProjectRepository(fixture)).toThrow("SOURCE_ALREADY_EXISTS");
   });
 
+  it("allows duplicate source content hashes across owner projects", () => {
+    const fixture = createDemoResearchFixture();
+    const otherProject = {
+      ...fixture.projects[0],
+      id: "project_other_owner",
+      ownerId: "user_other",
+      slug: "other-owner-project",
+    };
+    const otherSource = {
+      ...fixture.sources[0],
+      id: "source_other_owner",
+      projectId: otherProject.id,
+      canonicalUrl: "https://other.example.com/shared-research",
+      domain: "other.example.com",
+    };
+    fixture.projects.push(otherProject);
+    fixture.sources.push(otherSource);
+
+    const repository = createInMemoryProjectRepository(fixture);
+
+    expect(
+      repository.listSources({ ownerId: otherProject.ownerId, projectId: otherProject.id }),
+    ).toEqual([otherSource]);
+  });
+
+  it("rejects duplicate source content hashes within a project", () => {
+    const fixture = createDemoResearchFixture();
+    const repository = createInMemoryProjectRepository(fixture);
+    const [source] = fixture.sources;
+
+    expect(() =>
+      repository.addSource({
+        ownerId: fixture.projects[0].ownerId,
+        source: {
+          ...source,
+          id: "source_same_project_duplicate_hash",
+          canonicalUrl: "https://another.example.com/shared-research",
+          domain: "another.example.com",
+        },
+      }),
+    ).toThrow("SOURCE_ALREADY_EXISTS");
+  });
+
   it("rejects duplicate claims and evidence links while initializing", () => {
     const claimFixture = createDemoResearchFixture();
     claimFixture.claims.push({
