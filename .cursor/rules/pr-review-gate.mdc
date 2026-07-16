@@ -1,28 +1,45 @@
 ---
-description: PR 审核门禁 — 开/更新 PR 后必须触发独立 Claude 审核，合并前必须确认无 claude-changes-requested 标签
+description: PR 全自动审核门禁：根据变更路径触发普通或可信基线 Claude 审核，阻塞 finding 清零后自动 merge commit
 alwaysApply: true
 ---
 
-# PR 审核门禁（evidence-graph 专属）
+# PR 全自动审核门禁
 
-Cursor Bugbot 额度用尽期间，本仓库用 Claude Code 的 `pr-review` skill 做独立只读审核，协议见 `docs/bugbot-autofix-workflow.md` 第 7 节。
+Cursor Bugbot 额度不可用期间，本仓库使用独立 Claude Code `pr-review` skill。流程不包含人工审核步骤。
 
-## 硬规则
+## 开出或更新 PR 后
 
-1. 开出或更新 Draft PR 后，立刻在仓库根目录跑：
+1. 查询 PR 编号、`baseRefOid`、`headRefOid` 和变更文件。
+2. 普通 PR 在仓库根目录运行：
 
    ```bash
    claude --permission-mode auto --model sonnet -p "/pr-review"
    ```
 
-   等它跑完（非交互，自动退出）再继续，不要自己读 diff 给自己判定。这是一个独立的 `claude` 进程，不是 Cursor 自己的模型在评分。
+3. 任一变更触及以下审核协议路径时，不得从 PR 分支运行 reviewer：
 
-2. 合并前必须确认：
+   - `.claude/skills/pr-review/**`
+   - `.cursor/rules/pr-review-gate.mdc`
+   - `AGENT.md` 的审核/合并门禁
+   - `docs/bugbot-autofix-workflow.md` 的审核协议
+   - `docs/superpowers/specs/*pr-review*`
+   - `docs/superpowers/plans/*pr-review*`
+
+   必须在准确 `baseRefOid` 的临时 detached worktree 运行：
 
    ```bash
-   gh pr view <number> --json labels --jq '[.labels[].name]'
+   claude --permission-mode auto --model sonnet -p "/pr-review --trusted-base <PR编号>"
    ```
 
-   出现 `claude-changes-requested` 时，先处理评论里的问题、push、重新跑一遍第 1 步（会因为 head SHA 变化自动重审），确认标签消失后再合并。
+4. 审核完成后清理 clean 的临时 worktree。禁止强制删除包含改动的 worktree。
 
-3. 例外：只改 `.claude/skills/pr-review/` 或 `docs/bugbot-autofix-workflow.md` 审核协议本身的 PR，不需要触发这个流程（`pr-review` skill 本身也会主动跳过这类 PR），人工看一眼直接合并。
+## 自动修复与复审
+
+- 出现 `claude-changes-requested`：验证 CRITICAL/HIGH finding，在原分支按 TDD 修复，跑聚焦和完整门禁，push 后重新审核。
+- 只有 `claude-reviewed`、marker SHA 匹配当前 head，且没有 `claude-changes-requested` 时审核才通过。
+- MEDIUM/LOW 由开发 agent 自动技术判断，不要求人工批准。
+- 不得手工操作 Claude 标签，不得冒充 Claude 发布审核评论。
+
+## 自动合并
+
+本地门禁、GitHub CI 和 Claude 审核全部通过后，直接使用 merge commit 合并并删除远端分支。禁止 squash、rebase、force push。协议 PR 同样必须自动审核，没有“人工看一眼”例外。
