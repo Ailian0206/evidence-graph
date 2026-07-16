@@ -7,7 +7,7 @@
 - 阶段：托管部署里程碑开发中。
 - 分支：`feat/managed-deployment`，在隔离 worktree 中开发。
 - PR：[#11](https://github.com/Ailian0206/evidence-graph/pull/11) 已通过独立 Claude 审核和 GitHub CI，并以 merge commit `74c3b49` 合并。
-- 当前任务：项目持久化、Dashboard 和新建研究已完成，下一步接入 Inngest 事件和确定性工作流入口。
+- 当前任务：Inngest 事件和确定性工作流入口已完成，下一步增加 Sentry、Analytics 和安全响应头。
 - 外部 Provider 调用：已禁用。
 - 生产部署：未配置。
 - Node.js：本地和 CI 使用 `v22.22.1`。
@@ -68,9 +68,14 @@
 - 本地 Supabase 真实登录态下，项目列表、RLS 创建和归档操作通过；PostgREST `timestamptz` 偏移格式已在映射边界标准化。
 - 项目工作区门禁通过 99 个单元测试、13 个 Auth/工作台/项目 E2E、类型检查、lint 和生产构建。
 - Dashboard 和新建研究页已覆盖 390x844、1024x768 和 1440x1000 三种尺寸，无横向溢出、裁切或控件重叠。
+- Inngest 事件使用 Zod 运行时校验，`runId` 同时作为事件与函数幂等键；单 owner 并发为 1，最多重试 3 次。
+- Inngest webhook 使用 Admin client 读取 run，再显式核对 `ownerId/projectId/runId`；不匹配时抛出不可重试错误。
+- `/api/inngest` 已通过官方 Next App Router 适配器导出 `GET/POST/PUT`；本地健康响应只返回能力布尔值，不泄露环境变量。
+- Inngest 任务门禁通过 108 个单元测试、14 个 Auth/工作台/项目/Inngest E2E、类型检查、lint、生产构建和真实 Provider 扫描。
+- 当前函数执行器只使用 fixture providers 和内存 workflow store，不调用真实 OpenAI/Tavily；尚未连接外部 Inngest，也未发送真实事件。
 
 ## 下一步
 
-1. 按 TDD 接入 Inngest 事件、所有权复核和确定性工作流入口，不触发真实 Provider。
-2. 继续完成 Sentry、Vercel 的本地集成边界和部署文档。
+1. 按 TDD 增加 Sentry、Vercel Analytics 和安全响应头，缺少 DSN 时保持无网络行为。
+2. 继续完成 CI 数据库门禁和部署文档。
 3. 创建账号资源、写入密钥和运行生产冒烟测试前取得明确授权。

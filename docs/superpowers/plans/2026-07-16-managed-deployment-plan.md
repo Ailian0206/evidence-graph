@@ -324,25 +324,25 @@ git commit -m "feat(projects): 实现托管项目工作区"
 - 创建：`tests/unit/inngest-research.test.ts`
 - 创建：`tests/e2e/inngest-route.spec.ts`
 
-- [ ] **步骤 1：编写事件与所有权 RED 测试**
+- [x] **步骤 1：编写事件与所有权 RED 测试**
 
 测试验证事件必须包含 `ownerId/projectId/runId`；函数执行前查询项目并核对三者；不匹配时抛出不可重试的 `RUN_PROJECT_MISMATCH`；相同事件使用 `runId` 作为幂等 key；日常测试只注入 fixture providers。
 
-- [ ] **步骤 2：运行测试确认 RED**
+- [x] **步骤 2：运行测试确认 RED**
 
 运行：`npm run test:unit -- tests/unit/inngest-research.test.ts`
 
 预期：Inngest 模块不存在。
 
-- [ ] **步骤 3：实现最小 Inngest 适配器**
+- [x] **步骤 3：实现最小 Inngest 适配器**
 
 注册 `evidence/research.requested` 事件。函数并发键使用 owner ID，单用户并发为 1，重试最多 3 次；先执行所有权检查，再在 `step.run` 内调用现有确定性工作流边界。没有真实 Provider 确认变量时只能使用 fixtures，不能导入未来的 OpenAI/Tavily adapter。
 
-- [ ] **步骤 4：实现 Route Handler**
+- [x] **步骤 4：实现 Route Handler**
 
 使用 Inngest 官方 `serve` App Router 适配器导出 `GET/POST/PUT`。Route Handler 不挂 locale，不缓存，不返回环境变量。
 
-- [ ] **步骤 5：验证 GREEN**
+- [x] **步骤 5：验证 GREEN**
 
 运行：
 
@@ -354,7 +354,7 @@ rg -n "api\.openai\.com|api\.tavily\.com|OPENAI_API_KEY|TAVILY_API_KEY" src/inng
 
 预期：事件、所有权和路由测试通过；安全扫描无真实 Provider 实现。
 
-- [ ] **步骤 6：提交**
+- [x] **步骤 6：提交**
 
 ```bash
 git add src/inngest src/app/api/inngest tests
