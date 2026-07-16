@@ -10,18 +10,23 @@ export function WorkspaceSourceViewer({
   locale,
   evidence,
   source,
+  mobileActive,
 }: {
   locale: AppLocale;
   evidence?: EvidenceLink;
   source?: Source;
+  mobileActive: boolean;
 }) {
   const t = useTranslations("Workspace");
 
   return (
     <aside
+      id="workspace-panel-source"
       className={`${styles.panel} ${styles.sourcePanel}`}
-      aria-labelledby="source-title"
+      aria-labelledby="workspace-tab-source"
       data-testid="workspace-source"
+      data-mobile-active={mobileActive}
+      role="tabpanel"
     >
       <header className={styles.panelHeader}>
         <div>

@@ -38,6 +38,7 @@
     "reviewFilter": "按人工审核状态筛选",
     "currentStatus": "当前审核状态",
     "relationFilter": "按证据关系筛选",
+    "mobileTabsLabel": "工作台视图",
     "graphTitle": "主张与证据关系",
     "emptyClaims": "当前筛选条件下没有主张。",
     "noSource": "选择主张后查看关联来源",
@@ -57,7 +58,40 @@
     "panels": {
       "claims": "Claims",
       "graph": "Graph",
-      "source": "Source"
+      "source": "Source",
+      "log": "Run Log"
+    },
+    "tabs": {
+      "claims": "主张",
+      "graph": "图谱",
+      "source": "来源",
+      "log": "日志"
+    },
+    "runLog": {
+      "completed": "{count} 个步骤已完成",
+      "searches": "{count} 次搜索",
+      "tokens": "{count} Token",
+      "cost": "${cost}",
+      "expand": "展开运行日志",
+      "collapse": "收起运行日志",
+      "stepsLabel": "研究运行步骤",
+      "attempt": "第 {count} 次尝试",
+      "status": {
+        "started": "运行中",
+        "completed": "已完成",
+        "failed": "失败",
+        "skipped": "已跳过"
+      }
+    },
+    "steps": {
+      "planning": "规划问题",
+      "searching": "搜索来源",
+      "collecting": "保存正文",
+      "indexing": "建立索引",
+      "extracting_claims": "提取主张",
+      "linking_evidence": "关联证据",
+      "detecting_conflicts": "检测冲突",
+      "drafting_report": "生成报告草稿"
     },
     "status": {
       "all": "全部",

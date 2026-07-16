@@ -24,6 +24,7 @@ import {
 import styles from "./evidence-workspace.module.css";
 import { WorkspaceClaimList } from "./workspace-claim-list";
 import { WorkspaceGraph } from "./workspace-graph";
+import { WorkspaceRunLog } from "./workspace-run-log";
 import { WorkspaceSourceViewer } from "./workspace-source-viewer";
 
 const reviewFilters: ClaimReviewFilter[] = [
@@ -32,6 +33,8 @@ const reviewFilters: ClaimReviewFilter[] = [
   "accepted",
   "rejected",
 ];
+const mobileTabs = ["claims", "graph", "source", "log"] as const;
+type MobileTab = (typeof mobileTabs)[number];
 
 export function EvidenceWorkspace({ initialData }: { initialData: EvidenceWorkspaceData }) {
   const t = useTranslations("Workspace");
@@ -44,6 +47,7 @@ export function EvidenceWorkspace({ initialData }: { initialData: EvidenceWorksp
   const [selectedEvidenceLinkId, setSelectedEvidenceLinkId] = useState(
     initialData.evidenceLinks[0]?.id ?? "",
   );
+  const [activeMobileTab, setActiveMobileTab] = useState<MobileTab>("claims");
   const workspace = useMemo(() => ({ ...initialData, claims }), [claims, initialData]);
   const claimSummaries = useMemo(
     () => createWorkspaceClaimSummaries(workspace),
@@ -150,6 +154,26 @@ export function EvidenceWorkspace({ initialData }: { initialData: EvidenceWorksp
       return next;
     });
   };
+  const handleMobileTabKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    currentIndex: number,
+  ) => {
+    if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(event.key)) {
+      return;
+    }
+
+    event.preventDefault();
+    const nextIndex =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? mobileTabs.length - 1
+          : (currentIndex + (event.key === "ArrowRight" ? 1 : -1) + mobileTabs.length) %
+            mobileTabs.length;
+    const nextTab = mobileTabs[nextIndex];
+    setActiveMobileTab(nextTab);
+    requestAnimationFrame(() => document.getElementById(`workspace-tab-${nextTab}`)?.focus());
+  };
 
   return (
     <section
@@ -193,8 +217,32 @@ export function EvidenceWorkspace({ initialData }: { initialData: EvidenceWorksp
         </dl>
       </header>
 
+      <div className={styles.mobileTabs} role="tablist" aria-label={t("mobileTabsLabel")}>
+        {mobileTabs.map((tab, index) => (
+          <button
+            key={tab}
+            id={`workspace-tab-${tab}`}
+            type="button"
+            role="tab"
+            aria-controls={`workspace-panel-${tab}`}
+            aria-selected={activeMobileTab === tab}
+            tabIndex={activeMobileTab === tab ? 0 : -1}
+            onClick={() => setActiveMobileTab(tab)}
+            onKeyDown={(event) => handleMobileTabKeyDown(event, index)}
+          >
+            {t(`tabs.${tab}`)}
+          </button>
+        ))}
+      </div>
+
       <div className={styles.workspaceGrid}>
-        <section className={`${styles.panel} ${styles.claimPanel}`} aria-labelledby="claims-title">
+        <section
+          id="workspace-panel-claims"
+          className={`${styles.panel} ${styles.claimPanel}`}
+          aria-labelledby="workspace-tab-claims"
+          data-mobile-active={activeMobileTab === "claims"}
+          role="tabpanel"
+        >
           <header className={styles.panelHeader}>
             <div>
               <p>{t("panels.claims")}</p>
@@ -257,7 +305,13 @@ export function EvidenceWorkspace({ initialData }: { initialData: EvidenceWorksp
           )}
         </section>
 
-        <section className={`${styles.panel} ${styles.graphPanel}`} aria-labelledby="graph-title">
+        <section
+          id="workspace-panel-graph"
+          className={`${styles.panel} ${styles.graphPanel}`}
+          aria-labelledby="workspace-tab-graph"
+          data-mobile-active={activeMobileTab === "graph"}
+          role="tabpanel"
+        >
           <header className={styles.panelHeader}>
             <div>
               <p>{t("panels.graph")}</p>
@@ -305,8 +359,15 @@ export function EvidenceWorkspace({ initialData }: { initialData: EvidenceWorksp
           locale={workspace.locale}
           evidence={selectedEvidence}
           source={selectedSource}
+          mobileActive={activeMobileTab === "source"}
         />
       </div>
+      <WorkspaceRunLog
+        locale={workspace.locale}
+        run={workspace.run}
+        entries={workspace.runLogs}
+        mobileActive={activeMobileTab === "log"}
+      />
     </section>
   );
 }

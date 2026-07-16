@@ -38,6 +38,7 @@
     "reviewFilter": "Filter by human review status",
     "currentStatus": "Current review status",
     "relationFilter": "Filter by evidence relation",
+    "mobileTabsLabel": "Workspace views",
     "graphTitle": "Claim and evidence relations",
     "emptyClaims": "No claims match the current filters.",
     "noSource": "Select a claim to inspect its source",
@@ -57,7 +58,40 @@
     "panels": {
       "claims": "Claims",
       "graph": "Graph",
-      "source": "Source"
+      "source": "Source",
+      "log": "Run Log"
+    },
+    "tabs": {
+      "claims": "Claims",
+      "graph": "Graph",
+      "source": "Source",
+      "log": "Log"
+    },
+    "runLog": {
+      "completed": "{count} steps complete",
+      "searches": "{count} searches",
+      "tokens": "{count} tokens",
+      "cost": "${cost}",
+      "expand": "Expand run log",
+      "collapse": "Collapse run log",
+      "stepsLabel": "Research run steps",
+      "attempt": "Attempt {count}",
+      "status": {
+        "started": "Running",
+        "completed": "Complete",
+        "failed": "Failed",
+        "skipped": "Skipped"
+      }
+    },
+    "steps": {
+      "planning": "Plan questions",
+      "searching": "Search sources",
+      "collecting": "Save source text",
+      "indexing": "Build index",
+      "extracting_claims": "Extract claims",
+      "linking_evidence": "Link evidence",
+      "detecting_conflicts": "Detect conflicts",
+      "drafting_report": "Draft report"
     },
     "status": {
       "all": "All",

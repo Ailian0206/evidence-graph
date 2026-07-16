@@ -103,6 +103,10 @@
   grid-template-columns: minmax(270px, 0.78fr) minmax(420px, 1.65fr) minmax(300px, 0.9fr);
 }
 
+.mobileTabs {
+  display: none;
+}
+
 .panel {
   min-width: 0;
   background: #f7f7f3;
@@ -591,6 +595,136 @@
   font-weight: 750;
 }
 
+.runLogPanel {
+  border-top: 1px solid #bfc4bc;
+  border-bottom: 1px solid #bfc4bc;
+  background: #f7f7f3;
+}
+
+.runLogBar {
+  display: grid;
+  min-height: 56px;
+  align-items: center;
+  padding: 8px 18px;
+  grid-template-columns: minmax(180px, 1fr) auto auto;
+  gap: 24px;
+}
+
+.runLogBar > div:first-child,
+.runLogBar > div:first-child > span,
+.runLogSummary,
+.runLogToggle {
+  display: flex;
+  align-items: center;
+}
+
+.runLogBar > div:first-child {
+  min-width: 0;
+  gap: 9px;
+}
+
+.runLogBar > div:first-child > span {
+  min-width: 0;
+  gap: 10px;
+}
+
+.runLogBar strong {
+  font-size: 11px;
+}
+
+.runLogBar span {
+  color: #677067;
+  font-size: 10px;
+}
+
+.runLogSummary {
+  gap: 18px;
+  white-space: nowrap;
+}
+
+.runLogToggle {
+  height: 32px;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid #bfc4bc;
+  border-radius: 3px;
+  background: #f7f7f3;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.runLogToggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.runLogList {
+  display: grid;
+  margin: 0;
+  padding: 0 18px 18px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  list-style: none;
+}
+
+.runLogList li {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 74px;
+  align-items: start;
+  padding: 13px 14px 12px 30px;
+  border-top: 1px solid #cdd1c9;
+  border-right: 1px solid #cdd1c9;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 8px;
+}
+
+.runLogList li:nth-child(4n + 1) {
+  border-left: 1px solid #cdd1c9;
+}
+
+.runLogList li:nth-last-child(-n + 4) {
+  border-bottom: 1px solid #cdd1c9;
+}
+
+.runLogList li > svg {
+  position: absolute;
+  top: 14px;
+  left: 10px;
+  color: #17796d;
+}
+
+.runLogList li[data-status="failed"] > svg {
+  color: #a4382d;
+}
+
+.runLogList li div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.runLogList strong {
+  overflow: hidden;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runLogList span,
+.runLogList time,
+.runLogList code {
+  color: #6c736b;
+  font-size: 9px;
+}
+
+.runLogList code {
+  grid-column: 1 / -1;
+  overflow-wrap: anywhere;
+  color: #8f2f26;
+}
+
 @media (max-width: 1120px) {
   .projectBar {
     align-items: flex-start;
@@ -648,10 +782,92 @@
 
   .workspaceGrid {
     display: block;
+    min-height: 0;
   }
 
-  .panel + .panel {
-    border-top: 1px solid #bfc4bc;
+  .mobileTabs {
+    position: sticky;
+    z-index: 20;
+    top: var(--header-height);
+    display: grid;
+    padding: 8px 10px;
+    border-bottom: 1px solid #bfc4bc;
+    background: #f7f7f3;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .mobileTabs button {
+    height: 38px;
+    border: 1px solid #c4c8c0;
+    border-right-width: 0;
+    background: #f7f7f3;
+    font-size: 11px;
+    font-weight: 750;
+  }
+
+  .mobileTabs button:first-child {
+    border-radius: 3px 0 0 3px;
+  }
+
+  .mobileTabs button:last-child {
+    border-right-width: 1px;
+    border-radius: 0 3px 3px 0;
+  }
+
+  .mobileTabs button[aria-selected="true"] {
+    border-color: #2f362f;
+    background: #2f362f;
+    color: #fff;
+  }
+
+  .workspaceGrid .panel,
+  .runLogPanel {
+    display: none;
+  }
+
+  .workspaceGrid .panel[data-mobile-active="true"],
+  .runLogPanel[data-mobile-active="true"] {
+    display: grid;
+  }
+
+  .workspaceGrid .panel[data-mobile-active="true"] {
+    min-height: 610px;
     border-left: 0;
+  }
+
+  .runLogPanel[data-mobile-active="true"] {
+    min-height: 610px;
+    align-content: start;
+    border-top: 0;
+  }
+
+  .runLogBar {
+    min-height: 0;
+    padding: 16px;
+    grid-template-columns: 1fr auto;
+    gap: 14px;
+  }
+
+  .runLogSummary {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .runLogList {
+    padding: 0 16px 16px;
+    grid-template-columns: 1fr;
+  }
+
+  .runLogList li,
+  .runLogList li:nth-child(4n + 1),
+  .runLogList li:nth-last-child(-n + 4) {
+    border: 0;
+    border-top: 1px solid #cdd1c9;
+  }
+
+  .runLogList li:last-child {
+    border-bottom: 1px solid #cdd1c9;
   }
 }

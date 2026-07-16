@@ -95,3 +95,44 @@ test.describe("evidence workspace graph", () => {
       .toBeLessThan(initialElementCount);
   });
 });
+
+test.describe("evidence workspace responsive navigation", () => {
+  test("switches the four mobile workspace tabs with keyboard controls", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/zh/app/research/demo");
+
+    const claimsTab = page.getByRole("tab", { name: "主张" });
+    const graphTab = page.getByRole("tab", { name: "图谱" });
+    const sourceTab = page.getByRole("tab", { name: "来源" });
+    const logTab = page.getByRole("tab", { name: "日志" });
+    await expect(claimsTab).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("tabpanel", { name: "主张" })).toBeVisible();
+    await expect(page.getByRole("tabpanel", { name: "图谱" })).toBeHidden();
+
+    await claimsTab.focus();
+    await claimsTab.press("ArrowRight");
+    await expect(graphTab).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("tabpanel", { name: "图谱" })).toBeVisible();
+    await expect(page.getByRole("tabpanel", { name: "来源" })).toBeHidden();
+
+    await sourceTab.click();
+    await expect(page.getByRole("tabpanel", { name: "来源" })).toBeVisible();
+
+    await logTab.click();
+    await expect(page.getByRole("tabpanel", { name: "日志" })).toBeVisible();
+  });
+
+  test("expands the run log and exposes every deterministic workflow step", async ({
+    page,
+  }) => {
+    await page.goto("/zh/app/research/demo");
+
+    await page.getByRole("button", { name: "展开运行日志" }).click();
+
+    await expect(page.getByRole("list", { name: "研究运行步骤" }).getByRole("listitem"))
+      .toHaveCount(8);
+    await expect(page.getByRole("button", { name: "收起运行日志" })).toBeVisible();
+  });
+});
