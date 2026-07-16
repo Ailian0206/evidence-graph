@@ -18,6 +18,8 @@ description: 用于独立审核刚创建或更新的 PR，并维护当前 head S
 /pr-review --trusted-base <PR编号> --recheck
 ```
 
+调用方必须使用 `claude --setting-sources project,local ...`，防止 `~/.claude/skills/` 中其它项目的同名 skill 覆盖本文件。
+
 - 普通模式：从当前 PR 分支工作区审核该分支对应的一个开放 PR。
 - 可信基线模式：从目标 PR 的准确 `baseRefOid` detached worktree 审核涉及审核协议的 PR。
 - `--recheck`：仅在 Codex 已对当前 SHA 的 finding 发布结构化技术回复时，允许同 SHA 重新审核。
@@ -84,7 +86,7 @@ description: 用于独立审核刚创建或更新的 PR，并维护当前 head S
 普通模式发现这些路径时必须零 GitHub 写入退出，并要求开发 agent 从准确 `baseRefOid` worktree 运行：
 
 ```bash
-claude --permission-mode auto --model sonnet -p "/pr-review --trusted-base <PR编号>"
+claude --setting-sources project,local --permission-mode auto --model sonnet -p "/pr-review --trusted-base <PR编号>"
 ```
 
 ## 普通模式

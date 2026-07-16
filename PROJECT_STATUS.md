@@ -4,10 +4,10 @@
 
 ## 当前阶段
 
-- 阶段：来源内容哈希项目隔离 Draft PR 自动审核。
-- 分支：`fix/source-hash-project-scope-v2`。
-- PR：Draft [#7](https://github.com/Ailian0206/evidence-graph/pull/7) 已创建，等待 Claude 审核和 CI。
-- 当前任务：运行普通 Claude 审核，自动处理 finding，并在门禁通过后合并。
+- 阶段：Claude reviewer 配置源隔离已在本地完成，准备可信基线审核。
+- 分支：`fix/pr-review-project-sources`。
+- PR：尚未创建；完整门禁通过后创建一个协议修复 Draft PR。
+- 当前任务：创建一个协议修复 Draft PR，并运行可信基线审核。
 - 外部 Provider 调用：已禁用。
 - 生产部署：未配置。
 - Node.js：本地和 CI 使用 `v22.22.1`。
@@ -31,7 +31,8 @@
 | 研究领域基础 | 已完成 | PR [#3](https://github.com/Ailian0206/evidence-graph/pull/3) 已合并为 `3fef13c` |
 | 确定性研究工作流 | 已完成 | PR [#4](https://github.com/Ailian0206/evidence-graph/pull/4) 已通过 merge commit `2c8b90d` 合并 |
 | 全自动 PR 审核 | 已完成 | PR [#6](https://github.com/Ailian0206/evidence-graph/pull/6) 已通过 merge commit `c1daf16` 合并 |
-| Source hash 项目隔离 | Draft PR [#7](https://github.com/Ailian0206/evidence-graph/pull/7) | RED-GREEN 和完整门禁通过；等待 Claude 审核和 CI |
+| Source hash 项目隔离 | 已完成 | PR [#7](https://github.com/Ailian0206/evidence-graph/pull/7) 已通过 merge commit `8bc6f39` 合并 |
+| Reviewer 配置源隔离 | 本地完成 | 命令一致性扫描和完整门禁通过；等待 Draft PR、可信基线审核和 CI |
 | 证据工作台 | 待开始 | 桌面三栏、移动端标签页和图谱交互测试通过 |
 | 托管部署 | 待开始 | 获得账号授权后完成 Supabase、Inngest、Vercel 配置和生产冒烟测试 |
 
@@ -51,9 +52,13 @@
 - Source hash RED：跨 owner/project 相同 `contentHash` 在 repository 初始化时抛出 `SOURCE_ALREADY_EXISTS`。
 - Source hash GREEN：聚焦测试 25 个通过；不同 owner/project 可保存相同内容，同一项目仍拒绝重复哈希。
 - Source hash 完整门禁：lint、typecheck、67 个单元测试、build 和 18 个 E2E 测试通过。
+- PR #7 独立 Claude 审核和 GitHub CI 通过后已合并；合并后的聚焦测试 25 个通过。
+- Reviewer 配置源 RED：默认 Claude 调用加载用户级旧 skill，summary 缺少 `CLAUDE_REVIEW_VERDICT`。
+- Reviewer 配置源 GREEN：限制 `project,local` 后加载仓库 skill，并发布完整 verdict 和 SHA marker。
+- Reviewer 配置源完整门禁：lint、typecheck、67 个单元测试、build 和 18 个 E2E 测试通过。
 
 ## 下一步
 
-1. 从 PR #7 分支运行普通 `/pr-review`。
-2. 自动处理有效 finding，并在 head SHA 改变后重新审核。
-3. Claude marker、标签和 CI 通过后 merge commit 合并。
+1. 提交 reviewer 配置源隔离修复并创建一个 Draft PR。
+2. 使用可信基线模式审核。
+3. 审核和 CI 通过后 merge commit 合并。

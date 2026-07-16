@@ -30,7 +30,7 @@ MVP 不增加 ProjectPilot AI、通用聊天、计费、团队、浏览器扩展
 7. 使用中文 Conventional Commits。
 8. PR 保持模块粒度；中间任务、单纯审核清理或每个小提交都不单独开 PR。
 9. 模块达到里程碑后先跑完整门禁，再推送分支并只创建一个 Draft PR。
-10. 创建或更新 Draft PR 后必须触发独立 Claude 审核。普通 PR 在当前 PR 分支工作区根目录运行 `claude --permission-mode auto --model sonnet -p "/pr-review"`；任何触及审核协议的 PR 必须从准确 `baseRefOid` detached worktree 运行 `/pr-review --trusted-base <PR编号>`。完整编排见 `~/.codex/skills/pr-review/SKILL.md` 和 `docs/bugbot-autofix-workflow.md` 第 7 节。
+10. 创建或更新 Draft PR 后必须触发独立 Claude 审核。所有调用都必须带 `--setting-sources project,local`，防止用户级同名 skill 覆盖仓库 reviewer。普通 PR 在当前 PR 分支工作区根目录运行 `claude --setting-sources project,local --permission-mode auto --model sonnet -p "/pr-review"`；任何触及审核协议的 PR 必须从准确 `baseRefOid` detached worktree 运行 `/pr-review --trusted-base <PR编号>`。完整编排见 `~/.codex/skills/pr-review/SKILL.md` 和 `docs/bugbot-autofix-workflow.md` 第 7 节。
 11. 审核进程可交给一个只读监控子代理，主进程继续不冲突任务；没有子代理时以前台方式运行。合并前必须取得当前 head SHA 的审核终态。
 12. Cursor Bugbot 可用时只是附加审核。额度耗尽或服务不可用时不等待、不重复触发；Claude 审核始终是有效门禁。
 13. Bugbot Autofix 活跃时由它先处理自己的问题；Autofix 失败、终止或不可用后，Codex 验证问题并接管。不得并发修复同一个问题。

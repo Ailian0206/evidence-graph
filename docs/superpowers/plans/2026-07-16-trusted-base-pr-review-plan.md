@@ -21,7 +21,7 @@
 从 PR #6 自身工作区运行：
 
 ```bash
-claude --permission-mode auto --model sonnet -p "/pr-review --trusted-base 6"
+claude --setting-sources project,local --permission-mode auto --model sonnet -p "/pr-review --trusted-base 6"
 ```
 
 预期：旧 skill 不识别可信基线模式，只按“协议不能自审”跳过，无法校验当前 HEAD 与 `baseRefOid`。
