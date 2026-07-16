@@ -24,6 +24,14 @@
     "sample": "The sample workspace uses deterministic research data and makes no real provider calls.",
     "openWorkspace": "Open sample workspace"
   },
+  "Auth": {
+    "eyebrow": "Account access",
+    "title": "Sign in to Evidence Graph",
+    "description": "Continue to the research workspace with GitHub.",
+    "github": "Sign in with GitHub",
+    "unconfigured": "Managed sign-in is not configured",
+    "error": "Sign-in did not complete. Try again."
+  },
   "Workspace": {
     "eyebrow": "Research run / Evidence review",
     "backToPreview": "Back to product entry",

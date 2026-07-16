@@ -3,6 +3,7 @@ import { setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 
 import { EvidenceWorkspace } from "@/components/evidence-workspace/evidence-workspace";
+import { requireManagedUser } from "@/features/auth/server-session";
 import { createEvidenceWorkspaceFixture } from "@/features/research/evidence-workspace-fixture";
 import type { AppLocale } from "@/i18n/routing";
 
@@ -33,6 +34,10 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
   setRequestLocale(locale);
 
   if (id !== "demo") {
+    await requireManagedUser({
+      locale,
+      nextPath: `/${locale}/app/research/${id}`,
+    });
     notFound();
   }
 

@@ -217,7 +217,7 @@ git commit -m "feat(database): 增加跨租户访问策略"
 - 创建：`tests/unit/auth-session.test.ts`
 - 创建：`tests/e2e/auth-boundary.spec.ts`
 
-- [ ] **步骤 1：编写服务端授权 RED 测试**
+- [x] **步骤 1：编写服务端授权 RED 测试**
 
 通过可注入的 `getUser` 依赖验证：缺少用户时生成保留 locale 与目标路径的登录重定向；已登录时返回最小 `{ id, email }` 会话；Provider 错误不得被当成匿名静默吞掉。
 
@@ -227,21 +227,21 @@ await expect(requireUser({ locale: "zh", getUser: async () => null })).rejects.t
 });
 ```
 
-- [ ] **步骤 2：运行测试确认 RED**
+- [x] **步骤 2：运行测试确认 RED**
 
 运行：`npm run test:unit -- tests/unit/auth-session.test.ts`
 
 预期：Auth 模块不存在。
 
-- [ ] **步骤 3：实现客户端和会话刷新**
+- [x] **步骤 3：实现客户端和会话刷新**
 
 使用 `@supabase/ssr` 的 `createBrowserClient` 与 `createServerClient`。Server Client 使用 Next 16 异步 `cookies()`；Proxy Client 只刷新 Cookie。`src/lib/supabase/admin.ts` 首行导入 `server-only`，只读取 Service Role。登录 action 使用 GitHub OAuth；callback Route Handler 交换 code 后只允许站内相对 `next` 路径。
 
-- [ ] **步骤 4：实现双层授权**
+- [x] **步骤 4：实现双层授权**
 
 `proxy.ts` 保留现有非法 locale 404 和 `next-intl` 行为，并刷新 Supabase 会话。`/[locale]/app/page.tsx`、新建研究页和数据操作各自在离数据最近的位置调用 `requireUser`；工作台页面只对 `id !== "demo"` 调用授权，保证公开示例仍可访问。Proxy 不能作为唯一授权边界。
 
-- [ ] **步骤 5：验证 GREEN**
+- [x] **步骤 5：验证 GREEN**
 
 运行：
 
@@ -253,7 +253,7 @@ npm run build
 
 预期：未配置环境时公开示例正常；受保护页面显示明确配置状态或登录入口；配置测试客户端时未登录访问被重定向；build 不要求真实密钥。
 
-- [ ] **步骤 6：提交**
+- [x] **步骤 6：提交**
 
 ```bash
 git add src/lib/supabase src/features/auth src/app/auth src/app/[locale]/auth src/app/[locale]/app/research/[id]/page.tsx src/proxy.ts messages tests
