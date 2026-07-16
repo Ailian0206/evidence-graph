@@ -35,7 +35,7 @@ MVP 不增加 ProjectPilot AI、通用聊天、计费、团队、浏览器扩展
 11. Claude 发现问题时，Codex 验证评论，在原分支按 TDD 修复，跑聚焦测试和完整门禁，直接提交并 push，然后重新运行第 10 步；不创建新 PR。
 12. Claude 对当前 head SHA 返回 `pass` 且 GitHub CI 通过后，Codex 无需人工批准，直接执行 `gh pr merge <PR编号> --merge --delete-branch`。
 13. Cursor Bugbot 可用时只做附加审核。Autofix 活跃时由它先处理自己的 finding，Codex 不抢修同一个问题；Bugbot 不可用时不等待。
-14. 审核和 CI 等待可交给一个只读子代理，主进程继续其它不冲突任务。
+14. PR 创建后由当前进程依次完成 Claude 审核、问题修复、重新审核、CI 等待和合并；当前 PR 完整闭环前不开始下一个模块。
 
 ## 成本与外部写入门禁
 
