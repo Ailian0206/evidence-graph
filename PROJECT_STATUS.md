@@ -4,10 +4,10 @@
 
 ## 当前阶段
 
-- 阶段：简化独立 Claude PR 自动审核流程。
-- 分支：`fix/pr-review-project-sources`。
-- PR：Draft [#8](https://github.com/Ailian0206/evidence-graph/pull/8) 已创建，正在更新为简化流程。
-- 当前任务：只保留“Claude 审核评论、Codex 修复、重审、通过后合并”。
+- 阶段：独立 Claude PR 自动审核串行闭环。
+- 分支：`fix/serial-pr-review-flow`。
+- PR：尚未创建；完成流程规则更新和本地门禁后创建唯一 Draft PR。
+- 当前任务：由当前进程串行完成 PR 审核、修复、重审、CI 和合并，闭环后再进入下一模块。
 - 外部 Provider 调用：已禁用。
 - 生产部署：未配置。
 - Node.js：本地和 CI 使用 `v22.22.1`。
@@ -30,7 +30,7 @@
 | 基础与作品集 | 已完成 | PR [#1](https://github.com/Ailian0206/evidence-graph/pull/1) 在 CI、Codex 审核和视觉验证通过后合并 |
 | 研究领域基础 | 已完成 | PR [#3](https://github.com/Ailian0206/evidence-graph/pull/3) 已合并为 `3fef13c` |
 | 确定性研究工作流 | 已完成 | PR [#4](https://github.com/Ailian0206/evidence-graph/pull/4) 已通过 merge commit `2c8b90d` 合并 |
-| 全自动 PR 审核 | 简化中 | PR [#8](https://github.com/Ailian0206/evidence-graph/pull/8) 删除非必要状态机，只保留独立 Claude 审核闭环 |
+| 全自动 PR 审核 | 串行规则修正中 | PR [#6](https://github.com/Ailian0206/evidence-graph/pull/6) 和 [#8](https://github.com/Ailian0206/evidence-graph/pull/8) 已合并；当前补充 PR 闭环前不开始下一模块的约束 |
 | Source hash 项目隔离 | 已完成 | PR [#7](https://github.com/Ailian0206/evidence-graph/pull/7) 已通过 merge commit `8bc6f39` 合并 |
 | 证据工作台 | 待开始 | 桌面三栏、移动端标签页和图谱交互测试通过 |
 | 托管部署 | 待开始 | 获得账号授权后完成 Supabase、Inngest、Vercel 配置和生产冒烟测试 |
@@ -52,10 +52,11 @@
 - Source hash GREEN：聚焦测试 25 个通过；不同 owner/project 可保存相同内容，同一项目仍拒绝重复哈希。
 - Source hash 完整门禁：lint、typecheck、67 个单元测试、build 和 18 个 E2E 测试通过。
 - PR #7 独立 Claude 审核和 GitHub CI 通过后已合并；合并后的聚焦测试 25 个通过。
-- PR #8 简化方向：只保留唯一命名的全局 Claude skill 和审核、修复、重审、合并四步流程。
+- PR #8 已通过独立 Claude 审核和 GitHub CI 后合并，只保留唯一命名的全局 Claude skill 和审核、修复、重审、合并流程。
+- PR #9 已通过独立 Claude 审核和 GitHub CI，并以 merge commit `2108ea0` 合并；MCP Guardian 已加入作品集 Work 页。
 
 ## 下一步
 
-1. 完成 PR #8 的简化文档与完整门禁。
-2. 运行独立 Claude `/codex-independent-pr-review 8`。
-3. 有问题就在 PR #8 修复并重审；无问题且 CI 通过就 merge commit 合并。
+1. 完成 PR 串行闭环规则更新和本地门禁，创建本模块唯一 Draft PR。
+2. 当前进程运行独立 Claude 审核；有问题就在原 PR 修复并重审。
+3. 当前 head 审核通过且 CI 成功后 merge commit 合并，再开始 `feat/evidence-workspace` 模块。
