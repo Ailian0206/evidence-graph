@@ -30,11 +30,12 @@ Do not add ProjectPilot AI, generic chat, billing, teams, browser extensions, OC
 7. Use Chinese Conventional Commits.
 8. Keep pull requests at module granularity. Do not create PRs for intermediate tasks, review-only cleanups, or every small commit.
 9. At the module milestone, run the complete gate, push the branch, and create one Draft PR for that module.
-10. Follow `docs/bugbot-autofix-workflow.md` when automated review is available. Automated review tools are optional accelerators, not merge gates; do not wait for or repeatedly trigger a tool whose quota is exhausted or whose service is unavailable.
-11. When Cursor Bugbot Autofix is available and active, let it attempt the first fix for its findings. If Autofix fails, stalls, is unavailable, or the user disables the wait, Codex takes ownership after verifying the finding.
-12. Review every automated or Codex-authored fix by inspecting the diff, running focused tests, and then running the module gate. Follow-up fixes stay on the same module branch and do not get a separate PR.
-13. Use a read-only monitor subagent only while remote automation is active. Otherwise continue the main local development task without monitoring or waiting.
-14. Merge with `gh pr merge <number> --merge --delete-branch` only after checks are green and the currently available review path has found no unresolved valid issue.
+10. Immediately after opening or updating the Draft PR, trigger an independent review instead of reading your own diff: run `claude --permission-mode auto --model sonnet -p "/pr-review"` from the repo root and wait for it to exit. This is a separate `claude` CLI process, not you — see `docs/bugbot-autofix-workflow.md` section 7 and `~/.codex/skills/pr-review/SKILL.md`. Skip this only for a PR that changes exclusively `.claude/skills/pr-review/` or this review protocol itself.
+11. Follow `docs/bugbot-autofix-workflow.md` when Cursor Bugbot review is also available. Automated review tools are optional accelerators, not the only merge gate; do not wait for or repeatedly trigger a tool whose quota is exhausted or whose service is unavailable — the Claude review from step 10 still applies regardless.
+12. When Cursor Bugbot Autofix is available and active, let it attempt the first fix for its findings. If Autofix fails, stalls, is unavailable, or the user disables the wait, Codex takes ownership after verifying the finding.
+13. Review every automated or Codex-authored fix by inspecting the diff, running focused tests, and then running the module gate. Follow-up fixes stay on the same module branch and do not get a separate PR. Re-run step 10 after any push that changes the PR's head SHA.
+14. Use a read-only monitor subagent only while remote automation is active. Otherwise continue the main local development task without monitoring or waiting.
+15. Merge with `gh pr merge <number> --merge --delete-branch` only after checks are green, `gh pr view <number> --json labels` shows no `claude-changes-requested` label, and the currently available review path has found no unresolved valid issue.
 
 ## Cost and external-write gates
 

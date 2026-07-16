@@ -1,0 +1,28 @@
+---
+description: PR 审核门禁 — 开/更新 PR 后必须触发独立 Claude 审核，合并前必须确认无 claude-changes-requested 标签
+alwaysApply: true
+---
+
+# PR 审核门禁（evidence-graph 专属）
+
+Cursor Bugbot 额度用尽期间，本仓库用 Claude Code 的 `pr-review` skill 做独立只读审核，协议见 `docs/bugbot-autofix-workflow.md` 第 7 节。
+
+## 硬规则
+
+1. 开出或更新 Draft PR 后，立刻在仓库根目录跑：
+
+   ```bash
+   claude --permission-mode auto --model sonnet -p "/pr-review"
+   ```
+
+   等它跑完（非交互，自动退出）再继续，不要自己读 diff 给自己判定。这是一个独立的 `claude` 进程，不是 Cursor 自己的模型在评分。
+
+2. 合并前必须确认：
+
+   ```bash
+   gh pr view <number> --json labels --jq '[.labels[].name]'
+   ```
+
+   出现 `claude-changes-requested` 时，先处理评论里的问题、push、重新跑一遍第 1 步（会因为 head SHA 变化自动重审），确认标签消失后再合并。
+
+3. 例外：只改 `.claude/skills/pr-review/` 或 `docs/bugbot-autofix-workflow.md` 审核协议本身的 PR，不需要触发这个流程（`pr-review` skill 本身也会主动跳过这类 PR），人工看一眼直接合并。
