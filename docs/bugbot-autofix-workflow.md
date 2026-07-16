@@ -58,6 +58,27 @@ If Autofix committed directly to the module branch, keep the commit after it pas
 - Merge the module PR with a merge commit only after CI is green, the currently available review path has completed, and no valid finding remains unresolved.
 - A Bugbot usage-limit skip is missing automated coverage, not a code finding or merge blocker. Record it in `PROJECT_STATUS.md`, do not repeatedly retrigger paid reviews, use Codex review plus the complete module gate as the temporary fallback, and keep local work moving.
 
+### 7. Claude review-only fallback (while Bugbot quota is exhausted)
+
+A separate Claude Code session runs the `pr-review` skill (`.claude/skills/pr-review/SKILL.md`)
+as a read-only stand-in for Bugbot: it never edits code, never commits, never opens
+or merges a PR. It only posts inline + summary PR comments and applies two labels.
+
+- `claude-reviewed` — a review pass has completed for the PR's current head SHA.
+  Absence means no pass has happened yet at this commit; wait or trigger one
+  before treating the PR as reviewed.
+- `claude-changes-requested` — the most recent pass found an unresolved CRITICAL
+  or HIGH finding. **Treat this the same as an unresolved Bugbot Critical finding
+  under section 6: do not merge while it is present.** It is removed once a later
+  pass confirms the finding is resolved.
+- Every summary comment ends with `<!-- CLAUDE_REVIEWED_SHA: <sha> -->`. If that
+  SHA does not match the PR's current head, the labels are stale — new commits
+  landed after the last review and it needs another pass.
+
+This runs independently of the main Codex process and on its own schedule; do not
+wait synchronously for it the way section 2's monitor subagent waits for Bugbot.
+Check label state before merging, same as any other merge-gate check in section 6.
+
 ## Monitor subagent contract
 
 The monitor is deliberately read-only. It may use `gh pr view`, `gh pr checks`, `gh api`, `git fetch`, and remote log or diff commands. It must not edit files, create commits, push branches, comment on PRs, trigger Autofix, or merge.
