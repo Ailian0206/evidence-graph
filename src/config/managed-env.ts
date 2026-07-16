@@ -59,8 +59,10 @@ export const requireProductionSmokeEnv = (environment: EnvironmentSource) => {
     const hostname = baseUrl.hostname.toLowerCase();
     const isLocal =
       hostname === "localhost" ||
-      hostname === "127.0.0.1" ||
-      hostname === "::1" ||
+      hostname.endsWith(".localhost") ||
+      hostname.startsWith("127.") ||
+      hostname === "0.0.0.0" ||
+      hostname === "[::1]" ||
       hostname.endsWith(".local");
 
     if (baseUrl.protocol !== "https:" || isLocal) {
@@ -69,7 +71,10 @@ export const requireProductionSmokeEnv = (environment: EnvironmentSource) => {
 
     return { baseUrl: baseUrl.origin };
   } catch (error) {
-    if (error instanceof Error && error.message === "PRODUCTION_BASE_URL_INVALID") {
+    if (
+      error instanceof Error &&
+      error.message === "PRODUCTION_BASE_URL_INVALID"
+    ) {
       throw error;
     }
 

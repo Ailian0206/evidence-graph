@@ -7,7 +7,7 @@
 - 阶段：托管部署里程碑开发中。
 - 分支：`feat/managed-deployment`，在隔离 worktree 中开发。
 - PR：[#11](https://github.com/Ailian0206/evidence-graph/pull/11) 已通过独立 Claude 审核和 GitHub CI，并以 merge commit `74c3b49` 合并。
-- 当前任务：数据库与 Provider CI 门禁已完成，下一步增加部署文档和生产冒烟确认门禁。
+- 当前任务：本地部署文档与生产冒烟门禁已完成，停在托管账号资源授权门禁前。
 - 外部 Provider 调用：已禁用。
 - 生产部署：未配置。
 - Node.js：本地和 CI 使用 `v22.22.1`。
@@ -80,8 +80,15 @@
 - Provider 边界扫描已接入 quality job，能够拒绝真实 OpenAI/Tavily 端点、客户端敏感变量和非 fixture 网络 Provider；脚本回归测试通过。
 - database job 使用本地 `supabase db start`，完成 reset、33 个 pgTAP、schema lint，并通过 `if: always()` 清理本地容器；与 CI 相同的 start、test、stop 路径已在本机验证。
 - CI 门禁任务的完整 `npm run test:ci` 通过 lint、typecheck、112 个单元测试、生产构建和 36 个 E2E。
+- 中文部署手册已覆盖 Vercel、Supabase、GitHub OAuth、Inngest、Sentry、环境变量作用域、发布回滚、备份恢复和密钥轮换。
+- `verify:managed-env` 只输出变量名和配置状态；缺少托管变量时以 `MANAGED_ENV_INCOMPLETE` 退出，完整测试变量下通过，不打印变量值。
+- 生产冒烟必须同时提供精确确认令牌和 HTTPS 非本地地址；HTTP、localhost、IPv4/IPv6 回环地址都在任何请求前拒绝。
+- 默认生产冒烟只检查公开首页与安全 Header、公开示例、Auth 重定向和 Inngest 无签名拒绝；6 个门禁测试通过，未调用真实网络或付费 Provider。
+- 部署文档与冒烟门禁的完整 `npm run test:ci` 通过 lint、typecheck、118 个单元测试、生产构建和 36 个 E2E。
+- Vercel、Supabase、Inngest、Sentry、GitHub OAuth 和域名尚未创建或连接；没有写入真实密钥，也没有运行生产冒烟。
 
 ## 下一步
 
-1. 完成部署、回滚、备份和生产冒烟确认门禁文档。
-2. 创建账号资源、写入密钥和运行生产冒烟测试前取得明确授权。
+1. 取得明确授权和账号、GitHub OAuth、域名处理方式后，创建或连接免费层托管资源。
+2. 先在 Preview 应用迁移和验证 RLS，再配置 Production 并运行不含付费 Provider 的生产冒烟。
+3. 完成回滚与备份恢复演练后，运行里程碑完整门禁并只创建一个 Draft PR。

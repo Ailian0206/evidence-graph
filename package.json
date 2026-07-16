@@ -9,6 +9,8 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "check:provider-boundary": "node scripts/check-provider-boundary.mjs",
+    "verify:managed-env": "node --env-file-if-exists=.env.local scripts/verify-managed-env.mjs",
+    "smoke:production": "node scripts/smoke-production.mjs",
     "test:db": "supabase db reset --local && supabase test db --local && supabase db lint --local --level warning",
     "test:unit": "vitest run --passWithNoTests",
     "test:e2e": "playwright test",

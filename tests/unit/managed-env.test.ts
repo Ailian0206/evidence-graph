@@ -70,6 +70,15 @@ describe("managed runtime environment", () => {
       }),
     ).toThrow("PRODUCTION_BASE_URL_INVALID");
 
+    for (const baseUrl of ["https://127.0.0.2", "https://[::1]"]) {
+      expect(() =>
+        requireProductionSmokeEnv({
+          ALLOW_PRODUCTION_SMOKE: "YES_I_ACCEPT_REAL_WRITES",
+          PRODUCTION_BASE_URL: baseUrl,
+        }),
+      ).toThrow("PRODUCTION_BASE_URL_INVALID");
+    }
+
     expect(
       requireProductionSmokeEnv({
         ALLOW_PRODUCTION_SMOKE: "YES_I_ACCEPT_REAL_WRITES",

@@ -465,21 +465,21 @@ git commit -m "ci: 增加托管数据库门禁"
 - 修改：`package.json`
 - 修改：`README.md`
 
-- [ ] **步骤 1：编写生产冒烟 RED 测试**
+- [x] **步骤 1：编写生产冒烟 RED 测试**
 
 验证没有确认令牌时脚本在任何网络请求前退出；base URL 必须 HTTPS 且不能是 localhost；默认冒烟只检查公开首页、公开示例、Auth 重定向、Inngest 签名拒绝和安全 Header，不运行真实研究。
 
-- [ ] **步骤 2：运行测试确认 RED**
+- [x] **步骤 2：运行测试确认 RED**
 
 运行：`npm run test:unit -- tests/unit/production-smoke-gate.test.ts`
 
 预期：脚本和门禁不存在。
 
-- [ ] **步骤 3：实现脚本和中文文档**
+- [x] **步骤 3：实现脚本和中文文档**
 
 `docs/deployment.md` 明确 Vercel Git Import、Supabase 迁移、GitHub OAuth callback、Inngest、Sentry、Preview/Production 变量作用域、备份恢复、密钥轮换和回滚步骤。真实研究冒烟单独要求 `ALLOW_PAID_PROVIDER_SMOKE=YES_I_ACCEPT_PROVIDER_COST`，并在输出中显示最高 1 美元成本上限。
 
-- [ ] **步骤 4：验证无网络默认行为**
+- [x] **步骤 4：验证无网络默认行为**
 
 运行：
 
@@ -490,7 +490,7 @@ npm run smoke:production
 
 预期：没有真实环境时，环境校验列出缺项；生产冒烟在发送请求前以 `PRODUCTION_SMOKE_NOT_CONFIRMED` 退出。
 
-- [ ] **步骤 5：提交**
+- [x] **步骤 5：提交**
 
 ```bash
 git add docs/deployment.md scripts package.json README.md tests/unit/production-smoke-gate.test.ts
