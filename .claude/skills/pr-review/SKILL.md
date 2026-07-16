@@ -1,125 +1,141 @@
 ---
 name: pr-review
-description: Read-only code review for open pull requests in this repo. Diffs changed files, grades findings by severity (CRITICAL/HIGH/MEDIUM/LOW), posts inline and summary GitHub comments, and labels the PR to signal review state to the developer agent (Codex/Cursor). Never edits source files, creates branches, commits, or merges. Use when a PR was just opened/updated, or when polling for PRs that lack an up-to-date `claude-reviewed` marker.
+description: 用于审核刚创建或更新的 PR，以及检查缺少当前 head SHA 审核 marker 的开放 PR。
 ---
 
-# PR Review (Bugbot quota fallback)
+# PR 独立只读审核
 
-This skill exists because Cursor Bugbot's monthly quota can run out, leaving PRs
-merged without automated review. It replaces Bugbot for the *review* half only —
-fixing is a separate agent's job (Codex/Cursor), per `docs/bugbot-autofix-workflow.md`.
+本 skill 在 Cursor Bugbot 不可用时承担审核职责。它只发现和报告问题，修复由 Codex/Cursor 开发 agent 完成。
 
-## Hard boundary
+## 调用模式
 
-This skill is **read-only with respect to code**. In one run it may:
+支持两种调用：
 
-- Read: `gh pr list/view/diff`, `gh api`, `Read`, `Grep`, `codegraph_*`.
-- Run throwaway verification scripts (e.g. a Node one-liner to confirm a schema
-  behaves as suspected) — never edit tracked files to do this.
-- Write: PR comments (`gh pr comment`, `gh api .../pulls/{n}/comments`), PR labels
-  (`gh pr edit --add-label` / `--remove-label`).
-
-It must never: `Edit`/`Write` a tracked source file, `git commit`, `git push`,
-create a branch, open a PR, or merge/close a PR. If a finding needs a code fix,
-the fix belongs to the developer agent — describe the problem and a direction,
-not a diff.
-
-## Review-state protocol (how the dev agent finds out)
-
-Every summary comment this skill posts ends with a hidden marker:
-
+```text
+/pr-review
+/pr-review --trusted-base <PR编号>
 ```
+
+- 普通模式：从当前 PR 工作区审核不涉及审核协议的开放 PR。
+- 可信基线模式：从目标 PR 的准确 `baseRefOid` detached worktree 审核涉及审核协议的 PR。
+
+## 代码只读硬边界
+
+允许：
+
+- 使用 `gh pr list/view/diff`、`gh api`、Read、Grep、`codegraph_*` 读取信息。
+- 运行不会修改仓库的验证命令或临时脚本。
+- 发布 PR inline/summary 评论和维护审核标签。
+
+禁止：
+
+- 编辑或写入 tracked 文件。
+- commit、push、创建分支、创建/关闭/合并 PR。
+- checkout 目标 PR head。
+- 在可信基线模式执行、复制或导入目标分支代码。
+- 直接修复 finding。
+
+## 审核状态协议
+
+每条 summary 评论必须以当前 PR head SHA marker 结尾：
+
+```html
 <!-- CLAUDE_REVIEWED_SHA: <head-sha> -->
 ```
 
-- Before reviewing a PR, fetch its comments and look for the most recent marker.
-  If its SHA equals the PR's current head SHA, the PR is already reviewed at this
-  commit — skip it (idempotent; safe to re-run this skill often).
-- If the head SHA has moved since the last marker (new commits pushed), review
-  again — this is how a Codex fix-and-repush gets re-checked automatically.
+标签语义：
 
-Labels applied after each review pass:
+- `claude-reviewed`：当前 head SHA 的审核已完成。
+- `claude-changes-requested`：当前审核存在未解决的 CRITICAL/HIGH finding。
 
-- `claude-reviewed` — always applied once a review pass completes. Presence means
-  "read the review comments," not "approved."
-- `claude-changes-requested` — applied only when the pass found an unresolved
-  CRITICAL or HIGH finding. Remove it on a later pass once those are resolved
-  (keep `claude-reviewed`).
+如果最新 marker SHA 等于当前 head SHA，必须幂等跳过，不发新评论、不改标签。新 head SHA 必须重新审核。只有审核器可以维护这两个标签。
 
-`docs/bugbot-autofix-workflow.md` tells the dev agent to check these labels before
-merging a module PR, the same way it already checks Bugbot/CI state.
+## 审核协议路径
 
-## Procedure
+任一变更命中以下路径，就必须使用可信基线模式：
 
-1. **Discover work.**
+- `.claude/skills/pr-review/**`
+- `.cursor/rules/pr-review-gate.mdc`
+- `AGENT.md` 中的 PR 审核/合并门禁
+- `docs/bugbot-autofix-workflow.md` 中的审核协议
+- `docs/superpowers/specs/*pr-review*`
+- `docs/superpowers/plans/*pr-review*`
+
+普通模式发现这些路径时必须零 GitHub 写入退出，并明确要求开发 agent 从 `baseRefOid` worktree 运行：
+
+```bash
+claude --permission-mode auto --model sonnet -p "/pr-review --trusted-base <PR编号>"
+```
+
+## 普通模式
+
+1. 查询开放 PR：
+
+   ```bash
+   gh pr list --state open --json number,headRefOid,baseRefOid,title,isDraft,url
    ```
-   gh pr list --state open --json number,headRefOid,title,isDraft,url
+
+2. 读取每个 PR 的 issue 评论，查找最新 `CLAUDE_REVIEWED_SHA`。
+3. SHA 已匹配时跳过。
+4. 读取变更文件列表；命中审核协议路径时按上一节退出，不得评论或加标签。
+5. 其余 PR 进入“共同审核过程”。
+
+## 可信基线模式
+
+只允许指定一个 PR。开始审核前按顺序验证：
+
+1. 参数包含有效正整数 PR 编号。
+2. 读取目标状态：
+
+   ```bash
+   gh pr view <PR编号> --json state,baseRefOid,headRefOid,title,isDraft,url
    ```
-   For each PR, fetch comments (`gh api repos/{owner}/{repo}/issues/{n}/comments`)
-   and check for a `CLAUDE_REVIEWED_SHA` marker matching `headRefOid`. Build the
-   list of PRs that actually need a pass. If empty, stop — do not post anything.
 
-2. **Read the diff, not just the summary.**
+3. `state` 必须是 `OPEN`。
+4. `baseRefOid` 和 `headRefOid` 必须存在且不同。
+5. 当前 HEAD 必须等于 `baseRefOid`：
+
+   ```bash
+   test "$(git rev-parse HEAD)" = "<baseRefOid>"
    ```
-   gh pr diff <n>
-   ```
-   For files that are hard to judge from the diff alone (schema files, shared
-   utilities, anything touching ownership/auth/money/citations in this project),
-   read the full file with `Read`, not just the patch context.
 
-3. **Verify before flagging — don't guess.** If a finding depends on library
-   behavior you're not certain of (e.g. "does `.extend()` on a Zod schema keep a
-   `.superRefine()`?"), write a 5-line throwaway script and run it rather than
-   asserting from memory. Only report findings you've confirmed against the
-   actual code or a runnable check.
+6. 当前必须是 detached HEAD；`git symbolic-ref -q HEAD` 成功表示校验失败。
+7. 任一校验失败时输出稳定原因并立即退出；不得发布评论或修改标签。
+8. marker 已匹配 `headRefOid` 时幂等退出。
 
-4. **Grade findings** using this repo's existing severity scale
-   (`~/.claude/rules/common/code-review.md`):
+可信基线模式读取目标内容时只能使用：
 
-   | Level | Meaning | Action |
-   |---|---|---|
-   | CRITICAL | Security vulnerability or data loss risk | blocks merge |
-   | HIGH | Bug or significant quality issue | should fix before merge |
-   | MEDIUM | Maintainability concern | worth fixing, not blocking |
-   | LOW | Style/minor, record and move on | optional |
+- `gh pr diff <PR编号>` 获取完整 patch。
+- `gh api repos/{owner}/{repo}/contents/{path}?ref=<headRefOid>` 获取目标 head 的完整文件。
+- `gh api` 读取评论、review 和 metadata。
+- 当前 base worktree 中未被修改的基线上下文。
 
-   Check the standard categories: hardcoded secrets, injection, auth/ownership
-   bypass, silent error swallowing, N+1/unbounded queries, missing tests for new
-   behavior, and — specific to this project — provider-call safety (no real
-   OpenAI/Tavily calls in routine tests) and evidence/citation integrity rules.
+不得 checkout、fetch 到工作区、执行目标分支测试或从目标分支加载 skill。需要验证库行为时，只能在 base worktree 运行与目标代码无关的临时只读脚本。
 
-5. **Post findings.**
-   - Concrete, file:line-anchored issues → inline comment via
-     `gh api repos/{owner}/{repo}/pulls/{n}/comments -f commit_id=<head-sha>
-     -f path=<file> -F line=<n> -f side=RIGHT -f body=...`. One comment per
-     distinct issue; posting via this endpoint auto-creates and submits a review.
-   - Always post one summary comment (`gh pr comment <n> --body ...`) listing
-     every finding by severity (even ones already inline, briefly), overall
-     verdict, and the `CLAUDE_REVIEWED_SHA` marker at the end.
-   - Findings should describe: what's wrong, a concrete failure scenario
-     (inputs/state → wrong output), and a fix direction — not a full diff.
+## 共同审核过程
 
-6. **Apply labels** per the review-state protocol above.
+1. 完整读取 `gh pr diff <PR编号>`。
+2. 对 schema、共享工具、ownership/auth、成本、引文等高风险文件读取完整文件；普通模式可读工作区文件，可信基线模式必须用 GitHub Contents API 读取目标 head。
+3. 不确定库行为时先做只读实证，禁止凭记忆报告。
+4. 按以下等级输出：
 
-7. **Stop.** Do not wait for the dev agent, do not re-review the same SHA twice,
-   do not touch code.
+   | 等级 | 含义 | 合并影响 |
+   | --- | --- | --- |
+   | CRITICAL | 安全漏洞或数据丢失风险 | 阻塞 |
+   | HIGH | 明确 bug 或重大质量问题 | 阻塞 |
+   | MEDIUM | 可维护性或非阻塞质量问题 | 自动判断 |
+   | LOW | 样式、小风险或记录项 | 可选 |
 
-## Out of scope: this skill's own operating rules
+5. 必查类别：密钥、注入、ownership 绕过、静默吞错、无界查询、缺失行为测试、真实 Provider 调用，以及本项目的 evidence/citation 完整性。
+6. 可精确定位的 finding 使用 inline 评论；每个问题一条。评论包含错误、可复现场景和修复方向，不提供完整 diff。
+7. 始终发布一条 summary，列出全部 finding、最终结论和准确 SHA marker。
+8. 如果仓库缺少审核标签，可创建缺少的标签；不得改变已有标签的颜色或说明。
+9. 审核完成后添加 `claude-reviewed`。有 CRITICAL/HIGH 时添加 `claude-changes-requested`；后续干净审核必须移除它。
+10. 立即退出，不等待开发 agent，不重复审核同一 SHA。
 
-Never apply `claude-reviewed` or `claude-changes-requested`, and never post a
-"review complete" comment, on a PR whose diff is entirely within
-`.claude/skills/pr-review/` and/or the review-protocol section of
-`docs/bugbot-autofix-workflow.md`. A PR that changes the reviewer's own rulebook
-cannot be certified by that same rulebook — that is self-approval regardless of
-how mechanical the change looks. Leave such PRs unlabeled; a human merges them
-after reading the diff directly.
+## 项目约束
 
-## Notes specific to this repo
-
-- Drafts are in scope — `docs/bugbot-autofix-workflow.md` treats one module PR as
-  one Draft PR under active review, same as Bugbot did.
-- PR authorship in `gh pr list` won't reliably distinguish "Codex" from "human"
-  from "Cursor" — everything pushes under the same git identity. Review every
-  open PR needing it regardless of apparent author.
-- `.worktrees/` may contain stale local checkouts unrelated to any PR — never a
-  review target, ignore it if `Grep`/`Read` wander into it.
+- Draft PR 也必须审核。
+- GitHub 作者身份不能区分 Codex、Cursor 或用户，所有待审核 PR 都按相同规则处理。
+- 忽略 `.worktrees/` 中与目标 PR 无关的历史 checkout。
+- 审核协议 PR 没有人工例外；必须由可信基线模式完成。
