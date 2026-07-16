@@ -5,12 +5,12 @@ alwaysApply: true
 
 # PR 全自动审核门禁
 
-Cursor Bugbot 额度不可用期间，本仓库使用独立 Claude Code `pr-review` skill。流程不包含人工审核步骤。
+本仓库始终使用独立 Claude Code `pr-review` skill 作为必需审核门禁；Cursor Bugbot 可用时只提供附加审核。流程不包含人工审核步骤。
 
 ## 开出或更新 PR 后
 
 1. 查询 PR 编号、`baseRefOid`、`headRefOid` 和变更文件。
-2. 普通 PR 在仓库根目录运行：
+2. 普通 PR 在当前 PR 分支工作区根目录运行：
 
    ```bash
    claude --permission-mode auto --model sonnet -p "/pr-review"
@@ -37,9 +37,11 @@ Cursor Bugbot 额度不可用期间，本仓库使用独立 Claude Code `pr-revi
 
 - 出现 `claude-changes-requested`：验证 CRITICAL/HIGH finding，在原分支按 TDD 修复，跑聚焦和完整门禁，push 后重新审核。
 - 只有 `claude-reviewed`、marker SHA 匹配当前 head，且没有 `claude-changes-requested` 时审核才通过。
+- Codex 判定 finding 无效且无需改代码时，发布包含 finding 链接、结论、证据和 `CODEX_REVIEW_RESPONSE_SHA` 的回复，再运行对应模式的 `--recheck`；不得手工改 Claude 标签。
+- 同 SHA marker 已存在但标签缺失或冲突时，由 reviewer 根据 summary verdict 自动修复标签，不发布重复 summary。
 - MEDIUM/LOW 由开发 agent 自动技术判断，不要求人工批准。
 - 不得手工操作 Claude 标签，不得冒充 Claude 发布审核评论。
 
 ## 自动合并
 
-本地门禁、GitHub CI 和 Claude 审核全部通过后，直接使用 merge commit 合并并删除远端分支。禁止 squash、rebase、force push。协议 PR 同样必须自动审核，没有“人工看一眼”例外。
+本地门禁、GitHub CI 和 Claude 审核全部通过后，直接使用 merge commit 合并并删除远端分支。禁止 squash、rebase、force push。PR #6 是用户批准的唯一一次流程引导；它合并后，协议 PR 同样必须自动审核，没有“人工看一眼”例外。

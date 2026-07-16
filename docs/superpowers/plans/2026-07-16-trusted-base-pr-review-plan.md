@@ -87,6 +87,10 @@ rg -n "人工|trusted-base|可信基线|claude-changes-requested|CLAUDE_REVIEWED
 
 预期：不存在协议 PR 依赖人工审核的有效规则；两种模式和阻塞标签语义一致。
 
+- [x] **步骤 4.1：修复规格复核发现的状态机缺口**
+
+普通模式绑定当前 PR 分支和 head SHA；summary 增加机器可读 verdict；同 SHA 标签异常由 reviewer 自动修复；Codex 使用结构化证据回复和 `--recheck` 处理无需改代码的无效 finding；PR #6 一次性引导例外在所有规则中保持一致。
+
 - [x] **步骤 5：提交仓库规则**
 
 ```bash
