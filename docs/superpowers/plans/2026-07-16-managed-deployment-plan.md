@@ -42,7 +42,7 @@
 - 创建：`src/config/managed-env.ts`
 - 创建：`tests/unit/managed-env.test.ts`
 
-- [ ] **步骤 1：编写环境变量 RED 测试**
+- [x] **步骤 1：编写环境变量 RED 测试**
 
 测试覆盖：公开 Supabase URL/Publishable Key 成对出现；Service Role 只能由服务端读取；没有变量时返回 `configured: false` 而不是让公开 build 失败；生产冒烟必须同时满足 `ALLOW_PRODUCTION_SMOKE=YES_I_ACCEPT_REAL_WRITES` 和 HTTPS `PRODUCTION_BASE_URL`。
 
@@ -62,13 +62,13 @@ expect(() =>
 ).toThrow("PRODUCTION_SMOKE_NOT_CONFIRMED");
 ```
 
-- [ ] **步骤 2：运行测试确认 RED**
+- [x] **步骤 2：运行测试确认 RED**
 
 运行：`npm run test:unit -- tests/unit/managed-env.test.ts`
 
 预期：因 `@/config/managed-env` 不存在而失败。
 
-- [ ] **步骤 3：安装锁定依赖**
+- [x] **步骤 3：安装锁定依赖**
 
 运行：
 
@@ -77,11 +77,11 @@ npm install @supabase/supabase-js@2.110.6 @supabase/ssr@0.12.3 inngest@4.13.0 @s
 npm install --save-dev supabase@2.109.1
 ```
 
-- [ ] **步骤 4：实现惰性环境解析**
+- [x] **步骤 4：实现惰性环境解析**
 
 `readManagedRuntimeStatus` 只报告能力；`requireSupabasePublicEnv`、`requireSupabaseAdminEnv` 和 `requireProductionSmokeEnv` 在实际使用对应能力时才抛出稳定错误码。客户端文件不得导入服务端 Schema，不得使用动态 `process.env[name]` 读取 `NEXT_PUBLIC_*`。
 
-- [ ] **步骤 5：验证 GREEN 和客户端密钥边界**
+- [x] **步骤 5：验证 GREEN 和客户端密钥边界**
 
 运行：
 
@@ -90,9 +90,9 @@ npm run test:unit -- tests/unit/managed-env.test.ts
 rg -n "SUPABASE_SERVICE_ROLE_KEY|SENTRY_AUTH_TOKEN|INNGEST_SIGNING_KEY" src --glob '*.{ts,tsx}'
 ```
 
-预期：测试通过；敏感变量只出现在明确标记为 `server-only` 的模块。
+预期：测试通过；解析模块不直接读取敏感 `process.env`，后续实际读取由明确标记为 `server-only` 的 adapter 负责。
 
-- [ ] **步骤 6：提交**
+- [x] **步骤 6：提交**
 
 ```bash
 git add package.json package-lock.json .env.example src/config/managed-env.ts tests/unit/managed-env.test.ts
