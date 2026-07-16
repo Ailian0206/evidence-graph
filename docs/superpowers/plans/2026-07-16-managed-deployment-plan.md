@@ -419,22 +419,23 @@ git commit -m "feat(observability): 增加监控与安全门禁"
 - 修改：`.github/workflows/ci.yml`
 - 修改：`package.json`
 - 创建：`scripts/check-provider-boundary.mjs`
+- 创建：`tests/unit/provider-boundary.test.ts`
 
-- [ ] **步骤 1：先验证现有 CI 不执行数据库测试**
+- [x] **步骤 1：先验证现有 CI 不执行数据库测试**
 
 运行：`rg -n "supabase|test:db|provider-boundary" .github/workflows/ci.yml package.json`
 
 预期：无匹配或缺少完整门禁。
 
-- [ ] **步骤 2：增加稳定脚本**
+- [x] **步骤 2：增加稳定脚本**
 
 新增 `test:db`、`test:managed` 和 `check:provider-boundary`。Provider 扫描检查真实端点、敏感变量的客户端引用和 fixture 之外的网络 Provider；数据库命令使用锁定的本地 CLI，不连接远端。
 
-- [ ] **步骤 3：增加独立 database CI job**
+- [x] **步骤 3：增加独立 database CI job**
 
 保持现有 quality job 不变，新增 database job 启动本地 Supabase、执行 reset 和 pgTAP，最后无论成功失败都停止本地容器。两个 job 都通过才允许 PR 合并。
 
-- [ ] **步骤 4：本地验证**
+- [x] **步骤 4：本地验证**
 
 运行：
 
@@ -446,7 +447,7 @@ npm run test:ci
 
 预期：Provider 扫描、全部 pgTAP、lint、typecheck、unit、build 和 E2E 通过。
 
-- [ ] **步骤 5：提交**
+- [x] **步骤 5：提交**
 
 ```bash
 git add .github/workflows/ci.yml package.json package-lock.json scripts/check-provider-boundary.mjs

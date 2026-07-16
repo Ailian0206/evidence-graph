@@ -7,7 +7,7 @@
 - 阶段：托管部署里程碑开发中。
 - 分支：`feat/managed-deployment`，在隔离 worktree 中开发。
 - PR：[#11](https://github.com/Ailian0206/evidence-graph/pull/11) 已通过独立 Claude 审核和 GitHub CI，并以 merge commit `74c3b49` 合并。
-- 当前任务：Sentry、Analytics 和安全响应头已完成，下一步把数据库与 Provider 门禁接入 CI。
+- 当前任务：数据库与 Provider CI 门禁已完成，下一步增加部署文档和生产冒烟确认门禁。
 - 外部 Provider 调用：已禁用。
 - 生产部署：未配置。
 - Node.js：本地和 CI 使用 `v22.22.1`。
@@ -77,9 +77,11 @@
 - Sentry `beforeSend` 递归移除 email、GitHub 用户名、研究问题、来源正文、quote 和 Provider payload；Vercel Analytics 不接收自定义研究数据。
 - 全站已增加 nosniff、严格 Referrer Policy、受限 Permissions Policy、`DENY` frame 和稳定 `frame-ancestors` 防护。
 - 监控与安全门禁的完整 `npm run test:ci` 通过 lint、typecheck、111 个单元测试、生产构建和 36 个 E2E。
+- Provider 边界扫描已接入 quality job，能够拒绝真实 OpenAI/Tavily 端点、客户端敏感变量和非 fixture 网络 Provider；脚本回归测试通过。
+- database job 使用本地 `supabase db start`，完成 reset、33 个 pgTAP、schema lint，并通过 `if: always()` 清理本地容器；与 CI 相同的 start、test、stop 路径已在本机验证。
+- CI 门禁任务的完整 `npm run test:ci` 通过 lint、typecheck、112 个单元测试、生产构建和 36 个 E2E。
 
 ## 下一步
 
-1. 把本地 Supabase 数据库测试和 Provider 边界扫描接入 GitHub CI。
-2. 完成部署、回滚、备份和生产冒烟确认门禁文档。
-3. 创建账号资源、写入密钥和运行生产冒烟测试前取得明确授权。
+1. 完成部署、回滚、备份和生产冒烟确认门禁文档。
+2. 创建账号资源、写入密钥和运行生产冒烟测试前取得明确授权。
