@@ -104,6 +104,16 @@ merging a module PR, the same way it already checks Bugbot/CI state.
 7. **Stop.** Do not wait for the dev agent, do not re-review the same SHA twice,
    do not touch code.
 
+## Out of scope: this skill's own operating rules
+
+Never apply `claude-reviewed` or `claude-changes-requested`, and never post a
+"review complete" comment, on a PR whose diff is entirely within
+`.claude/skills/pr-review/` and/or the review-protocol section of
+`docs/bugbot-autofix-workflow.md`. A PR that changes the reviewer's own rulebook
+cannot be certified by that same rulebook — that is self-approval regardless of
+how mechanical the change looks. Leave such PRs unlabeled; a human merges them
+after reading the diff directly.
+
 ## Notes specific to this repo
 
 - Drafts are in scope — `docs/bugbot-autofix-workflow.md` treats one module PR as
