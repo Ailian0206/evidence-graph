@@ -49,6 +49,30 @@ export const publicProjects: PortfolioProject[] = [
     tags: ["Next.js", "Prisma", "Playwright", "Image API"],
     repositoryUrl: "https://github.com/Ailian0206/ai-photo-studio-cn",
   },
+  {
+    slug: "mcp-guardian",
+    name: { zh: "MCP Guardian", en: "MCP Guardian" },
+    status: "in-development",
+    statusLabel: { zh: "MVP 就绪", en: "MVP ready" },
+    summary: {
+      zh: "在 Agent 调用 MCP 工具之前执行 allow / deny / redact / require_approval，并留下可回放审计。",
+      en: "A pre-call policy gateway for MCP tool calls—allow, deny, redact, or require approval—with replayable audits.",
+    },
+    problem: {
+      zh: "Trace 平台擅长事后观测，但拦不住一次危险的 shell、越权读系统文件，或把密钥打进 HTTP 参数。",
+      en: "Trace platforms observe after the fact, but cannot stop a dangerous shell command, path escape, or secrets in HTTP args.",
+    },
+    approach: {
+      zh: "YAML 策略引擎 + 本地 Gateway 代理 tools/call，默认 fail-closed，并提供 CLI 与 Web 两条审批路径。",
+      en: "YAML policy engine plus a local gateway proxying tools/call, fail-closed by default, with CLI and web approval paths.",
+    },
+    proof: {
+      zh: "A1–A8 与 6 个红队场景脚本可重复通过；公开 /demo 与 Playwright smoke 已覆盖。",
+      en: "Repeatable A1–A8 and six red-team scenarios; public /demo and Playwright smoke are green.",
+    },
+    tags: ["TypeScript", "MCP", "Policy", "Playwright"],
+    repositoryUrl: "https://github.com/Ailian0206/mcp-guardian",
+  },
 ];
 
 export function getProjectBySlug(slug: string) {
