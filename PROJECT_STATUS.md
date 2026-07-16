@@ -6,7 +6,7 @@
 
 - 阶段：独立 Claude PR 自动审核串行闭环。
 - 分支：`fix/serial-pr-review-flow`。
-- PR：尚未创建；完成流程规则更新和本地门禁后创建唯一 Draft PR。
+- PR：Draft [#10](https://github.com/Ailian0206/evidence-graph/pull/10) 已创建，等待独立 Claude 审核和 GitHub CI。
 - 当前任务：由当前进程串行完成 PR 审核、修复、重审、CI 和合并，闭环后再进入下一模块。
 - 外部 Provider 调用：已禁用。
 - 生产部署：未配置。
@@ -30,7 +30,7 @@
 | 基础与作品集 | 已完成 | PR [#1](https://github.com/Ailian0206/evidence-graph/pull/1) 在 CI、Codex 审核和视觉验证通过后合并 |
 | 研究领域基础 | 已完成 | PR [#3](https://github.com/Ailian0206/evidence-graph/pull/3) 已合并为 `3fef13c` |
 | 确定性研究工作流 | 已完成 | PR [#4](https://github.com/Ailian0206/evidence-graph/pull/4) 已通过 merge commit `2c8b90d` 合并 |
-| 全自动 PR 审核 | 串行规则修正中 | PR [#6](https://github.com/Ailian0206/evidence-graph/pull/6) 和 [#8](https://github.com/Ailian0206/evidence-graph/pull/8) 已合并；当前补充 PR 闭环前不开始下一模块的约束 |
+| 全自动 PR 审核 | 串行规则修正中 | PR [#6](https://github.com/Ailian0206/evidence-graph/pull/6) 和 [#8](https://github.com/Ailian0206/evidence-graph/pull/8) 已合并；Draft PR [#10](https://github.com/Ailian0206/evidence-graph/pull/10) 补充 PR 闭环前不开始下一模块的约束 |
 | Source hash 项目隔离 | 已完成 | PR [#7](https://github.com/Ailian0206/evidence-graph/pull/7) 已通过 merge commit `8bc6f39` 合并 |
 | 证据工作台 | 待开始 | 桌面三栏、移动端标签页和图谱交互测试通过 |
 | 托管部署 | 待开始 | 获得账号授权后完成 Supabase、Inngest、Vercel 配置和生产冒烟测试 |
@@ -57,6 +57,6 @@
 
 ## 下一步
 
-1. 完成 PR 串行闭环规则更新和本地门禁，创建本模块唯一 Draft PR。
-2. 当前进程运行独立 Claude 审核；有问题就在原 PR 修复并重审。
+1. 当前进程对 PR #10 运行独立 Claude 审核。
+2. 有问题就在 PR #10 修复、验证、提交并重审，不创建新 PR。
 3. 当前 head 审核通过且 CI 成功后 merge commit 合并，再开始 `feat/evidence-workspace` 模块。
