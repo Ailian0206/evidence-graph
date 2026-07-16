@@ -343,3 +343,217 @@ $$;
 create trigger auth_user_profile_created
 after insert on auth.users
 for each row execute function public.handle_new_user_profile();
+
+create function public.owns_project(requested_project_id text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.projects
+    where id = requested_project_id
+      and owner_id = auth.uid()
+      and status <> 'deleted'
+  );
+$$;
+
+create function public.get_public_report(requested_slug text)
+returns table (
+  report_id text,
+  project_slug text,
+  title text,
+  question text,
+  markdown text,
+  sections jsonb,
+  citations jsonb,
+  version integer,
+  published_at timestamptz
+)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select
+    report.id,
+    project.slug,
+    project.title,
+    project.question,
+    report.markdown,
+    report.sections,
+    report.citations,
+    report.version,
+    report.published_at
+  from public.reports as report
+  join public.projects as project on project.id = report.project_id
+  where report.slug = requested_slug
+    and report.status = 'published'
+    and report.published_at is not null
+    and project.visibility = 'public'
+    and project.status = 'active';
+$$;
+
+alter table public.profiles enable row level security;
+alter table public.profiles force row level security;
+alter table public.projects enable row level security;
+alter table public.projects force row level security;
+alter table public.research_runs enable row level security;
+alter table public.research_runs force row level security;
+alter table public.sources enable row level security;
+alter table public.sources force row level security;
+alter table public.source_chunks enable row level security;
+alter table public.source_chunks force row level security;
+alter table public.claims enable row level security;
+alter table public.claims force row level security;
+alter table public.evidence_links enable row level security;
+alter table public.evidence_links force row level security;
+alter table public.claim_relations enable row level security;
+alter table public.claim_relations force row level security;
+alter table public.workflow_checkpoints enable row level security;
+alter table public.workflow_checkpoints force row level security;
+alter table public.run_logs enable row level security;
+alter table public.run_logs force row level security;
+alter table public.reports enable row level security;
+alter table public.reports force row level security;
+alter table public.usage_monthly enable row level security;
+alter table public.usage_monthly force row level security;
+alter table public.audit_events enable row level security;
+alter table public.audit_events force row level security;
+
+grant usage on schema public to authenticated, service_role;
+
+grant select, insert, update, delete
+on table
+  public.profiles,
+  public.projects,
+  public.research_runs,
+  public.sources,
+  public.source_chunks,
+  public.claims,
+  public.evidence_links,
+  public.claim_relations,
+  public.workflow_checkpoints,
+  public.run_logs,
+  public.reports,
+  public.usage_monthly,
+  public.audit_events
+to authenticated, service_role;
+
+revoke all
+on table
+  public.profiles,
+  public.projects,
+  public.research_runs,
+  public.sources,
+  public.source_chunks,
+  public.claims,
+  public.evidence_links,
+  public.claim_relations,
+  public.workflow_checkpoints,
+  public.run_logs,
+  public.reports,
+  public.usage_monthly,
+  public.audit_events
+from anon;
+
+create policy profiles_owner_all
+on public.profiles
+for all
+to authenticated
+using (id = auth.uid())
+with check (id = auth.uid());
+
+create policy projects_owner_all
+on public.projects
+for all
+to authenticated
+using (owner_id = auth.uid() and status <> 'deleted')
+with check (owner_id = auth.uid());
+
+create policy research_runs_owner_all
+on public.research_runs
+for all
+to authenticated
+using (owner_id = auth.uid() and public.owns_project(project_id))
+with check (owner_id = auth.uid() and public.owns_project(project_id));
+
+create policy sources_owner_all
+on public.sources
+for all
+to authenticated
+using (public.owns_project(project_id))
+with check (public.owns_project(project_id));
+
+create policy source_chunks_owner_all
+on public.source_chunks
+for all
+to authenticated
+using (public.owns_project(project_id))
+with check (public.owns_project(project_id));
+
+create policy claims_owner_all
+on public.claims
+for all
+to authenticated
+using (public.owns_project(project_id))
+with check (public.owns_project(project_id));
+
+create policy evidence_links_owner_all
+on public.evidence_links
+for all
+to authenticated
+using (public.owns_project(project_id))
+with check (public.owns_project(project_id));
+
+create policy claim_relations_owner_all
+on public.claim_relations
+for all
+to authenticated
+using (public.owns_project(project_id))
+with check (public.owns_project(project_id));
+
+create policy workflow_checkpoints_owner_all
+on public.workflow_checkpoints
+for all
+to authenticated
+using (public.owns_project(project_id))
+with check (public.owns_project(project_id));
+
+create policy run_logs_owner_all
+on public.run_logs
+for all
+to authenticated
+using (public.owns_project(project_id))
+with check (public.owns_project(project_id));
+
+create policy reports_owner_all
+on public.reports
+for all
+to authenticated
+using (public.owns_project(project_id))
+with check (public.owns_project(project_id));
+
+create policy usage_monthly_owner_all
+on public.usage_monthly
+for all
+to authenticated
+using (owner_id = auth.uid())
+with check (owner_id = auth.uid());
+
+create policy audit_events_owner_all
+on public.audit_events
+for all
+to authenticated
+using (owner_id = auth.uid() and public.owns_project(project_id))
+with check (owner_id = auth.uid() and public.owns_project(project_id));
+
+revoke all on function public.enforce_exact_evidence_quote() from public;
+revoke all on function public.handle_new_user_profile() from public;
+revoke all on function public.owns_project(text) from public;
+revoke all on function public.get_public_report(text) from public;
+
+grant execute on function public.owns_project(text) to authenticated, service_role;
+grant execute on function public.get_public_report(text) to anon, authenticated, service_role;

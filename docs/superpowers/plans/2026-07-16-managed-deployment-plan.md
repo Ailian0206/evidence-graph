@@ -166,21 +166,21 @@ git commit -m "feat(database): 建立研究数据模型"
 - 修改：`supabase/migrations/20260716000100_managed_research_schema.sql`
 - 创建：`supabase/tests/02_rls_isolation.sql`
 
-- [ ] **步骤 1：编写 RLS RED 测试**
+- [x] **步骤 1：编写 RLS RED 测试**
 
 测试创建用户 A、用户 B 和匿名角色，设置 `request.jwt.claims` 后验证：A 不能读取、修改或删除 B 的项目及任何子表；B 不能通过伪造 `owner_id/project_id` 写入 A 的项目；匿名用户只能通过只读函数取得 `visibility = 'public'` 且 `published_at is not null` 的报告快照，不能读取私有来源正文、运行日志和成本。
 
-- [ ] **步骤 2：运行测试确认 RED**
+- [x] **步骤 2：运行测试确认 RED**
 
 运行：`npx supabase test db supabase/tests/02_rls_isolation.sql`
 
 预期：缺少策略或公开读取函数导致失败。
 
-- [ ] **步骤 3：实现最小 RLS 策略**
+- [x] **步骤 3：实现最小 RLS 策略**
 
 所有用户数据表启用并强制 RLS。`projects` 直接比较 `owner_id = auth.uid()`；子表通过项目所有权 `exists` 校验；`profiles` 和 `usage_monthly` 比较主键 owner；公开报告只通过 `security definer` 函数返回经过限定的报告与引用快照，函数固定 `search_path` 且不返回 Service Role 数据。
 
-- [ ] **步骤 4：验证 GREEN**
+- [x] **步骤 4：验证 GREEN**
 
 运行：
 
@@ -191,7 +191,7 @@ npx supabase test db
 
 预期：Schema 和 RLS 两组测试全部通过。
 
-- [ ] **步骤 5：提交**
+- [x] **步骤 5：提交**
 
 ```bash
 git add supabase/migrations/20260716000100_managed_research_schema.sql supabase/tests/02_rls_isolation.sql
