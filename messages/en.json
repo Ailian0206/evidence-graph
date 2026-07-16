@@ -21,7 +21,24 @@
     "title": "Evidence Graph",
     "status": "Building",
     "description": "Connect research claims back to source evidence readers can inspect.",
-    "sample": "The sample workspace will open after the research domain module lands."
+    "sample": "The sample workspace uses deterministic research data and makes no real provider calls.",
+    "openWorkspace": "Open sample workspace"
+  },
+  "Workspace": {
+    "eyebrow": "Research run / Evidence review",
+    "backToPreview": "Back to product entry",
+    "runSummary": "Research run summary",
+    "claims": "Claims",
+    "sources": "Sources",
+    "searches": "Searches",
+    "estimatedCost": "Estimated cost",
+    "loadingTitle": "Loading research workspace",
+    "loadingDescription": "Preparing claims, evidence relations, and saved source text.",
+    "errorTitle": "Research workspace failed to load",
+    "errorDescription": "No data was changed. You can reload the current research project.",
+    "retry": "Reload workspace",
+    "notFoundTitle": "Research project not found",
+    "notFoundDescription": "The project may have been deleted or this link is no longer valid."
   },
   "Footer": {
     "statement": "Evidence and runnable outcomes first."

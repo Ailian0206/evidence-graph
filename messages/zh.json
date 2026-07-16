@@ -21,7 +21,24 @@
     "title": "Evidence Graph",
     "status": "正在构建",
     "description": "把研究结论连接回可以检查的原文证据。",
-    "sample": "示例工作台将在研究领域模块完成后开放。"
+    "sample": "示例工作台使用确定性研究数据，不调用真实 Provider。",
+    "openWorkspace": "打开示例工作台"
+  },
+  "Workspace": {
+    "eyebrow": "研究运行 / 证据审核",
+    "backToPreview": "返回产品入口",
+    "runSummary": "研究运行摘要",
+    "claims": "主张",
+    "sources": "来源",
+    "searches": "搜索",
+    "estimatedCost": "估算成本",
+    "loadingTitle": "正在载入研究工作台",
+    "loadingDescription": "正在准备主张、证据关系和保存的原文。",
+    "errorTitle": "研究工作台载入失败",
+    "errorDescription": "数据没有被修改，可以重新载入当前研究项目。",
+    "retry": "重新载入",
+    "notFoundTitle": "没有找到这个研究项目",
+    "notFoundDescription": "项目可能已删除，或者当前链接不再有效。"
   },
   "Footer": {
     "statement": "以证据和可运行结果为准。"

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ArrowLeft, Code2 } from "lucide-react";
+import { ArrowLeft, Code2, Waypoints } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { EvidenceCanvas } from "@/components/portfolio/evidence-canvas";
@@ -37,6 +37,10 @@ export default async function EvidencePage({
           <p>{t("description")}</p>
         </div>
         <div className="evidence-preview-actions">
+          <Link className="primary-action" href="/app/research/demo">
+            <Waypoints aria-hidden="true" size={17} />
+            {t("openWorkspace")}
+          </Link>
           <Link className="text-action" href="/">
             <ArrowLeft aria-hidden="true" size={17} />
             {locale === "zh" ? "返回作品集" : "Back to portfolio"}
