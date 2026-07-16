@@ -4,10 +4,10 @@
 
 ## 当前阶段
 
-- 阶段：证据工作台准备，尚未开始开发。
-- 分支：`main`。
+- 阶段：证据工作台开发中。
+- 分支：`feat/evidence-workspace`。
 - PR：[#10](https://github.com/Ailian0206/evidence-graph/pull/10) 已通过独立 Claude 审核和 GitHub CI，并以 merge commit `eee88c2` 合并。
-- 当前任务：自动审核串行闭环规则已完成；下一模块为 `feat/evidence-workspace`。
+- 当前任务：按中文实施计划开发 Claim 列表、图谱、来源查看器、审核动作、Run Log 和响应式交互。
 - 外部 Provider 调用：已禁用。
 - 生产部署：未配置。
 - Node.js：本地和 CI 使用 `v22.22.1`。
@@ -32,7 +32,7 @@
 | 确定性研究工作流 | 已完成 | PR [#4](https://github.com/Ailian0206/evidence-graph/pull/4) 已通过 merge commit `2c8b90d` 合并 |
 | 全自动 PR 审核 | 已完成 | PR [#6](https://github.com/Ailian0206/evidence-graph/pull/6)、[#8](https://github.com/Ailian0206/evidence-graph/pull/8) 和 [#10](https://github.com/Ailian0206/evidence-graph/pull/10) 已合并；当前进程串行完成 PR 闭环 |
 | Source hash 项目隔离 | 已完成 | PR [#7](https://github.com/Ailian0206/evidence-graph/pull/7) 已通过 merge commit `8bc6f39` 合并 |
-| 证据工作台 | 待开始 | 桌面三栏、移动端标签页和图谱交互测试通过 |
+| 证据工作台 | 开发中 | 桌面三栏、移动端标签页和图谱交互测试通过后才创建唯一 Draft PR |
 | 托管部署 | 待开始 | 获得账号授权后完成 Supabase、Inngest、Vercel 配置和生产冒烟测试 |
 
 ## 验证摘要
@@ -58,6 +58,6 @@
 
 ## 下一步
 
-1. 为 `feat/evidence-workspace` 编写中文实施计划。
-2. 在独立模块分支和 worktree 开发证据工作台。
-3. 模块完整门禁通过后创建唯一 Draft PR，并按串行自动审核流程闭环。
+1. 按 TDD 建立工作台视图模型和确定性 Fixture。
+2. 完成桌面三栏、移动端标签、Claim 审核、图谱联动、来源查看和 Run Log。
+3. 完整门禁和三视口验证通过后创建唯一 Draft PR。

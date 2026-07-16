@@ -28,4 +28,4 @@
 
 ## 当前模块
 
-独立 Claude Code 审核流程的串行闭环规则已通过 PR [#10](https://github.com/Ailian0206/evidence-graph/pull/10) 合并。下一模块为 `feat/evidence-workspace`，尚未开始开发。
+`feat/evidence-workspace` 已进入开发，按 `docs/superpowers/plans/2026-07-16-evidence-workspace-plan.md` 完成整个里程碑后再创建唯一 Draft PR。
