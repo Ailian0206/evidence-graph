@@ -211,6 +211,30 @@ describe("project repository boundary", () => {
     expect(() => createInMemoryProjectRepository(fixture)).toThrow("SOURCE_ALREADY_EXISTS");
   });
 
+  it("allows the same source content in different projects", () => {
+    const fixture = createDemoResearchFixture();
+    const otherProject = {
+      ...fixture.projects[0],
+      id: "project_other_owner",
+      ownerId: "user_other",
+      slug: "other-owner-project",
+    };
+    fixture.projects.push(otherProject);
+    // Same body and contentHash as an existing source, stored by another owner.
+    fixture.sources.push({
+      ...fixture.sources[0],
+      id: "source_other_owner_copy",
+      projectId: otherProject.id,
+      canonicalUrl: "https://mirror.example.com/research",
+    });
+
+    const repository = createInMemoryProjectRepository(fixture);
+
+    expect(
+      repository.listSources({ ownerId: "user_other", projectId: otherProject.id }),
+    ).toHaveLength(1);
+  });
+
   it("rejects duplicate claims and evidence links while initializing", () => {
     const claimFixture = createDemoResearchFixture();
     claimFixture.claims.push({

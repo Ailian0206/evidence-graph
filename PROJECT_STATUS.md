@@ -1,12 +1,12 @@
 # Evidence Graph Project Status
 
-Updated: 2026-07-15
+Updated: 2026-07-16
 
 ## Current phase
 
-- Phase: research workflow Draft PR validation.
-- Branch: `feat/research-workflow`.
-- Pull request: Draft [#4](https://github.com/Ailian0206/evidence-graph/pull/4) is open; CI is running.
+- Phase: post-merge review follow-up for PR #3 and PR #4 (Bugbot quota fallback).
+- Branch: `fix/source-hash-project-scope`.
+- Pull request: Draft [#4](https://github.com/Ailian0206/evidence-graph/pull/4) merged as `2c8b90d`; follow-up review found one Medium finding (global contentHash uniqueness in the project repository) now fixed with a regression test.
 - Active module: deterministic research workflow.
 - External provider calls: disabled.
 - Production deployment: not configured.

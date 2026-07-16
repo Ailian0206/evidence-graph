@@ -92,14 +92,13 @@ export const createInMemoryProjectRepository = (
         throw new Error("SOURCE_ALREADY_EXISTS");
       }
 
+      // Uniqueness is scoped per project so different owners can store the
+      // same public document; this matches the workflow-store upsert rules.
       if (
         current.projectId === source.projectId &&
-        current.canonicalUrl === source.canonicalUrl
+        (current.canonicalUrl === source.canonicalUrl ||
+          current.contentHash === source.contentHash)
       ) {
-        throw new Error("SOURCE_ALREADY_EXISTS");
-      }
-
-      if (current.contentHash === source.contentHash) {
         throw new Error("SOURCE_ALREADY_EXISTS");
       }
     }
