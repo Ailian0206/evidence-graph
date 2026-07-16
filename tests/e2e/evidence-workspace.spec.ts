@@ -94,6 +94,28 @@ test.describe("evidence workspace graph", () => {
       .poll(async () => Number(await graph.getAttribute("data-graph-elements")))
       .toBeLessThan(initialElementCount);
   });
+
+  test("selects graph nodes with arrow keys and Enter", async ({ page }) => {
+    await page.goto("/zh/app/research/demo");
+
+    const graph = page.getByRole("application", {
+      name: "证据关系图，使用方向键浏览节点，按回车选择",
+    });
+    await graph.focus();
+    await graph.press("ArrowRight");
+    await graph.press("ArrowRight");
+    await graph.press("Enter");
+
+    await expect(
+      page.getByRole("button", {
+        name: "只有页面级链接也足以证明报告中的事实段落。",
+        exact: true,
+      }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("workspace-source")).toContainText(
+      "可引用报告的产品约束与反例记录",
+    );
+  });
 });
 
 test.describe("evidence workspace responsive navigation", () => {
