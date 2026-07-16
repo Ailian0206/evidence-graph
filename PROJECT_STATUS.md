@@ -4,10 +4,10 @@
 
 ## 当前阶段
 
-- 阶段：证据工作台准备，尚未开始开发。
-- 分支：`main`。
-- PR：[#10](https://github.com/Ailian0206/evidence-graph/pull/10) 已通过独立 Claude 审核和 GitHub CI，并以 merge commit `eee88c2` 合并。
-- 当前任务：自动审核串行闭环规则已完成；下一模块为 `feat/evidence-workspace`。
+- 阶段：证据工作台里程碑 PR 自动审核中。
+- 分支：`feat/evidence-workspace`。
+- PR：Draft [#11](https://github.com/Ailian0206/evidence-graph/pull/11) 已创建，等待独立 Claude 审核和 GitHub CI。
+- 当前任务：当前进程完成 PR #11 的独立审核、必要修复、重审、CI 和 merge commit。
 - 外部 Provider 调用：已禁用。
 - 生产部署：未配置。
 - Node.js：本地和 CI 使用 `v22.22.1`。
@@ -32,7 +32,7 @@
 | 确定性研究工作流 | 已完成 | PR [#4](https://github.com/Ailian0206/evidence-graph/pull/4) 已通过 merge commit `2c8b90d` 合并 |
 | 全自动 PR 审核 | 已完成 | PR [#6](https://github.com/Ailian0206/evidence-graph/pull/6)、[#8](https://github.com/Ailian0206/evidence-graph/pull/8) 和 [#10](https://github.com/Ailian0206/evidence-graph/pull/10) 已合并；当前进程串行完成 PR 闭环 |
 | Source hash 项目隔离 | 已完成 | PR [#7](https://github.com/Ailian0206/evidence-graph/pull/7) 已通过 merge commit `8bc6f39` 合并 |
-| 证据工作台 | 待开始 | 桌面三栏、移动端标签页和图谱交互测试通过 |
+| 证据工作台 | PR 审核中 | Draft PR [#11](https://github.com/Ailian0206/evidence-graph/pull/11) 覆盖完整里程碑，桌面/移动端及完整门禁已通过 |
 | 托管部署 | 待开始 | 获得账号授权后完成 Supabase、Inngest、Vercel 配置和生产冒烟测试 |
 
 ## 验证摘要
@@ -55,9 +55,12 @@
 - PR #8 已通过独立 Claude 审核和 GitHub CI 后合并，只保留唯一命名的全局 Claude skill 和审核、修复、重审、合并流程。
 - PR #9 已通过独立 Claude 审核和 GitHub CI，并以 merge commit `2108ea0` 合并；MCP Guardian 已加入作品集 Work 页。
 - PR #10 独立 Claude 审核结果为 `pass`，GitHub CI 通过 67 个单元测试和 18 个 E2E 测试后，以 merge commit `eee88c2` 合并。
+- 证据工作台 `npm run test:ci`：lint、typecheck、76 个单元测试、生产构建和 29 个 E2E 测试全部通过。
+- 工作台视觉门禁覆盖 390x844、1024x768 和 1440x1000，验证无横向溢出、面板重叠和空白画布；Cytoscape 多层 canvas 像素检查通过。
+- 工作台图谱模型通过 200 个超长标签 Claim 测试，节点和边结构不随标签长度改变。
 
 ## 下一步
 
-1. 为 `feat/evidence-workspace` 编写中文实施计划。
-2. 在独立模块分支和 worktree 开发证据工作台。
-3. 模块完整门禁通过后创建唯一 Draft PR，并按串行自动审核流程闭环。
+1. 当前进程对 PR #11 运行独立 Claude 审核。
+2. 有问题就在 PR #11 修复、验证、提交并重审，不创建新 PR。
+3. 当前 head 审核通过且 CI 成功后使用 merge commit 合并。

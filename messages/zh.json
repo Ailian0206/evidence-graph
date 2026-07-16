@@ -21,7 +21,116 @@
     "title": "Evidence Graph",
     "status": "正在构建",
     "description": "把研究结论连接回可以检查的原文证据。",
-    "sample": "示例工作台将在研究领域模块完成后开放。"
+    "sample": "示例工作台使用确定性研究数据，不调用真实 Provider。",
+    "openWorkspace": "打开示例工作台"
+  },
+  "Workspace": {
+    "eyebrow": "研究运行 / 证据审核",
+    "backToPreview": "返回产品入口",
+    "runSummary": "研究运行摘要",
+    "claims": "主张",
+    "sources": "来源",
+    "searches": "搜索",
+    "tokens": "Token",
+    "estimatedCost": "估算成本",
+    "claimCount": "{count} 条主张",
+    "evidenceCount": "{count} 条证据",
+    "reviewFilter": "按人工审核状态筛选",
+    "currentStatus": "当前审核状态",
+    "relationFilter": "按证据关系筛选",
+    "mobileTabsLabel": "工作台视图",
+    "graphTitle": "主张与证据关系",
+    "emptyClaims": "当前筛选条件下没有主张。",
+    "noSource": "选择主张后查看关联来源",
+    "openSource": "打开原网页",
+    "run": {
+      "ready": "运行完成"
+    },
+    "graph": {
+      "ariaLabel": "证据关系图，使用方向键浏览节点，按回车选择",
+      "navigatorLabel": "图谱节点导航",
+      "keyboardHint": "方向键切换图谱节点，Enter 选择；鼠标可拖动画布和缩放。",
+      "claimNode": "主张",
+      "evidenceNode": "证据",
+      "sourceNode": "来源",
+      "labelSeparator": "："
+    },
+    "panels": {
+      "claims": "Claims",
+      "graph": "Graph",
+      "source": "Source",
+      "log": "Run Log"
+    },
+    "tabs": {
+      "claims": "主张",
+      "graph": "图谱",
+      "source": "来源",
+      "log": "日志"
+    },
+    "runLog": {
+      "completed": "{count} 个步骤已完成",
+      "searches": "{count} 次搜索",
+      "tokens": "{count} Token",
+      "cost": "${cost}",
+      "expand": "展开运行日志",
+      "collapse": "收起运行日志",
+      "stepsLabel": "研究运行步骤",
+      "attempt": "第 {count} 次尝试",
+      "status": {
+        "started": "运行中",
+        "completed": "已完成",
+        "failed": "失败",
+        "skipped": "已跳过"
+      }
+    },
+    "steps": {
+      "planning": "规划问题",
+      "searching": "搜索来源",
+      "collecting": "保存正文",
+      "indexing": "建立索引",
+      "extracting_claims": "提取主张",
+      "linking_evidence": "关联证据",
+      "detecting_conflicts": "检测冲突",
+      "drafting_report": "生成报告草稿"
+    },
+    "status": {
+      "all": "全部",
+      "pending": "待审核",
+      "accepted": "已接受",
+      "rejected": "已拒绝"
+    },
+    "relation": {
+      "supports": "支持",
+      "rebuts": "反驳",
+      "qualifies": "限定",
+      "context": "上下文"
+    },
+    "strength": {
+      "weak": "弱",
+      "moderate": "中",
+      "strong": "强"
+    },
+    "actions": {
+      "accept": "接受主张",
+      "reject": "拒绝主张",
+      "reset": "恢复待审核"
+    },
+    "sourceMeta": {
+      "title": "来源标题",
+      "author": "作者",
+      "retrieved": "获取时间",
+      "url": "原始 URL",
+      "unknown": "未提供"
+    },
+    "loadingTitle": "正在载入研究工作台",
+    "loadingDescription": "正在准备主张、证据关系和保存的原文。",
+    "emptyTitle": "还没有可审核的主张",
+    "emptyDescription": "研究运行完成提取后，主张和关联证据会显示在这里。",
+    "errorTitle": "研究工作台载入失败",
+    "errorDescription": "数据没有被修改，可以重新载入当前研究项目。",
+    "retry": "重新载入",
+    "notFoundTitle": "没有找到这个研究项目",
+    "notFoundDescription": "项目可能已删除，或者当前链接不再有效。"
   },
   "Footer": {
     "statement": "以证据和可运行结果为准。"
