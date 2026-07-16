@@ -1,97 +1,95 @@
-# Trusted-Base PR Review Design
+# 可信基线 PR 自动审核设计
 
-## Context
+## 背景
 
-Evidence Graph uses an independent Claude Code process as the required PR reviewer while Cursor Bugbot is unavailable. Normal pull requests can load `.claude/skills/pr-review/SKILL.md` from their own branch because they do not modify the reviewer. A pull request that changes the review protocol cannot safely certify itself with the version under review.
+Cursor Bugbot 额度不可用期间，Evidence Graph 使用独立 Claude Code 进程作为 PR 必需审核方。普通 PR 可以加载自身分支中的 `.claude/skills/pr-review/SKILL.md`，因为它没有修改审核器；修改审核协议的 PR 不能使用正在被修改的版本给自己认证。
 
-PR #6 is the one-time bootstrap. The user has reviewed and approved that bootstrap branch. After it merges, every later PR, including review-protocol changes, must complete without a human review gate.
+PR #6 是唯一一次引导建立流程。用户已审核并批准这个引导分支。它合并后，包括审核协议变更在内的所有后续 PR 都必须在没有人工审核门禁的情况下完成。
 
-## Goals
+## 目标
 
-- Keep one coherent PR per module or independent bugfix.
-- Run review and remediation without human approval steps.
-- Prevent a review-protocol PR from loading the reviewer implementation it is changing.
-- Preserve the existing `CLAUDE_REVIEWED_SHA`, `claude-reviewed`, and `claude-changes-requested` protocol.
-- Let the main development process continue non-overlapping local work while independent review runs.
+- 每个完整模块或独立 bugfix 只创建一个 PR。
+- 审核、修复、复审和合并不依赖人工批准。
+- 审核协议 PR 不得加载它正在修改的审核器实现。
+- 保留现有 `CLAUDE_REVIEWED_SHA`、`claude-reviewed` 和 `claude-changes-requested` 协议。
+- 独立审核运行期间，主开发进程可以继续不冲突的本地任务。
 
-## Non-Goals
+## 不在范围内
 
-- Replacing CI, local tests, or project-specific verification gates.
-- Allowing the reviewer to edit code, commit, push, create PRs, or merge.
-- Restoring Cursor Bugbot or Autofix while its quota is unavailable.
-- Automatically approving external-write, secret, paid-provider, or production gates.
+- 替代 CI、本地测试或项目专项门禁。
+- 允许审核器修改代码、提交、推送、创建 PR 或合并。
+- 在 Cursor Bugbot 额度不可用时恢复 Bugbot 或 Autofix。
+- 自动批准 `AGENT.md` 已列出的密钥、付费 Provider、生产环境或其它外部写入门禁。
 
-## Trust Model
+## 信任模型
 
-### Normal pull requests
+### 普通 PR
 
-The independent Claude process runs from the pull request checkout and invokes `/pr-review`. The repository skill reads the current PR diff, posts findings and a summary marker, and applies review-state labels.
+独立 Claude 进程从 PR 工作区运行 `/pr-review`。仓库 skill 读取当前 PR 差异，发布 finding、汇总 marker，并写入审核状态标签。
 
-### Review-protocol pull requests
+### 审核协议 PR
 
-The developer agent must not run the reviewer from the protocol PR checkout. It obtains the PR's `baseRefOid`, creates a temporary detached worktree at that exact SHA, and invokes the base version of `/pr-review` in trusted-base mode:
+开发 agent 不得从协议 PR 工作区运行审核器。它先取得 PR 的 `baseRefOid`，在该 SHA 创建临时 detached worktree，再从基线版本执行可信基线模式：
 
 ```bash
-claude --permission-mode auto --model sonnet -p "/pr-review --trusted-base <pr-number>"
+claude --permission-mode auto --model sonnet -p "/pr-review --trusted-base <PR编号>"
 ```
 
-Trusted-base mode verifies all of these conditions before reviewing:
+可信基线模式在审核前必须验证：
 
-1. The requested PR is open.
-2. The current detached worktree HEAD equals the PR's `baseRefOid`.
-3. The target head SHA differs from the base SHA.
-4. The review marker, if present, does not already match the target head SHA.
+1. 指定 PR 仍处于 open 状态。
+2. 当前 detached worktree 的 HEAD 等于 PR 的 `baseRefOid`。
+3. PR head SHA 与 base SHA 不同。
+4. 如果已有审核 marker，其 SHA 不等于当前 PR head SHA。
 
-The reviewer then reads the target PR through `gh pr diff` and GitHub APIs. It never checks out or executes files from the target branch. The base reviewer is therefore the previously accepted implementation, not the rule under review.
+审核器随后通过 `gh pr diff` 和 GitHub API 读取目标 PR，不 checkout 或执行目标分支文件。因此执行审核的是此前已接受的基线版本，不是本次正在修改的规则。
 
-The temporary worktree is removed after the Claude process exits. A failed cleanup is an operational error to report and retry; it does not make the review successful.
+Claude 退出后删除临时 worktree。清理失败属于需要报告和重试的运行错误，不能把审核视为成功。
 
-## Automated State Machine
+## 全自动状态机
 
-1. The developer agent completes the module or bugfix locally and runs the full gate.
-2. It pushes one module branch and opens or updates the existing Draft PR.
-3. It records the PR number and current head SHA.
-4. It selects normal mode or trusted-base mode from the changed paths.
-5. It starts one independent Claude review process. A read-only monitor may own that process while the main agent continues non-overlapping work.
-6. It waits to make a merge decision until CI and review reach terminal states.
-7. If `claude-changes-requested` is present, the developer agent verifies each CRITICAL/HIGH finding, fixes valid issues through TDD on the same branch, runs focused and full gates, pushes once, and returns to step 3.
-8. If `claude-reviewed` is present, `claude-changes-requested` is absent, and the marker SHA equals the PR head SHA, the review gate passes. MEDIUM/LOW findings are triaged automatically and fixed when technically justified.
-9. When CI is green and no valid blocking finding remains, the developer agent marks the PR ready and merges with a merge commit, then deletes the remote branch.
+1. 开发 agent 在本地完成模块或 bugfix，并跑完整门禁。
+2. 推送一个模块分支，创建或更新现有 Draft PR。
+3. 记录 PR 编号和当前 head SHA。
+4. 根据变更路径选择普通模式或可信基线模式。
+5. 启动一个独立 Claude 审核进程；可由只读监控子代理持有该进程，主 agent 继续不冲突工作。
+6. 只有 CI 和审核都达到终态后才做合并判断。
+7. 出现 `claude-changes-requested` 时，开发 agent 验证每个 CRITICAL/HIGH finding，在同一分支按 TDD 修复有效问题，跑聚焦和完整门禁，批量推送一次后回到步骤 3。
+8. 存在 `claude-reviewed`、不存在 `claude-changes-requested`，且 marker SHA 等于 PR head SHA 时，审核门禁通过。MEDIUM/LOW finding 由开发 agent 自动判断，技术上成立时一并修复。
+9. CI 通过且没有未解决的有效阻塞 finding 后，开发 agent 把 PR 标记为 Ready，使用 merge commit 合并并删除远端分支。
 
-No state in this sequence requires a human approval. Human input remains necessary only for the explicit cost and external-write gates already listed in `AGENT.md`.
+整个状态机没有人工审核步骤。只有 `AGENT.md` 已列出的成本和外部写入门禁仍需要用户授权。
 
-## Failure Handling
+## 失败处理
 
-- Claude exits non-zero: keep both review labels unchanged, record the failure, and retry once after checking authentication and command output.
-- No matching SHA marker: treat the review as incomplete even if `claude-reviewed` exists.
-- Marker SHA is stale: trigger a new pass for the current head.
-- Both labels are absent: treat the review as incomplete.
-- `claude-changes-requested` remains after a new clean pass: the reviewer removes it; the developer agent never removes it manually.
-- Base SHA verification fails in trusted-base mode: stop without posting comments or labels and recreate the detached worktree from the exact `baseRefOid`.
-- CI fails: fix the failure on the same branch and re-run review because the head SHA changed.
+- Claude 非零退出：保持两个审核标签不变，记录输出，检查认证和命令错误后自动重试一次。
+- 没有匹配当前 head SHA 的 marker：即使存在 `claude-reviewed` 也视为审核未完成。
+- marker SHA 过期：对当前 head 重新触发审核。
+- 两个标签都不存在：视为审核未完成。
+- 新一轮干净审核后仍有 `claude-changes-requested`：由审核器移除，开发 agent 永远不手工移除。
+- 可信基线模式校验 base SHA 失败：不发评论、不加标签，按准确 `baseRefOid` 重建 detached worktree。
+- CI 失败：在同一分支修复；由于 head SHA 改变，修复后必须重新审核。
 
-## Files and Responsibilities
+## 文件职责
 
-- `~/.codex/skills/pr-review/SKILL.md`: Codex-side orchestration, mode selection, detached base worktree lifecycle, verdict checks, and automatic remediation loop.
-- `.claude/skills/pr-review/SKILL.md`: Claude-side normal and trusted-base review procedures, guard checks, comments, markers, and labels.
-- `.cursor/rules/pr-review-gate.mdc`: Cursor-side requirement to trigger the same automatic mode selection and prohibit human-only exceptions.
-- `AGENT.md`: project merge gate and automatic reviewer ownership rules.
-- `docs/bugbot-autofix-workflow.md`: durable workflow description and state transitions.
+- `~/.codex/skills/pr-review/SKILL.md`：Codex 侧编排、模式选择、基线 worktree 生命周期、审核结果检查和自动修复循环。
+- `.claude/skills/pr-review/SKILL.md`：Claude 侧普通/可信基线审核、前置校验、评论、marker 和标签。
+- `.cursor/rules/pr-review-gate.mdc`：Cursor 侧自动模式选择和无人工例外约束。
+- `AGENT.md`：项目合并门禁和自动审核职责。
+- `docs/bugbot-autofix-workflow.md`：长期协作流程和状态迁移。
 
-## Verification
+## 验证场景
 
-The implementation is complete only after these scenarios pass:
+1. 协议 PR 从自身工作区运行时必须拒绝自我认证，不发评论、不加标签。
+2. 可信基线模式必须拒绝 HEAD 不等于 `baseRefOid` 的 worktree。
+3. 可信基线模式从准确 base SHA 审核协议 PR，并写入一个汇总 marker 和正确标签。
+4. 对同一 head SHA 重跑时不得产生任何新写入。
+5. 普通非协议 PR 继续使用 `/pr-review`，行为不退化。
+6. 每次审核后仓库工作区都保持不变。
 
-1. A protocol-only PR reviewed from its own checkout is rejected without comments or labels.
-2. Trusted-base mode rejects a worktree whose HEAD does not equal `baseRefOid`.
-3. Trusted-base mode reviews the protocol PR from the exact base SHA and writes one summary marker plus the correct labels.
-4. Re-running against the same head SHA writes nothing.
-5. A normal non-protocol PR still follows `/pr-review` and preserves existing behavior.
-6. The repository worktree remains unchanged after every review process.
+## 交付顺序
 
-## Delivery Sequence
-
-1. Add trusted-base automation to PR #6, run CI, and use the user's bootstrap approval to merge it with a merge commit.
-2. Start a clean developer-owned bugfix branch from updated `main`.
-3. Reproduce the cross-project `contentHash` collision with a failing unit test, implement the project-scoped uniqueness rule, and run the complete gate.
-4. Open one Draft bugfix PR, run the now-automatic Claude review flow, remediate any valid finding, and merge automatically when CI and review pass.
+1. 在 PR #6 增加可信基线自动化，运行 CI，并使用用户对引导版本的批准通过 merge commit 合并。
+2. 从更新后的 `main` 创建开发 agent 自有的 bugfix 分支。
+3. 先用失败单测复现跨项目 `contentHash` 冲突，再实现项目内唯一规则并跑完整门禁。
+4. 创建一个 Draft bugfix PR，运行新的全自动 Claude 审核，修复有效 finding，CI 和审核通过后自动合并。
