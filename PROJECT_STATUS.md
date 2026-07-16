@@ -4,10 +4,10 @@
 
 ## 当前阶段
 
-- 阶段：Claude reviewer 配置源隔离已在本地完成，准备可信基线审核。
+- 阶段：Claude reviewer 配置源隔离 Draft PR 可信基线审核。
 - 分支：`fix/pr-review-project-sources`。
-- PR：尚未创建；完整门禁通过后创建一个协议修复 Draft PR。
-- 当前任务：创建一个协议修复 Draft PR，并运行可信基线审核。
+- PR：Draft [#8](https://github.com/Ailian0206/evidence-graph/pull/8) 已创建，等待可信基线审核和 CI。
+- 当前任务：从准确 `baseRefOid` worktree 运行 `/pr-review --trusted-base 8`。
 - 外部 Provider 调用：已禁用。
 - 生产部署：未配置。
 - Node.js：本地和 CI 使用 `v22.22.1`。
@@ -32,7 +32,7 @@
 | 确定性研究工作流 | 已完成 | PR [#4](https://github.com/Ailian0206/evidence-graph/pull/4) 已通过 merge commit `2c8b90d` 合并 |
 | 全自动 PR 审核 | 已完成 | PR [#6](https://github.com/Ailian0206/evidence-graph/pull/6) 已通过 merge commit `c1daf16` 合并 |
 | Source hash 项目隔离 | 已完成 | PR [#7](https://github.com/Ailian0206/evidence-graph/pull/7) 已通过 merge commit `8bc6f39` 合并 |
-| Reviewer 配置源隔离 | 本地完成 | 命令一致性扫描和完整门禁通过；等待 Draft PR、可信基线审核和 CI |
+| Reviewer 配置源隔离 | Draft PR [#8](https://github.com/Ailian0206/evidence-graph/pull/8) | 命令一致性扫描和完整门禁通过；等待可信基线审核和 CI |
 | 证据工作台 | 待开始 | 桌面三栏、移动端标签页和图谱交互测试通过 |
 | 托管部署 | 待开始 | 获得账号授权后完成 Supabase、Inngest、Vercel 配置和生产冒烟测试 |
 
@@ -59,6 +59,6 @@
 
 ## 下一步
 
-1. 提交 reviewer 配置源隔离修复并创建一个 Draft PR。
-2. 使用可信基线模式审核。
+1. 从 PR #8 的准确 base SHA 运行可信基线审核。
+2. 自动处理有效 finding，并在 head SHA 改变后重新审核。
 3. 审核和 CI 通过后 merge commit 合并。
