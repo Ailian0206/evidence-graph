@@ -533,7 +533,7 @@ git commit -m "feat(claims): 持久化人工审核状态"
 - 修改：`PROJECT_STATUS.md`
 - 修改：`docs/superpowers/plans/2026-07-17-durable-research-results-plan.md`
 
-- [ ] **步骤 1：运行聚焦集成验证**
+- [x] **步骤 1：运行聚焦集成验证**
 
 运行：
 
@@ -546,7 +546,7 @@ npx playwright test tests/e2e/auth-boundary.spec.ts tests/e2e/evidence-workspace
 
 预期：数据库、事件、Writer、工作台和审核闭环通过，不发送真实 Provider 请求。
 
-- [ ] **步骤 2：运行完整门禁**
+- [x] **步骤 2：运行完整门禁**
 
 运行：
 
@@ -556,18 +556,18 @@ npm run test:managed
 
 预期：Provider 扫描、数据库测试、Schema lint、lint、typecheck、全部单元测试、生产构建和全部 E2E 通过。
 
-- [ ] **步骤 3：更新中文状态文档**
+- [x] **步骤 3：更新中文状态文档**
 
 在 `docs/development-plan.md` 增加 `feat/durable-research-results` 模块；在 `PROJECT_STATUS.md` 记录分支、验证数量、fixture-only Provider 状态以及“等待托管部署 PR 合并后才创建本模块 PR”。把本计划已完成步骤改为 `[x]`。
 
-- [ ] **步骤 4：提交状态**
+- [x] **步骤 4：提交状态**
 
 ```bash
 git add docs/development-plan.md PROJECT_STATUS.md docs/superpowers/plans/2026-07-17-durable-research-results-plan.md
 git commit -m "docs(status): 记录持久化研究结果验证"
 ```
 
-- [ ] **步骤 5：检查分支但不创建 PR**
+- [x] **步骤 5：检查分支但不创建 PR**
 
 运行：
 

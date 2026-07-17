@@ -4,10 +4,10 @@
 
 ## 当前阶段
 
-- 阶段：托管部署里程碑开发中。
-- 分支：`feat/managed-deployment`，在隔离 worktree 中开发。
-- PR：[#11](https://github.com/Ailian0206/evidence-graph/pull/11) 已通过独立 Claude 审核和 GitHub CI，并以 merge commit `74c3b49` 合并。
-- 当前任务：Supabase、GitHub OAuth、Inngest 和 Sentry 免费资源已完成基础配置，等待 Vercel 账号恢复审核结果。
+- 阶段：托管部署等待外部收口；持久化研究结果本地里程碑已完成。
+- 分支：`feat/managed-deployment` 已推送远端；`feat/durable-research-results` 在独立 worktree 中完成 8 个本地提交，尚未 push。
+- PR：持久化研究结果未创建 PR；必须先完成并合并托管部署 PR，再为本模块创建唯一 Draft PR。
+- 当前任务：等待 Vercel 账号恢复审核结果；本地下一里程碑为报告发布，不混入当前分支。
 - 外部 Provider 调用：已禁用。
 - 生产部署：数据库和外部服务配置进行中，Vercel 尚未部署。
 - Node.js：本地和 CI 使用 `v22.22.1`。
@@ -34,6 +34,7 @@
 | Source hash 项目隔离 | 已完成 | PR [#7](https://github.com/Ailian0206/evidence-graph/pull/7) 已通过 merge commit `8bc6f39` 合并 |
 | 证据工作台 | 已完成 | PR [#11](https://github.com/Ailian0206/evidence-graph/pull/11) 已通过独立审核和 CI，并以 merge commit `74c3b49` 合并 |
 | 托管部署 | 进行中 | 获得账号授权后完成 Supabase、Inngest、Vercel 配置和生产冒烟测试 |
+| 持久化研究结果 | 本地已完成 | 原子研究事务、幂等 Writer、真实工作台和审核写回完成；等待托管部署合并后创建单一 Draft PR |
 
 ## 验证摘要
 
@@ -94,9 +95,16 @@
 - `feat/managed-deployment` 已推送远端但未创建 PR；HTTPS 凭据缺少 `workflow` scope，因此 push URL 已改为本机现有 SSH 凭据，fetch URL 保持 HTTPS。
 - 托管部署里程碑预检 `npm run test:managed` 已通过 Provider 边界扫描、33 个数据库测试、Schema lint、lint、类型检查、118 个单元测试、生产构建和 36 个 E2E；运行时显式禁用真实托管连接和付费 Provider。
 - Vercel 账号恢复申请已提交，官方邮件给出的典型审核时间为 1 个工作日；当前没有站点 URL、Inngest 应用同步、生产冒烟或 Vercel 回滚结果。
+- `create_managed_research` 已把项目、queued run 和月度次数收进同一事务；投递失败保留原项目/run，重投复用同一个 `runId`，不会重复创建或计费。
+- Inngest 执行顺序已收敛为 `authorize -> begin -> execute -> persist/finalize`；Writer 在完整 Zod 与 owner/project/run 校验后按外键顺序幂等写入，最后才把 run 标记为 ready。
+- 非 `demo` 工作台已通过 RLS Store 读取 queued/running/failed/ready 四态；排队与运行每 3 秒刷新，只有 `RESEARCH_DISPATCH_FAILED` 可以重投原事件。
+- managed Claim 审核已写回 Supabase，并同时限定 `claimId + projectId`；保存失败会回滚目标 Claim，demo 继续保持纯客户端行为。
+- 持久化研究结果聚焦门禁通过 Provider 扫描、51 个数据库测试、49 个闭环单测和 14 个 Auth/工作台/项目/Inngest E2E。
+- 持久化研究结果完整 `npm run test:managed` 通过 Schema lint、全仓 lint、typecheck、142 个单元测试、生产构建和 36 个 E2E；运行时清空托管变量，未调用真实 OpenAI、Tavily、Supabase、Inngest 或 Sentry 远端。
 
 ## 下一步
 
 1. 等待 Vercel 账号恢复审核通过，创建免费项目并取得稳定 Preview 与 Production 默认域名。
-2. 配置两套 Supabase Site URL 和 Redirect allow list，同步 Inngest 应用并运行不含付费 Provider 的生产冒烟和 Vercel 回滚演练。
-3. 完成任务 10 后运行里程碑完整门禁，并只创建一个 Draft PR 进入自动审核闭环。
+2. 配置两套 Supabase Site URL 和 Redirect allow list，同步 Inngest 应用并运行不含付费 Provider 的生产冒烟和 Vercel 回滚演练，完成托管部署 PR 闭环。
+3. 托管部署合并后，为 `feat/durable-research-results` 创建唯一 Draft PR，执行独立 Claude 审核、CI 和 merge commit 闭环。
+4. 本地下一里程碑进入 `feat/report-publishing`，实现报告发布、撤销、版本和公开分享，不提前创建堆叠 PR。
