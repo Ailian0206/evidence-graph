@@ -7,7 +7,7 @@
 - 阶段：托管部署里程碑开发中。
 - 分支：`feat/managed-deployment`，在隔离 worktree 中开发。
 - PR：[#11](https://github.com/Ailian0206/evidence-graph/pull/11) 已通过独立 Claude 审核和 GitHub CI，并以 merge commit `74c3b49` 合并。
-- 当前任务：Supabase、GitHub OAuth、Inngest 和 Sentry 免费资源已完成基础配置，停在 Vercel 账号恢复审核。
+- 当前任务：Supabase、GitHub OAuth、Inngest 和 Sentry 免费资源已完成基础配置，等待 Vercel 账号恢复审核结果。
 - 外部 Provider 调用：已禁用。
 - 生产部署：数据库和外部服务配置进行中，Vercel 尚未部署。
 - Node.js：本地和 CI 使用 `v22.22.1`。
@@ -92,10 +92,11 @@
 - `verify:managed-env` 已通过 Supabase、Inngest 和 Sentry 必需变量检查；真实密钥只存在于权限为 `0600` 的 `.env.local`，未进入 Git。
 - Preview 备份恢复演练已完成：远端 `public` 数据通过官方 CLI 导出，在本地用仓库迁移重建后恢复，33 个 pgTAP 和 Schema lint 通过，临时备份已删除。
 - `feat/managed-deployment` 已推送远端但未创建 PR；HTTPS 凭据缺少 `workflow` scope，因此 push URL 已改为本机现有 SSH 凭据，fetch URL 保持 HTTPS。
-- Vercel GitHub 登录仍返回“账号需要进一步验证”；账号恢复申请尚未提交，因此没有站点 URL、Inngest 应用同步、生产冒烟或 Vercel 回滚结果。
+- 托管部署里程碑预检 `npm run test:managed` 已通过 Provider 边界扫描、33 个数据库测试、Schema lint、lint、类型检查、118 个单元测试、生产构建和 36 个 E2E；运行时显式禁用真实托管连接和付费 Provider。
+- Vercel 账号恢复申请已提交，官方邮件给出的典型审核时间为 1 个工作日；当前没有站点 URL、Inngest 应用同步、生产冒烟或 Vercel 回滚结果。
 
 ## 下一步
 
-1. 提交并通过 Vercel 账号恢复审核，创建免费项目并取得稳定 Preview 与 Production 默认域名。
+1. 等待 Vercel 账号恢复审核通过，创建免费项目并取得稳定 Preview 与 Production 默认域名。
 2. 配置两套 Supabase Site URL 和 Redirect allow list，同步 Inngest 应用并运行不含付费 Provider 的生产冒烟和 Vercel 回滚演练。
 3. 完成任务 10 后运行里程碑完整门禁，并只创建一个 Draft PR 进入自动审核闭环。
