@@ -64,6 +64,10 @@ describe("managed project workspace UI", () => {
     renderWithMessages(<ProjectDashboard locale="zh" projects={[project]} />);
 
     expect(screen.getByRole("heading", { name: project.title })).toBeVisible();
+    expect(screen.getByRole("link", { name: project.title })).toHaveAttribute(
+      "href",
+      "/zh/app/research/project_1",
+    );
     expect(screen.getByText("进行中")).toBeVisible();
     expect(screen.getByText(/2026/)).toBeVisible();
     expect(screen.getByRole("button", { name: "归档可核查的 AI 研究" })).toBeVisible();

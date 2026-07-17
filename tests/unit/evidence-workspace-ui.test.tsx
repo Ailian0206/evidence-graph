@@ -1,12 +1,24 @@
-import { act, cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import messages from "../../messages/zh.json";
 import { EvidenceWorkspace } from "@/components/evidence-workspace/evidence-workspace";
+import { ManagedWorkspaceState } from "@/components/evidence-workspace/managed-workspace-state";
 import { WorkspaceState } from "@/components/evidence-workspace/workspace-state";
 import { createEvidenceWorkspaceFixture } from "@/features/research/evidence-workspace-fixture";
+
+const navigationMocks = vi.hoisted(() => ({ refresh: vi.fn() }));
+const projectActionMocks = vi.hoisted(() => ({
+  retryResearchDispatch: vi.fn(async () => ({ ok: true as const })),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: navigationMocks.refresh }),
+}));
+
+vi.mock("@/features/projects/actions", () => projectActionMocks);
 
 const renderWorkspace = () =>
   render(
@@ -15,7 +27,11 @@ const renderWorkspace = () =>
     </NextIntlClientProvider>,
   );
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+  vi.clearAllMocks();
+});
 
 describe("evidence workspace claim review", () => {
   it("filters the claim list by human review status", async () => {
@@ -140,5 +156,55 @@ describe("evidence workspace states", () => {
     await user.click(screen.getByRole("button", { name: "重新载入" }));
 
     expect(retry).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(["queued", "running"] as const)(
+    "refreshes a managed %s run without changing layout",
+    (state) => {
+      vi.useFakeTimers();
+      render(
+        <NextIntlClientProvider locale="zh" messages={messages}>
+          <ManagedWorkspaceState
+            locale="zh"
+            projectId="project_1"
+            result={{ state, runId: "run_1" }}
+          />
+        </NextIntlClientProvider>,
+      );
+
+      expect(screen.getByTestId("workspace-state")).toHaveAttribute(
+        "data-workspace-state",
+        state,
+      );
+      act(() => vi.advanceTimersByTime(3000));
+      expect(navigationMocks.refresh).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it("retries only the original dispatch-failed run", async () => {
+    render(
+      <NextIntlClientProvider locale="zh" messages={messages}>
+        <ManagedWorkspaceState
+          locale="zh"
+          projectId="project_1"
+          result={{
+            state: "failed",
+            runId: "run_1",
+            errorCode: "RESEARCH_DISPATCH_FAILED",
+            canRetryDispatch: true,
+          }}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "重新投递研究" }));
+
+    await waitFor(() =>
+      expect(projectActionMocks.retryResearchDispatch).toHaveBeenCalledWith(
+        "zh",
+        "project_1",
+        "run_1",
+      ),
+    );
   });
 });

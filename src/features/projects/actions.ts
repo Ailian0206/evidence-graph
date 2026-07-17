@@ -8,7 +8,10 @@ import {
   createResearchInputSchema,
   type CreateResearchInput,
 } from "@/features/projects/project-store";
-import { submitManagedResearch } from "@/features/projects/research-submission";
+import {
+  retryManagedResearchDispatch,
+  submitManagedResearch,
+} from "@/features/projects/research-submission";
 import {
   createSupabaseProjectQueryAdapter,
   createSupabaseProjectRepository,
@@ -42,6 +45,33 @@ const readResearchForm = (formData: FormData) =>
       .filter(Boolean),
   });
 
+const isRetryableResearchDispatch = async ({
+  ownerId,
+  projectId,
+  runId,
+}: {
+  ownerId: string;
+  projectId: string;
+  runId: string;
+}) => {
+  const client = await createSupabaseServerClient();
+  const { data, error } = await client
+    .from("research_runs")
+    .select("id")
+    .eq("id", runId)
+    .eq("owner_id", ownerId)
+    .eq("project_id", projectId)
+    .eq("status", "failed")
+    .eq("error_message", "RESEARCH_DISPATCH_FAILED")
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return Boolean(data);
+};
+
 export async function createResearch(
   locale: AppLocale,
   _previousState: CreateResearchFormState,
@@ -73,6 +103,29 @@ export async function createResearch(
 
   revalidatePath(`/${locale}/app`);
   redirect(`/${locale}/app/research/${result.projectId}`);
+}
+
+export async function retryResearchDispatch(
+  locale: AppLocale,
+  projectId: string,
+  runId: string,
+) {
+  const result = await retryManagedResearchDispatch({
+    locale,
+    projectId,
+    runId,
+    dependencies: {
+      requireUser: requireManagedUser,
+      isRetryable: isRetryableResearchDispatch,
+      sendEvent: sendResearchRequestedEvent,
+    },
+  });
+
+  if (result.ok) {
+    revalidatePath(`/${locale}/app/research/${projectId}`);
+  }
+
+  return result;
 }
 
 export async function archiveProject(

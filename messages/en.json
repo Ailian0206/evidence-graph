@@ -189,7 +189,20 @@
     "errorDescription": "No data was changed. You can reload the current research project.",
     "retry": "Reload workspace",
     "notFoundTitle": "Research project not found",
-    "notFoundDescription": "The project may have been deleted or this link is no longer valid."
+    "notFoundDescription": "The project may have been deleted or this link is no longer valid.",
+    "managed": {
+      "queuedTitle": "Research is queued",
+      "queuedDescription": "The research run is waiting to start. Results will appear automatically when ready.",
+      "runningTitle": "Building traceable research",
+      "runningDescription": "Sources, claims, and evidence relations are being processed.",
+      "failedTitle": "Research run failed",
+      "failedDescription": "The project and original run were kept without creating or charging for another run.",
+      "errorCode": "Error code: {code}",
+      "retry": "Retry research dispatch",
+      "retrying": "Retrying dispatch...",
+      "retrySentDescription": "The original research run was dispatched again and is waiting to start.",
+      "retryError": "Dispatch retry failed. Try again later."
+    }
   },
   "Footer": {
     "statement": "Evidence and runnable outcomes first."

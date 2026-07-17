@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { ProjectStore } from "@/features/projects/project-store";
-import { submitManagedResearch } from "@/features/projects/research-submission";
+import {
+  retryManagedResearchDispatch,
+  submitManagedResearch,
+} from "@/features/projects/research-submission";
 
 const input = {
   title: "Durable research",
@@ -140,5 +143,57 @@ describe("managed research submission", () => {
       projectId: "project_1",
       runId: "run_1",
     });
+  });
+});
+
+describe("managed research dispatch retry", () => {
+  it("authorizes, verifies, and reuses the original event identifiers", async () => {
+    const calls: string[] = [];
+    const sendEvent = vi.fn(async () => {
+      calls.push("dispatch");
+    });
+
+    await expect(
+      retryManagedResearchDispatch({
+        locale: "zh",
+        projectId: "project_1",
+        runId: "run_1",
+        dependencies: {
+          requireUser: async () => {
+            calls.push("authorize");
+            return { id: "owner_1" };
+          },
+          isRetryable: async () => {
+            calls.push("verify");
+            return true;
+          },
+          sendEvent,
+        },
+      }),
+    ).resolves.toEqual({ ok: true });
+    expect(calls).toEqual(["authorize", "verify", "dispatch"]);
+    expect(sendEvent).toHaveBeenCalledWith({
+      ownerId: "owner_1",
+      projectId: "project_1",
+      runId: "run_1",
+    });
+  });
+
+  it("does not send an event for a non-retryable run", async () => {
+    const sendEvent = vi.fn();
+
+    await expect(
+      retryManagedResearchDispatch({
+        locale: "en",
+        projectId: "project_1",
+        runId: "run_1",
+        dependencies: {
+          requireUser: async () => ({ id: "owner_1" }),
+          isRetryable: async () => false,
+          sendEvent,
+        },
+      }),
+    ).resolves.toEqual({ ok: false, code: "RESEARCH_DISPATCH_NOT_RETRYABLE" });
+    expect(sendEvent).not.toHaveBeenCalled();
   });
 });

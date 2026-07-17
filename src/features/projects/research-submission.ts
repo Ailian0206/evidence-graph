@@ -14,6 +14,12 @@ type ResearchSubmissionDependencies = {
   sendEvent: (input: ResearchRequestedEventData) => Promise<unknown>;
 };
 
+type ResearchDispatchRetryDependencies = {
+  requireUser: ResearchSubmissionDependencies["requireUser"];
+  isRetryable: (input: ResearchRequestedEventData) => Promise<boolean>;
+  sendEvent: ResearchSubmissionDependencies["sendEvent"];
+};
+
 export type ResearchSubmissionResult =
   | { ok: false; code: "MONTHLY_RUN_LIMIT_EXCEEDED" }
   | {
@@ -21,6 +27,13 @@ export type ResearchSubmissionResult =
       projectId: string;
       runId: string;
       dispatchFailed: boolean;
+    };
+
+export type ResearchDispatchRetryResult =
+  | { ok: true }
+  | {
+      ok: false;
+      code: "RESEARCH_DISPATCH_NOT_RETRYABLE" | "RESEARCH_DISPATCH_FAILED";
     };
 
 export const submitManagedResearch = async ({
@@ -73,4 +86,34 @@ export const submitManagedResearch = async ({
     runId: event.runId,
     dispatchFailed: false,
   };
+};
+
+export const retryManagedResearchDispatch = async ({
+  locale,
+  projectId,
+  runId,
+  dependencies,
+}: {
+  locale: AppLocale;
+  projectId: string;
+  runId: string;
+  dependencies: ResearchDispatchRetryDependencies;
+}): Promise<ResearchDispatchRetryResult> => {
+  const user = await dependencies.requireUser({
+    locale,
+    nextPath: `/${locale}/app/research/${projectId}`,
+  });
+  const event = { ownerId: user.id, projectId, runId };
+
+  if (!(await dependencies.isRetryable(event))) {
+    return { ok: false, code: "RESEARCH_DISPATCH_NOT_RETRYABLE" };
+  }
+
+  try {
+    await dependencies.sendEvent(event);
+  } catch {
+    return { ok: false, code: "RESEARCH_DISPATCH_FAILED" };
+  }
+
+  return { ok: true };
 };

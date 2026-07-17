@@ -381,15 +381,19 @@ git commit -m "feat(workflow): 持久化确定性研究结果"
 
 - 创建：`src/features/research/managed-workspace-store.ts`
 - 创建：`tests/unit/managed-workspace-store.test.ts`
+- 修改：`src/features/projects/research-submission.ts`
+- 修改：`src/features/projects/actions.ts`
 - 修改：`src/app/[locale]/app/research/[id]/page.tsx`
 - 修改：`src/components/projects/project-dashboard.tsx`
 - 修改：`src/components/projects/project-workspace.module.css`
 - 创建：`src/components/evidence-workspace/managed-workspace-state.tsx`
-- 修改：`src/components/evidence-workspace/workspace-state.tsx`
+- 修改：`tests/unit/create-research-action.test.ts`
+- 修改：`tests/unit/evidence-workspace-ui.test.tsx`
+- 修改：`tests/unit/project-workspace-ui.test.tsx`
 - 修改：`messages/zh.json`
 - 修改：`messages/en.json`
 
-- [ ] **步骤 1：编写 Store RED 测试**
+- [x] **步骤 1：编写 Store RED 测试**
 
 使用可注入 Query adapter 验证：
 
@@ -403,7 +407,7 @@ await expect(store.load({ ownerId: "owner_1", projectId: "missing", locale: "zh"
 
 分别覆盖 queued、running、failed、ready；所有 list 查询必须携带 `projectId`，run 查询同时携带 `ownerId`。
 
-- [ ] **步骤 2：运行测试确认 RED**
+- [x] **步骤 2：运行测试确认 RED**
 
 运行：
 
@@ -413,7 +417,7 @@ npm run test:unit -- tests/unit/managed-workspace-store.test.ts
 
 预期：Store 模块不存在。
 
-- [ ] **步骤 3：实现显式 row 映射和页面装配**
+- [x] **步骤 3：实现显式 row 映射和页面装配**
 
 Store 返回：
 
@@ -425,20 +429,22 @@ export type ManagedWorkspaceResult =
   | { state: "not-found" };
 ```
 
-非 `demo` 页面先 `requireManagedUser`，再创建 Supabase Server Client 和 Store。`not-found` 调用 `notFound()`；queued/running/failed 渲染固定尺寸状态；ready 渲染现有 `EvidenceWorkspace`。状态组件在 queued/running 时每 3 秒 `router.refresh()`，组件卸载时清理定时器；只有 `canRetryDispatch` 为 true 时显示重投按钮。Dashboard 的项目标题链接到 `/app/research/{projectId}`，归档和删除按钮保持独立操作。
+非 `demo` 页面先 `requireManagedUser`，再创建 Supabase Server Client 和 Store。`not-found` 调用 `notFound()`；queued/running/failed 渲染固定尺寸状态；ready 渲染现有 `EvidenceWorkspace`。状态组件在 queued/running 时每 3 秒 `router.refresh()`，组件卸载时清理定时器；只有 `canRetryDispatch` 为 true 时显示重投按钮。重投前重新认证并验证原 run 的失败码，成功后复用相同事件 ID 进入轮询，不创建项目或增加额度。Dashboard 的项目标题链接到 `/app/research/{projectId}`，归档和删除按钮保持独立操作。
 
-- [ ] **步骤 4：验证 GREEN**
+- [x] **步骤 4：验证 GREEN**
 
 运行：
 
 ```bash
-npm run test:unit -- tests/unit/managed-workspace-store.test.ts tests/unit/evidence-workspace-ui.test.tsx
+npm run test:unit -- tests/unit/managed-workspace-store.test.ts tests/unit/evidence-workspace-ui.test.tsx tests/unit/project-workspace-ui.test.tsx tests/unit/create-research-action.test.ts
+npm run typecheck
+npm run build
 npx playwright test tests/e2e/auth-boundary.spec.ts tests/e2e/evidence-workspace.spec.ts
 ```
 
 预期：真实路由保持登录边界，demo 和工作台行为不回归。
 
-- [ ] **步骤 5：提交**
+- [x] **步骤 5：提交**
 
 ```bash
 git add src/features/research/managed-workspace-store.ts src/app/[locale]/app/research/[id]/page.tsx src/components/evidence-workspace src/components/projects messages tests
