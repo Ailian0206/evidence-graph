@@ -38,7 +38,7 @@
 1. 用户在新建研究表单提交标题、问题、语言和最多 5 个 URL。
 2. Server Action 重新读取登录用户并调用数据库函数，原子创建 `projects`、`research_runs` 和当月用量记录。
 3. Server Action 在事务成功后发送 `evidence/research.requested`，然后跳转到新项目工作台。
-4. 工作台在 `queued/running` 时显示稳定的处理中状态并定时刷新；`failed` 时显示错误状态和重试命令；`ready` 时显示主张、图谱、来源和运行日志。
+4. 工作台在 `queued/running` 时显示稳定的处理中状态并定时刷新；`failed` 时显示稳定错误。只有 `RESEARCH_DISPATCH_FAILED` 提供重投操作，因为该错误表示事件没有成功交给 Inngest；`ready` 时显示主张、图谱、来源和运行日志。
 5. 用户修改 Claim 审核状态时，客户端先进入 pending 状态，Server Action 成功后更新本地状态并刷新；失败时恢复原状态并显示可重试错误。
 
 ## 数据库边界
@@ -50,7 +50,7 @@
 新增 `public.create_managed_research(...)` 数据库函数：
 
 - 使用 `auth.uid()` 作为唯一 owner，不接受调用者传入 owner ID。
-- 校验标题、问题、语言和最多 5 个 URL。
+- 校验标题、问题、语言和最多 5 个字符串；URL 语法继续由应用 Zod Schema 校验。
 - 锁定当前 owner 的当月 `usage_monthly` 记录；`run_count >= 3` 时抛出 `MONTHLY_RUN_LIMIT_EXCEEDED`。
 - 在同一事务插入项目、`queued` 运行并增加 `run_count`。
 - 返回项目 ID、运行 ID 和项目 slug。
@@ -64,6 +64,8 @@
 - `public.begin_research_run(owner_id, project_id, run_id)` 只允许三个 ID 与已有记录完全一致，然后把 `queued/failed` 更新为 `running`。
 - `public.finalize_research_run(owner_id, project_id, run_id, search_count, token_count, estimated_cost_usd)` 把 step 和 status 原子更新为最终值，并按已有 run 值计算月度用量差额，重复完成不会重复累计。
 - `public.fail_research_run(owner_id, project_id, run_id, error_code)` 保存稳定错误码并把状态设为 `failed`；Inngest 重试可再次调用 `begin_research_run`。
+
+另增 `public.fail_owned_research_dispatch(project_id, run_id)`，只授予 `authenticated`。函数使用 `auth.uid()` 并只允许把当前用户仍处于 `queued` 的 run 标记为 `RESEARCH_DISPATCH_FAILED`，前台不能调用任意后台失败函数。
 
 ### 快照写入
 
@@ -87,11 +89,11 @@
 
 `ProjectStore` 增加返回项目和运行的研究创建能力。Supabase adapter 使用 `rpc("create_managed_research")`，不再通过“先查次数、再插项目”的非原子流程创建研究。Server Action 接收可注入的事件发送器，单元测试只使用 spy，不连接 Inngest。
 
-事务成功但事件投递失败时，调用 `fail_research_run` 把原 run 标记为 `RESEARCH_DISPATCH_FAILED`。再次投递复用相同 `runId`，不会创建第二个项目或消耗第二次月度额度。
+事务成功但事件投递失败时，调用 `fail_owned_research_dispatch` 把原 run 标记为 `RESEARCH_DISPATCH_FAILED`。再次投递复用相同 `runId`，不会创建第二个项目或消耗第二次月度额度；其他工作流失败只使用 Inngest 已有的 3 次重试，不提供新的事件 ID。
 
 ### Inngest 持久化
 
-Inngest handler 保留授权先于执行的顺序。确定性工作流完成后，从内存 Store 读取快照并调用 Supabase Writer；Writer 成功后才返回 ready。所有 ID 从事件和现有确定性生成规则派生，保证同一事件重试得到相同数据键。
+Inngest handler 使用 `authorize -> begin -> execute -> persist/finalize` 顺序。授权通过后先调用 Writer 的 `begin` 把 run 设为 running，再执行确定性工作流；完成后从内存 Store 读取快照并调用 `persist`，Writer 成功后才返回 ready。所有 ID 从事件和现有确定性生成规则派生，保证同一事件重试得到相同数据键。
 
 ### 工作台读取
 
