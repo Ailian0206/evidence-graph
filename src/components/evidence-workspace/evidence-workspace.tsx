@@ -8,8 +8,9 @@ import {
   X,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 
+import { reviewClaim } from "@/features/research/actions";
 import {
   createEvidenceGraphElements,
   createWorkspaceClaimSummaries,
@@ -37,15 +38,27 @@ const reviewFilters: ClaimReviewFilter[] = [
 const mobileTabs = ["claims", "graph", "source", "log"] as const;
 type MobileTab = (typeof mobileTabs)[number];
 
-export function EvidenceWorkspace({ initialData }: { initialData: EvidenceWorkspaceData }) {
+export function EvidenceWorkspace({
+  initialData,
+  persistence = "demo",
+}: {
+  initialData: EvidenceWorkspaceData;
+  persistence?: "demo" | "managed";
+}) {
   if (initialData.claims.length === 0) {
     return <WorkspaceState state="empty" />;
   }
 
-  return <EvidenceWorkspaceReady initialData={initialData} />;
+  return <EvidenceWorkspaceReady initialData={initialData} persistence={persistence} />;
 }
 
-function EvidenceWorkspaceReady({ initialData }: { initialData: EvidenceWorkspaceData }) {
+function EvidenceWorkspaceReady({
+  initialData,
+  persistence,
+}: {
+  initialData: EvidenceWorkspaceData;
+  persistence: "demo" | "managed";
+}) {
   const t = useTranslations("Workspace");
   const [claims, setClaims] = useState(initialData.claims);
   const [reviewFilter, setReviewFilter] = useState<ClaimReviewFilter>("all");
@@ -57,6 +70,8 @@ function EvidenceWorkspaceReady({ initialData }: { initialData: EvidenceWorkspac
     initialData.evidenceLinks[0]?.id ?? "",
   );
   const [activeMobileTab, setActiveMobileTab] = useState<MobileTab>("claims");
+  const [reviewError, setReviewError] = useState(false);
+  const [reviewPending, startReview] = useTransition();
   const workspace = useMemo(() => ({ ...initialData, claims }), [claims, initialData]);
   const claimSummaries = useMemo(
     () => createWorkspaceClaimSummaries(workspace),
@@ -106,13 +121,40 @@ function EvidenceWorkspaceReady({ initialData }: { initialData: EvidenceWorkspac
       return;
     }
 
+    const claimId = selectedClaim.id;
+    const previousStatus = selectedClaim.reviewStatus;
+    setReviewError(false);
     setClaims((currentClaims) =>
       reviewWorkspaceClaim({
         claims: currentClaims,
-        claimId: selectedClaim.id,
+        claimId,
         reviewStatus,
       }),
     );
+
+    if (persistence === "demo") {
+      return;
+    }
+
+    startReview(async () => {
+      try {
+        await reviewClaim(
+          workspace.locale,
+          workspace.project.id,
+          claimId,
+          reviewStatus,
+        );
+      } catch {
+        setClaims((currentClaims) =>
+          reviewWorkspaceClaim({
+            claims: currentClaims,
+            claimId,
+            reviewStatus: previousStatus,
+          }),
+        );
+        setReviewError(true);
+      }
+    });
   };
   const handleSelectClaim = (claimId: string) => {
     setSelectedClaimId(claimId);
@@ -292,11 +334,19 @@ function EvidenceWorkspaceReady({ initialData }: { initialData: EvidenceWorkspac
                 <p>{selectedClaim.statement}</p>
               </div>
               <div className={styles.reviewActions}>
-                <button type="button" onClick={() => handleReview("accepted")}>
+                <button
+                  type="button"
+                  onClick={() => handleReview("accepted")}
+                  disabled={reviewPending}
+                >
                   <Check aria-hidden="true" size={16} />
                   {t("actions.accept")}
                 </button>
-                <button type="button" onClick={() => handleReview("rejected")}>
+                <button
+                  type="button"
+                  onClick={() => handleReview("rejected")}
+                  disabled={reviewPending}
+                >
                   <X aria-hidden="true" size={16} />
                   {t("actions.reject")}
                 </button>
@@ -306,10 +356,16 @@ function EvidenceWorkspaceReady({ initialData }: { initialData: EvidenceWorkspac
                   aria-label={t("actions.reset")}
                   title={t("actions.reset")}
                   onClick={() => handleReview("pending")}
+                  disabled={reviewPending}
                 >
                   <RotateCcw aria-hidden="true" size={15} />
                 </button>
               </div>
+              {reviewError ? (
+                <p className={styles.reviewError} role="alert">
+                  {t("reviewError")}
+                </p>
+              ) : null}
             </div>
           )}
         </section>

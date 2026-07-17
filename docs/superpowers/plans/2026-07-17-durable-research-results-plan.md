@@ -455,16 +455,21 @@ git commit -m "feat(workspace): 读取持久化研究结果"
 
 **文件：**
 
+- 创建：`src/features/research/claim-review.ts`
 - 创建：`src/features/research/actions.ts`
 - 修改：`src/components/evidence-workspace/evidence-workspace.tsx`
+- 修改：`src/components/evidence-workspace/evidence-workspace.module.css`
+- 修改：`src/app/[locale]/app/research/[id]/page.tsx`
+- 修改：`messages/zh.json`
+- 修改：`messages/en.json`
 - 修改：`tests/unit/evidence-workspace-ui.test.tsx`
 - 创建：`tests/unit/review-claim-action.test.ts`
 
-- [ ] **步骤 1：编写审核 RED 测试**
+- [x] **步骤 1：编写审核 RED 测试**
 
 Action 测试验证 `requireUser` 先执行，更新查询包含 `claimId + projectId`，非法状态被 Zod 拒绝。UI 测试验证成功后保留新状态，失败后恢复旧状态并允许重试；demo 模式不调用 Server Action。
 
-- [ ] **步骤 2：运行测试确认 RED**
+- [x] **步骤 2：运行测试确认 RED**
 
 运行：
 
@@ -474,7 +479,7 @@ npm run test:unit -- tests/unit/review-claim-action.test.ts tests/unit/evidence-
 
 预期：审核 Action 和持久化模式不存在。
 
-- [ ] **步骤 3：实现审核边界**
+- [x] **步骤 3：实现审核边界**
 
 输入 Schema：
 
@@ -498,23 +503,25 @@ client
   .maybeSingle();
 ```
 
-`EvidenceWorkspace` 增加 `persistence: "demo" | "managed"`。managed 模式使用 `useTransition` 调用 Action；demo 模式保持现有纯客户端行为。
+`EvidenceWorkspace` 增加 `persistence: "demo" | "managed"`。managed 模式使用 `useTransition` 调用 Action，先乐观更新，失败后只回滚目标 Claim 并显示本地化错误；demo 模式保持现有纯客户端行为。
 
-- [ ] **步骤 4：验证 GREEN**
+- [x] **步骤 4：验证 GREEN**
 
 运行：
 
 ```bash
 npm run test:unit -- tests/unit/review-claim-action.test.ts tests/unit/evidence-workspace-ui.test.tsx
+npm run typecheck
+npx eslint src/features/research/claim-review.ts src/features/research/actions.ts src/components/evidence-workspace/evidence-workspace.tsx tests/unit/review-claim-action.test.ts tests/unit/evidence-workspace-ui.test.tsx
 npx playwright test tests/e2e/evidence-workspace.spec.ts
 ```
 
 预期：审核状态持久化和 demo 回归测试通过。
 
-- [ ] **步骤 5：提交**
+- [x] **步骤 5：提交**
 
 ```bash
-git add src/features/research/actions.ts src/components/evidence-workspace/evidence-workspace.tsx tests
+git add src/features/research/claim-review.ts src/features/research/actions.ts src/components/evidence-workspace src/app/[locale]/app/research/[id]/page.tsx messages tests
 git commit -m "feat(claims): 持久化人工审核状态"
 ```
 

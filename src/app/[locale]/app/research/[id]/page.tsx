@@ -55,7 +55,7 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
     }
 
     if (result.state === "ready") {
-      return <EvidenceWorkspace initialData={result.data} />;
+      return <EvidenceWorkspace initialData={result.data} persistence="managed" />;
     }
 
     return <ManagedWorkspaceState locale={locale} projectId={id} result={result} />;
