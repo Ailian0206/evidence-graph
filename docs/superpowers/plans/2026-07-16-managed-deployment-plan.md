@@ -501,6 +501,8 @@ git commit -m "docs(deploy): 增加上线与回滚流程"
 
 **前置门禁：** 用户明确授权创建或连接 Vercel、Supabase、Inngest、Sentry 资源，并提供 GitHub OAuth 与域名处理方式。未获授权时停在本任务之前，但前九项本地开发继续完成。
 
+**进度记录（2026-07-17）：** Supabase Preview/Production 迁移、RLS 验证和 GitHub OAuth Provider 已完成；Inngest Production/Preview 环境和 Sentry EU 项目已创建；Preview 数据备份恢复演练已通过。Vercel 账号仍要求完成恢复审核，因此站点部署、Supabase Site URL、Inngest 应用同步、生产冒烟和 Vercel 回滚演练尚未执行。
+
 - [ ] **步骤 1：创建免费层资源并记录非敏感标识**
 
 只通过各平台官方集成创建资源；不升级付费套餐。密钥只写入平台环境变量和本地忽略的 `.env.local`，不进入命令日志、截图、测试报告或 Git。

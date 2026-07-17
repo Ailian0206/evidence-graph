@@ -1,15 +1,15 @@
 # Evidence Graph 项目状态
 
-更新时间：2026-07-16
+更新时间：2026-07-17
 
 ## 当前阶段
 
 - 阶段：托管部署里程碑开发中。
 - 分支：`feat/managed-deployment`，在隔离 worktree 中开发。
 - PR：[#11](https://github.com/Ailian0206/evidence-graph/pull/11) 已通过独立 Claude 审核和 GitHub CI，并以 merge commit `74c3b49` 合并。
-- 当前任务：本地部署文档与生产冒烟门禁已完成，停在托管账号资源授权门禁前。
+- 当前任务：Supabase、GitHub OAuth、Inngest 和 Sentry 免费资源已完成基础配置，停在 Vercel 账号恢复审核。
 - 外部 Provider 调用：已禁用。
-- 生产部署：未配置。
+- 生产部署：数据库和外部服务配置进行中，Vercel 尚未部署。
 - Node.js：本地和 CI 使用 `v22.22.1`。
 - Cursor Bugbot：本月额度已耗尽，不等待、不重复触发，也不作为当前合并门禁。
 - 独立 Claude 审核：由全局 `/codex-independent-pr-review <PR编号>` 执行，不在仓库维护第二套同名 reviewer。
@@ -85,10 +85,17 @@
 - 生产冒烟必须同时提供精确确认令牌和 HTTPS 非本地地址；HTTP、localhost、IPv4/IPv6 回环地址都在任何请求前拒绝。
 - 默认生产冒烟只检查公开首页与安全 Header、公开示例、Auth 重定向和 Inngest 无签名拒绝；6 个门禁测试通过，未调用真实网络或付费 Provider。
 - 部署文档与冒烟门禁的完整 `npm run test:ci` 通过 lint、typecheck、118 个单元测试、生产构建和 36 个 E2E。
-- Vercel、Supabase、Inngest、Sentry、GitHub OAuth 和域名尚未创建或连接；没有写入真实密钥，也没有运行生产冒烟。
+- Supabase 组织 `Ailian` 已创建东京区 Preview `vooexhwkqzymltwewcqc` 和 Production `dibngceljmdkcgrzxubx`；两套远端迁移、33 个 pgTAP 和 Schema lint 均通过。
+- GitHub OAuth Preview App `3734029` 和 Production App `3734035` 已创建；两套 Supabase GitHub Provider 已启用并验证，Preview Secret 已完成一次轮换。
+- Inngest 组织 `Ailian` 已创建 Production 和 Preview `preview-e7881f94` 环境；两套 Event Key、Signing Key 已写入本地忽略文件，尚未同步部署应用。
+- Sentry EU 组织 `ailian0206` 和 Next.js 项目 `evidence-graph` 已创建；运行时 DSN 已配置，Source Map Token 保持可选未配置，尚未发送受控异常。
+- `verify:managed-env` 已通过 Supabase、Inngest 和 Sentry 必需变量检查；真实密钥只存在于权限为 `0600` 的 `.env.local`，未进入 Git。
+- Preview 备份恢复演练已完成：远端 `public` 数据通过官方 CLI 导出，在本地用仓库迁移重建后恢复，33 个 pgTAP 和 Schema lint 通过，临时备份已删除。
+- `feat/managed-deployment` 已推送远端但未创建 PR；HTTPS 凭据缺少 `workflow` scope，因此 push URL 已改为本机现有 SSH 凭据，fetch URL 保持 HTTPS。
+- Vercel GitHub 登录仍返回“账号需要进一步验证”；账号恢复申请尚未提交，因此没有站点 URL、Inngest 应用同步、生产冒烟或 Vercel 回滚结果。
 
 ## 下一步
 
-1. 取得明确授权和账号、GitHub OAuth、域名处理方式后，创建或连接免费层托管资源。
-2. 先在 Preview 应用迁移和验证 RLS，再配置 Production 并运行不含付费 Provider 的生产冒烟。
-3. 完成回滚与备份恢复演练后，运行里程碑完整门禁并只创建一个 Draft PR。
+1. 提交并通过 Vercel 账号恢复审核，创建免费项目并取得稳定 Preview 与 Production 默认域名。
+2. 配置两套 Supabase Site URL 和 Redirect allow list，同步 Inngest 应用并运行不含付费 Provider 的生产冒烟和 Vercel 回滚演练。
+3. 完成任务 10 后运行里程碑完整门禁，并只创建一个 Draft PR 进入自动审核闭环。

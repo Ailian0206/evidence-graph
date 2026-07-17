@@ -26,6 +26,19 @@ npm run test:ci
 
 ## 3. 资源创建顺序
 
+### 3.0 当前资源状态
+
+| 服务 | 环境或标识 | 状态 |
+| --- | --- | --- |
+| Supabase | Preview `vooexhwkqzymltwewcqc`，东京 | 迁移、33 个 pgTAP、Schema lint 和 GitHub Provider 已通过 |
+| Supabase | Production `dibngceljmdkcgrzxubx`，东京 | 迁移、33 个 pgTAP、Schema lint 和 GitHub Provider 已通过 |
+| GitHub OAuth | Preview App `3734029`，Production App `3734035` | 两套 Client Secret 已写入本地忽略文件，Preview 已完成一次轮换 |
+| Inngest | Production，Preview `preview-e7881f94` | 两套 Event Key 和 Signing Key 已配置；等待部署 URL 后同步应用 |
+| Sentry | EU 组织 `ailian0206`，项目 `evidence-graph` | DSN 已配置；Source Map Token 保持可选未配置 |
+| Vercel | 默认域名 | 分支已推送；账号仍要求完成恢复审核，尚未创建项目 |
+
+上述表格只记录非敏感标识。Client Secret、Service Role、Event Key、Signing Key 和 DSN 的值不得写入文档或 Git。
+
 ### 3.1 Supabase
 
 1. 分别创建 Preview 和 Production 项目，保持 Postgres 主版本与 `supabase/config.toml` 一致。
