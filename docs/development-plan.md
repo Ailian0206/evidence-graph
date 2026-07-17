@@ -14,7 +14,7 @@
 | 6 | `feat/evidence-workspace` | 主张列表、图谱、来源查看器、审核动作和响应式应用 | 已完成；PR [#11](https://github.com/Ailian0206/evidence-graph/pull/11) 已通过独立审核和 CI 后合并 |
 | 7 | `feat/managed-deployment` | Supabase Auth/RLS/pgvector、Inngest、Sentry 和 Vercel | 本地门禁已完成；等待 Vercel 账号恢复后执行生产冒烟与回滚演练 |
 | 8 | `feat/durable-research-results` | 原子创建研究、Inngest 快照持久化、真实工作台和 Claim 审核 | 本地完成；`test:managed` 通过 51 个数据库测试、142 个单元测试和 36 个 E2E；等待父分支合并后再创建一个 Draft PR |
-| 9 | `feat/report-publishing` | 报告发布、撤销、公开 slug、版本切换和分享页 | 下一本地开发里程碑；不得混入持久化结果 PR |
+| 9 | `feat/report-publishing` | 报告发布、撤销、公开 slug、版本切换和分享页 | 本地开发中；设计和实施计划已确定，不 push、不创建堆叠 PR |
 
 ## 跨模块规则
 
@@ -30,4 +30,4 @@
 
 ## 当前模块
 
-`feat/managed-deployment` 正等待 Vercel 账号恢复结果；`feat/durable-research-results` 已在独立 worktree 完成本地门禁。先完成并合并托管部署 PR，再为持久化研究结果创建唯一 Draft PR；等待期间可以在新的本地分支准备报告发布，但不得提前 push 或创建堆叠 PR。
+`feat/managed-deployment` 正等待 Vercel 账号恢复结果；`feat/durable-research-results` 已在独立 worktree 完成本地门禁。`feat/report-publishing` 已从持久化结果最新本地提交建立 worktree，按 `docs/superpowers/plans/2026-07-17-report-publishing-plan.md` 开发。前两个父分支必须依次完成 PR 闭环，报告发布分支在此之前不得 push 或创建堆叠 PR。

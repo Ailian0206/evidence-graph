@@ -4,10 +4,10 @@
 
 ## 当前阶段
 
-- 阶段：托管部署等待外部收口；持久化研究结果本地里程碑已完成。
-- 分支：`feat/managed-deployment` 已推送远端；`feat/durable-research-results` 在独立 worktree 中完成 8 个本地提交，尚未 push。
+- 阶段：托管部署等待外部收口；持久化研究结果本地里程碑已完成；报告发布进入本地开发。
+- 分支：`feat/managed-deployment` 已推送远端；`feat/durable-research-results` 本地完成且尚未 push；`feat/report-publishing` 已从其最新提交建立独立 worktree，仅本地开发。
 - PR：持久化研究结果未创建 PR；必须先完成并合并托管部署 PR，再为本模块创建唯一 Draft PR。
-- 当前任务：等待 Vercel 账号恢复审核结果；本地下一里程碑为报告发布，不混入当前分支。
+- 当前任务：等待 Vercel 账号恢复审核结果；本地按实施计划开发报告发布、撤销、版本切换和公开分享，不提前 push 或创建堆叠 PR。
 - 外部 Provider 调用：已禁用。
 - Embedding Provider：已决定后续接入阿里云百炼 `text-embedding-v4` 并固定输出 1536 维；等待用户提供账号和密钥，当前不接入、不调用真实服务。
 - 生产部署：数据库和外部服务配置进行中，Vercel 尚未部署。
@@ -36,6 +36,7 @@
 | 证据工作台 | 已完成 | PR [#11](https://github.com/Ailian0206/evidence-graph/pull/11) 已通过独立审核和 CI，并以 merge commit `74c3b49` 合并 |
 | 托管部署 | 进行中 | 获得账号授权后完成 Supabase、Inngest、Vercel 配置和生产冒烟测试 |
 | 持久化研究结果 | 本地已完成 | 原子研究事务、幂等 Writer、真实工作台和审核写回完成；等待托管部署合并后创建单一 Draft PR |
+| 报告发布 | 本地开发中 | 设计稳定公开 slug、原子发布状态机、版本切换和只读分享页；不调用真实 Provider |
 
 ## 验证摘要
 
@@ -108,4 +109,4 @@
 1. 等待 Vercel 账号恢复审核通过，创建免费项目并取得稳定 Preview 与 Production 默认域名。
 2. 配置两套 Supabase Site URL 和 Redirect allow list，同步 Inngest 应用并运行不含付费 Provider 的生产冒烟和 Vercel 回滚演练，完成托管部署 PR 闭环。
 3. 托管部署合并后，为 `feat/durable-research-results` 创建唯一 Draft PR，执行独立 Claude 审核、CI 和 merge commit 闭环。
-4. 本地下一里程碑进入 `feat/report-publishing`，实现报告发布、撤销、版本和公开分享，不提前创建堆叠 PR。
+4. 在本地 `feat/report-publishing` 按计划完成报告发布、撤销、版本和公开分享，不提前 push 或创建堆叠 PR。
