@@ -4,10 +4,10 @@
 
 ## 当前阶段
 
-- 阶段：托管部署等待外部收口；持久化研究结果本地里程碑已完成；报告发布进入本地开发。
-- 分支：`feat/managed-deployment` 已推送远端；`feat/durable-research-results` 本地完成且尚未 push；`feat/report-publishing` 已从其最新提交建立独立 worktree，仅本地开发。
-- PR：持久化研究结果未创建 PR；必须先完成并合并托管部署 PR，再为本模块创建唯一 Draft PR。
-- 当前任务：等待 Vercel 账号恢复审核结果；本地按实施计划开发报告发布、撤销、版本切换和公开分享，不提前 push 或创建堆叠 PR。
+- 阶段：托管部署等待外部收口；持久化研究结果和报告发布均已完成本地里程碑。
+- 分支：`feat/managed-deployment` 已推送远端；`feat/durable-research-results` 与 `feat/report-publishing` 均仅在本地完成，尚未 push。
+- PR：持久化研究结果和报告发布均未创建 PR；必须先完成并合并托管部署 PR，再按父子顺序各创建唯一 Draft PR。
+- 当前任务：等待 Vercel 账号恢复审核结果；报告发布保持本地，不提前 push、不创建堆叠 PR，也不进入下一个模块。
 - 外部 Provider 调用：已禁用。
 - Embedding Provider：已决定后续接入阿里云百炼 `text-embedding-v4` 并固定输出 1536 维；等待用户提供账号和密钥，当前不接入、不调用真实服务。
 - 生产部署：数据库和外部服务配置进行中，Vercel 尚未部署。
@@ -36,7 +36,7 @@
 | 证据工作台 | 已完成 | PR [#11](https://github.com/Ailian0206/evidence-graph/pull/11) 已通过独立审核和 CI，并以 merge commit `74c3b49` 合并 |
 | 托管部署 | 进行中 | 获得账号授权后完成 Supabase、Inngest、Vercel 配置和生产冒烟测试 |
 | 持久化研究结果 | 本地已完成 | 原子研究事务、幂等 Writer、真实工作台和审核写回完成；等待托管部署合并后创建单一 Draft PR |
-| 报告发布 | 本地开发中 | 设计稳定公开 slug、原子发布状态机、版本切换和只读分享页；不调用真实 Provider |
+| 报告发布 | 本地已完成 | 原子发布/撤销、稳定 slug、版本切换、工作台报告视图和双语只读分享页完整通过本地门禁；等待父分支依次合并 |
 
 ## 验证摘要
 
@@ -103,10 +103,15 @@
 - managed Claim 审核已写回 Supabase，并同时限定 `claimId + projectId`；保存失败会回滚目标 Claim，demo 继续保持纯客户端行为。
 - 持久化研究结果聚焦门禁通过 Provider 扫描、51 个数据库测试、49 个闭环单测和 14 个 Auth/工作台/项目/Inngest E2E。
 - 持久化研究结果完整 `npm run test:managed` 通过 Schema lint、全仓 lint、typecheck、142 个单元测试、生产构建和 36 个 E2E；运行时清空托管变量，未调用真实 OpenAI、Tavily、Supabase、Inngest 或 Sentry 远端。
+- 报告发布数据库状态机通过首次发布、幂等发布、版本切换、失败原子性、跨用户隔离、撤销、匿名读取和审计验证；当前 4 个 pgTAP 文件共 86 个测试通过，Schema lint 无 warning。
+- Report Store、Server Actions 和工作台报告模式均使用稳定 DTO 与确定性 fixtures；发布与撤销从服务端会话推导 owner，公开读取不返回来源全文、owner、成本或运行日志。
+- `/r/[slug]` 已绕过 locale proxy，中文和英文 fixture 使用独立稳定 slug；未知或撤销报告返回 404，canonical、Open Graph article metadata 和打印样式通过 E2E。
+- 报告发布完整 `npm run test:managed` 通过 Provider 边界、86 个数据库测试、全仓 lint、typecheck、167 个单元测试、生产构建和 45 个 E2E；未调用真实或付费 Provider。
+- 工作台图谱/报告和公开报告均覆盖 390x844、1024x768、1440x1000；最终截图已确认无横向溢出、文字裁切、控件重叠、异常空白或模式切换位移，Cytoscape canvas 像素检查继续通过。
 
 ## 下一步
 
 1. 等待 Vercel 账号恢复审核通过，创建免费项目并取得稳定 Preview 与 Production 默认域名。
 2. 配置两套 Supabase Site URL 和 Redirect allow list，同步 Inngest 应用并运行不含付费 Provider 的生产冒烟和 Vercel 回滚演练，完成托管部署 PR 闭环。
 3. 托管部署合并后，为 `feat/durable-research-results` 创建唯一 Draft PR，执行独立 Claude 审核、CI 和 merge commit 闭环。
-4. 在本地 `feat/report-publishing` 按计划完成报告发布、撤销、版本和公开分享，不提前 push 或创建堆叠 PR。
+4. 持久化研究结果合并后，再为本地 `feat/report-publishing` 创建唯一 Draft PR，执行独立 Claude 审核、CI 和 merge commit 闭环；此前保持不 push、不创建堆叠 PR。
