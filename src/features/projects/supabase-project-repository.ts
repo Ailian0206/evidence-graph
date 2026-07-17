@@ -1,12 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
-  createProjectInputSchema,
+  createResearchInputSchema,
   managedProjectSchema,
   updateProjectInputSchema,
+  type CreatedManagedResearch,
   type ManagedProject,
   type ProjectStore,
 } from "@/features/projects/project-store";
+import { researchRunSchema, type ResearchRun } from "@/features/research/domain";
 
 export type ProjectRow = {
   id: string;
@@ -21,13 +23,39 @@ export type ProjectRow = {
   updated_at: string;
 };
 
+export type ResearchRunRow = {
+  id: string;
+  project_id: string;
+  owner_id: string;
+  status: "queued" | "running" | "ready" | "failed" | "cancelled";
+  step:
+    | "queued"
+    | "planning"
+    | "searching"
+    | "collecting"
+    | "indexing"
+    | "extracting_claims"
+    | "linking_evidence"
+    | "detecting_conflicts"
+    | "drafting_report"
+    | "ready"
+    | "failed"
+    | "cancelled";
+  source_limit: number;
+  manual_url_limit: number;
+  manual_urls: string[];
+  max_content_chars: number;
+  estimated_cost_usd: number;
+  search_count: number;
+  token_count: number;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 type ProjectUpdateRow = Partial<
   Pick<ProjectRow, "title" | "question" | "language" | "status" | "visibility" | "updated_at">
 >;
-
-type MonthlyUsageRow = {
-  run_count: number;
-};
 
 export type ProjectQueryAdapter = {
   listProjects: (input: { ownerId: string }) => Promise<ProjectRow[]>;
@@ -35,10 +63,23 @@ export type ProjectQueryAdapter = {
     ownerId: string;
     projectId: string;
   }) => Promise<ProjectRow | null>;
-  insertProject: (input: {
+  createResearch: (input: {
     ownerId: string;
-    row: ProjectRow;
-  }) => Promise<ProjectRow | null>;
+    projectId: string;
+    runId: string;
+    slug: string;
+    input: {
+      title: string;
+      question: string;
+      language: "zh" | "en";
+      manualUrls: string[];
+    };
+  }) => Promise<{ project: ProjectRow; run: ResearchRunRow }>;
+  markResearchDispatchFailed: (input: {
+    ownerId: string;
+    projectId: string;
+    runId: string;
+  }) => Promise<void>;
   updateProject: (input: {
     ownerId: string;
     projectId: string;
@@ -48,14 +89,12 @@ export type ProjectQueryAdapter = {
     ownerId: string;
     projectId: string;
   }) => Promise<ProjectRow | null>;
-  getMonthlyUsage: (input: {
-    ownerId: string;
-    month: string;
-  }) => Promise<MonthlyUsageRow | null>;
 };
 
 const projectColumns =
   "id,owner_id,title,question,language,status,visibility,slug,created_at,updated_at";
+const researchRunColumns =
+  "id,project_id,owner_id,status,step,source_limit,manual_url_limit,manual_urls,max_content_chars,estimated_cost_usd,search_count,token_count,error_message,created_at,updated_at";
 
 const normalizeTimestamp = (value: string) => {
   const timestamp = Date.parse(value);
@@ -92,18 +131,51 @@ export const createSupabaseProjectQueryAdapter = (
     throwQueryError(error);
     return data as ProjectRow | null;
   },
-  insertProject: async ({ ownerId, row }) => {
-    if (row.owner_id !== ownerId) {
-      throw new Error("PROJECT_OWNER_MISMATCH");
+  createResearch: async ({ ownerId, projectId, runId, slug, input }) => {
+    const { error } = await client.rpc("create_managed_research", {
+      requested_project_id: projectId,
+      requested_run_id: runId,
+      requested_title: input.title,
+      requested_question: input.question,
+      requested_language: input.language,
+      requested_slug: slug,
+      requested_manual_urls: input.manualUrls,
+    });
+    throwQueryError(error);
+
+    const projectResult = await client
+      .from("projects")
+      .select(projectColumns)
+      .eq("owner_id", ownerId)
+      .eq("id", projectId)
+      .neq("status", "deleted")
+      .maybeSingle();
+    throwQueryError(projectResult.error);
+
+    const runResult = await client
+      .from("research_runs")
+      .select(researchRunColumns)
+      .eq("owner_id", ownerId)
+      .eq("project_id", projectId)
+      .eq("id", runId)
+      .maybeSingle();
+    throwQueryError(runResult.error);
+
+    if (!projectResult.data || !runResult.data) {
+      throw new Error("RESEARCH_CREATION_RESULT_NOT_FOUND");
     }
 
-    const { data, error } = await client
-      .from("projects")
-      .insert(row)
-      .select(projectColumns)
-      .maybeSingle();
+    return {
+      project: projectResult.data as ProjectRow,
+      run: runResult.data as ResearchRunRow,
+    };
+  },
+  markResearchDispatchFailed: async ({ projectId, runId }) => {
+    const { error } = await client.rpc("fail_owned_research_dispatch", {
+      requested_project_id: projectId,
+      requested_run_id: runId,
+    });
     throwQueryError(error);
-    return data as ProjectRow | null;
   },
   updateProject: async ({ ownerId, projectId, updates }) => {
     const { data, error } = await client
@@ -128,16 +200,6 @@ export const createSupabaseProjectQueryAdapter = (
     throwQueryError(error);
     return data as ProjectRow | null;
   },
-  getMonthlyUsage: async ({ ownerId, month }) => {
-    const { data, error } = await client
-      .from("usage_monthly")
-      .select("run_count")
-      .eq("owner_id", ownerId)
-      .eq("month", month)
-      .maybeSingle();
-    throwQueryError(error);
-    return data as MonthlyUsageRow | null;
-  },
 });
 
 const mapProjectRow = (row: ProjectRow): ManagedProject =>
@@ -154,6 +216,24 @@ const mapProjectRow = (row: ProjectRow): ManagedProject =>
     updatedAt: normalizeTimestamp(row.updated_at),
   });
 
+const mapResearchRunRow = (row: ResearchRunRow): ResearchRun =>
+  researchRunSchema.parse({
+    id: row.id,
+    projectId: row.project_id,
+    ownerId: row.owner_id,
+    status: row.status,
+    step: row.step,
+    sourceLimit: row.source_limit,
+    manualUrlLimit: row.manual_url_limit,
+    maxContentChars: row.max_content_chars,
+    estimatedCostUsd: row.estimated_cost_usd,
+    searchCount: row.search_count,
+    tokenCount: row.token_count,
+    errorMessage: row.error_message ?? undefined,
+    createdAt: normalizeTimestamp(row.created_at),
+    updatedAt: normalizeTimestamp(row.updated_at),
+  });
+
 const requireProjectRow = (row: ProjectRow | null) => {
   if (!row) {
     throw new Error("PROJECT_NOT_FOUND");
@@ -162,53 +242,39 @@ const requireProjectRow = (row: ProjectRow | null) => {
   return row;
 };
 
-const getMonthStart = (date: Date) => `${date.toISOString().slice(0, 7)}-01`;
-
 export const createSupabaseProjectRepository = ({
   queries,
-  createId = () => `project_${globalThis.crypto.randomUUID()}`,
+  createProjectId = () => `project_${globalThis.crypto.randomUUID()}`,
+  createRunId = () => `run_${globalThis.crypto.randomUUID()}`,
   now = () => new Date(),
 }: {
   queries: ProjectQueryAdapter;
-  createId?: () => string;
+  createProjectId?: () => string;
+  createRunId?: () => string;
   now?: () => Date;
 }): ProjectStore => ({
   listProjects: async ({ ownerId }) =>
     (await queries.listProjects({ ownerId })).map(mapProjectRow),
   getProject: async ({ ownerId, projectId }) =>
     mapProjectRow(requireProjectRow(await queries.getProject({ ownerId, projectId }))),
-  createProject: async ({ ownerId, input }) => {
-    const parsed = createProjectInputSchema.parse(input);
-    const createdAt = now();
-    const usage = await queries.getMonthlyUsage({
+  createResearch: async ({ ownerId, input }): Promise<CreatedManagedResearch> => {
+    const parsed = createResearchInputSchema.parse(input);
+    const projectId = createProjectId();
+    const runId = createRunId();
+    const created = await queries.createResearch({
       ownerId,
-      month: getMonthStart(createdAt),
+      projectId,
+      runId,
+      slug: `research-${projectId}`,
+      input: parsed,
     });
 
-    if ((usage?.run_count ?? 0) >= 3) {
-      throw new Error("MONTHLY_RUN_LIMIT_EXCEEDED");
-    }
-
-    const id = createId();
-    const timestamp = createdAt.toISOString();
-    const row = await queries.insertProject({
-      ownerId,
-      row: {
-        id,
-        owner_id: ownerId,
-        title: parsed.title,
-        question: parsed.question,
-        language: parsed.language,
-        status: "active",
-        visibility: "private",
-        slug: `research-${id}`,
-        created_at: timestamp,
-        updated_at: timestamp,
-      },
-    });
-
-    return mapProjectRow(requireProjectRow(row));
+    return {
+      project: mapProjectRow(created.project),
+      run: mapResearchRunRow(created.run),
+    };
   },
+  markResearchDispatchFailed: (input) => queries.markResearchDispatchFailed(input),
   updateProject: async ({ ownerId, projectId, input }) => {
     const parsed = updateProjectInputSchema.parse(input);
     const row = await queries.updateProject({

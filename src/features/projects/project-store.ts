@@ -4,6 +4,7 @@ import {
   projectSchema,
   projectStatusSchema,
   projectVisibilitySchema,
+  type ResearchRun,
 } from "@/features/research/domain";
 
 export const projectLanguageSchema = z.enum(["zh", "en"]);
@@ -37,13 +38,23 @@ export type CreateProjectInput = z.input<typeof createProjectInputSchema>;
 export type CreateResearchInput = z.input<typeof createResearchInputSchema>;
 export type UpdateProjectInput = z.input<typeof updateProjectInputSchema>;
 
+export type CreatedManagedResearch = {
+  project: ManagedProject;
+  run: ResearchRun;
+};
+
 export type ProjectStore = {
   listProjects: (input: { ownerId: string }) => Promise<ManagedProject[]>;
   getProject: (input: { ownerId: string; projectId: string }) => Promise<ManagedProject>;
-  createProject: (input: {
+  createResearch: (input: {
     ownerId: string;
-    input: CreateProjectInput;
-  }) => Promise<ManagedProject>;
+    input: CreateResearchInput;
+  }) => Promise<CreatedManagedResearch>;
+  markResearchDispatchFailed: (input: {
+    ownerId: string;
+    projectId: string;
+    runId: string;
+  }) => Promise<void>;
   updateProject: (input: {
     ownerId: string;
     projectId: string;

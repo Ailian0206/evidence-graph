@@ -8,11 +8,13 @@ import {
   createResearchInputSchema,
   type CreateResearchInput,
 } from "@/features/projects/project-store";
+import { submitManagedResearch } from "@/features/projects/research-submission";
 import {
   createSupabaseProjectQueryAdapter,
   createSupabaseProjectRepository,
 } from "@/features/projects/supabase-project-repository";
 import type { AppLocale } from "@/i18n/routing";
+import { sendResearchRequestedEvent } from "@/inngest/client";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type CreateResearchFormState = {
@@ -55,24 +57,22 @@ export async function createResearch(
     };
   }
 
-  const user = await requireManagedUser({
+  const result = await submitManagedResearch({
     locale,
-    nextPath: `/${locale}/app/research/new`,
+    input: parsed.data,
+    dependencies: {
+      requireUser: requireManagedUser,
+      createStore: createManagedProjectStore,
+      sendEvent: sendResearchRequestedEvent,
+    },
   });
-  const store = await createManagedProjectStore();
 
-  try {
-    await store.createProject({ ownerId: user.id, input: parsed.data });
-  } catch (error) {
-    if (error instanceof Error && error.message === "MONTHLY_RUN_LIMIT_EXCEEDED") {
-      return { status: "error", code: "MONTHLY_RUN_LIMIT_EXCEEDED" };
-    }
-
-    throw error;
+  if (!result.ok) {
+    return { status: "error", code: result.code };
   }
 
   revalidatePath(`/${locale}/app`);
-  redirect(`/${locale}/app`);
+  redirect(`/${locale}/app/research/${result.projectId}`);
 }
 
 export async function archiveProject(

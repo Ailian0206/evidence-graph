@@ -31,7 +31,7 @@
 - 创建：`supabase/migrations/20260717000100_durable_research_results.sql`
 - 创建：`supabase/tests/03_durable_research_results.sql`
 
-- [ ] **步骤 1：编写数据库 RED 测试**
+- [x] **步骤 1：编写数据库 RED 测试**
 
 测试使用两个 Auth 用户，验证：
 
@@ -68,7 +68,7 @@ select throws_ok(
 
 继续验证 `begin_research_run` 的三个 ID 必须匹配、`fail_research_run` 保存稳定错误码、`finalize_research_run` 重复调用后 `usage_monthly.search_count/token_count/estimated_cost_usd` 不重复增加。
 
-- [ ] **步骤 2：运行数据库测试确认 RED**
+- [x] **步骤 2：运行数据库测试确认 RED**
 
 运行：
 
@@ -80,7 +80,7 @@ npx supabase test db --local supabase/tests/03_durable_research_results.sql
 
 预期：因迁移和 RPC 不存在失败。
 
-- [ ] **步骤 3：实现迁移和权限**
+- [x] **步骤 3：实现迁移和权限**
 
 迁移必须包含：
 
@@ -155,7 +155,7 @@ $$;
 
 实现 `begin_research_run`、`fail_research_run` 和 `finalize_research_run`，三者只授予 `service_role`；`create_managed_research` 和只允许当前用户标记 queued run 的 `fail_owned_research_dispatch` 授予 `authenticated`。所有函数固定 `search_path`，撤销 `public/anon` 权限。
 
-- [ ] **步骤 4：验证 GREEN**
+- [x] **步骤 4：验证 GREEN**
 
 运行：
 
@@ -167,7 +167,7 @@ npx supabase db lint --local --level warning
 
 预期：原有 33 个测试和新增用例全部通过，Schema lint 无错误。
 
-- [ ] **步骤 5：提交**
+- [x] **步骤 5：提交**
 
 ```bash
 git add supabase/migrations/20260717000100_durable_research_results.sql supabase/tests/03_durable_research_results.sql
@@ -180,14 +180,12 @@ git commit -m "feat(database): 增加持久化研究运行事务"
 
 - 修改：`src/features/projects/project-store.ts`
 - 修改：`src/features/projects/supabase-project-repository.ts`
+- 创建：`src/features/projects/research-submission.ts`
 - 修改：`src/features/projects/actions.ts`
-- 修改：`src/components/projects/new-research-form.tsx`
-- 修改：`messages/zh.json`
-- 修改：`messages/en.json`
 - 修改：`tests/unit/supabase-project-repository.test.ts`
 - 创建：`tests/unit/create-research-action.test.ts`
 
-- [ ] **步骤 1：编写 Repository 和 Action RED 测试**
+- [x] **步骤 1：编写 Repository 和 Action RED 测试**
 
 Repository 测试要求一次 RPC 返回项目和 run：
 
@@ -208,9 +206,9 @@ await expect(
 });
 ```
 
-Action 测试要求调用顺序为 `requireUser -> createResearch -> sendEvent`；RPC 失败不发送事件；发送失败调用 `markDispatchFailed` 并返回 `RESEARCH_DISPATCH_FAILED`。只有错误码为 `RESEARCH_DISPATCH_FAILED` 的现有 run 可以调用 `retryResearchDispatch`，重发时复用原 `runId`。
+Action 测试要求调用顺序为 `requireUser -> createResearch -> sendEvent`；RPC 失败不发送事件；发送失败调用 `markResearchDispatchFailed` 并返回原项目和 run，不重复创建和计费。重投入口随任务 4 的运行状态工作台一起实现，并复用原 `runId`。
 
-- [ ] **步骤 2：运行测试确认 RED**
+- [x] **步骤 2：运行测试确认 RED**
 
 运行：
 
@@ -220,7 +218,7 @@ npm run test:unit -- tests/unit/supabase-project-repository.test.ts tests/unit/c
 
 预期：`createResearch` 契约和 Action helper 不存在。
 
-- [ ] **步骤 3：实现最小应用契约**
+- [x] **步骤 3：实现最小应用契约**
 
 新增类型：
 
@@ -253,22 +251,24 @@ export type ProjectStore = {
 
 Supabase adapter 生成稳定的 `projectId`、`runId` 和 slug 后调用 `rpc("create_managed_research")`，再读取返回 ID 对应的项目和 run row。把 Action 核心提取为可注入依赖的 `submitManagedResearch`，生产入口注入 `sendResearchRequestedEvent`，测试注入 spy。
 
-成功后跳转 `/${locale}/app/research/${project.id}`。新增 `RESEARCH_DISPATCH_FAILED` 中英文错误文案，并实现只重发原事件的 `retryResearchDispatch`。
+事务成功后跳转 `/${locale}/app/research/${project.id}`。事件发送失败时先把原 run 标记为 `RESEARCH_DISPATCH_FAILED`，再进入同一个项目工作台；创建表单只处理事务尚未成功的输入和月度额度错误。
 
-- [ ] **步骤 4：验证 GREEN**
+- [x] **步骤 4：验证 GREEN**
 
 运行：
 
 ```bash
-npm run test:unit -- tests/unit/supabase-project-repository.test.ts tests/unit/create-research-action.test.ts tests/unit/project-workspace-ui.test.tsx
+npm run test:unit -- tests/unit/supabase-project-repository.test.ts tests/unit/create-research-action.test.ts
+npm run typecheck
+npx eslint src/features/projects/project-store.ts src/features/projects/supabase-project-repository.ts src/features/projects/research-submission.ts src/features/projects/actions.ts tests/unit/supabase-project-repository.test.ts tests/unit/create-research-action.test.ts
 ```
 
-预期：RPC 参数、调用顺序、错误回滚和表单文案全部通过，未连接真实 Inngest。
+预期：RPC 参数、调用顺序、投递失败标记和类型边界全部通过，未连接真实 Inngest。
 
-- [ ] **步骤 5：提交**
+- [x] **步骤 5：提交**
 
 ```bash
-git add src/features/projects src/components/projects/new-research-form.tsx messages tests/unit
+git add src/features/projects tests/unit docs/superpowers/plans/2026-07-17-durable-research-results-plan.md
 git commit -m "feat(projects): 创建研究运行并投递事件"
 ```
 
