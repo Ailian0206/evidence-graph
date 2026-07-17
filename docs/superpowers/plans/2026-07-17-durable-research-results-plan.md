@@ -281,7 +281,7 @@ git commit -m "feat(projects): 创建研究运行并投递事件"
 - 修改：`src/inngest/functions/run-research.ts`
 - 修改：`tests/unit/inngest-research.test.ts`
 
-- [ ] **步骤 1：编写 Writer RED 测试**
+- [x] **步骤 1：编写 Writer RED 测试**
 
 测试以 `createDemoResearchFixture` 和真实 `runResearchWorkflow` 结果构造快照，验证：
 
@@ -302,7 +302,7 @@ expect(queries.calls).toEqual([
 
 把任一 source 的 `projectId` 改为其他项目时抛出 `WORKFLOW_PROJECT_MISMATCH`，且 `beginRun` 之后不执行任何 upsert。相同快照执行两次时 adapter 使用相同 conflict keys。
 
-- [ ] **步骤 2：运行测试确认 RED**
+- [x] **步骤 2：运行测试确认 RED**
 
 运行：
 
@@ -312,7 +312,7 @@ npm run test:unit -- tests/unit/supabase-workflow-writer.test.ts tests/unit/inng
 
 预期：Writer 模块不存在。
 
-- [ ] **步骤 3：实现 Writer 和 Supabase adapter**
+- [x] **步骤 3：实现 Writer 和 Supabase adapter**
 
 定义接口：
 
@@ -327,8 +327,14 @@ export type WorkflowPersistenceQueries = {
   upsertClaims: (claims: Claim[]) => Promise<void>;
   upsertEvidenceLinks: (links: EvidenceLink[]) => Promise<void>;
   upsertClaimRelations: (relations: ClaimRelation[]) => Promise<void>;
-  upsertCheckpoints: (checkpoints: WorkflowCheckpoint[]) => Promise<void>;
-  upsertRunLogs: (entries: RunLogEntry[]) => Promise<void>;
+  upsertCheckpoints: (input: {
+    projectId: string;
+    checkpoints: WorkflowCheckpoint[];
+  }) => Promise<void>;
+  upsertRunLogs: (input: {
+    projectId: string;
+    entries: RunLogEntry[];
+  }) => Promise<void>;
   upsertReport: (report: ResearchReport | null) => Promise<void>;
   finalizeRun: (input: ResearchRequestedEventData & {
     searchCount: number;
@@ -350,9 +356,9 @@ export type DurableWorkflowWriter = {
 
 每批 upsert 显式声明数据库 conflict key；embedding 序列化为 pgvector 接受的 `[n,n,...]` 字符串。报告保存为 `status = "draft"`、`slug = null`、`published_at = null`。
 
-修改 Inngest 执行器：授权后调用 `writer.begin(event)`，再创建 Store、执行 workflow、读取 `store.getSnapshot()` 并调用 `writer.persist(...)`；异常时调用 `writer.fail(...)` 后继续抛出，让现有 3 次重试生效。Handler 测试固定调用顺序为 `authorize -> step -> begin -> execute -> persist`。
+修改 Inngest 执行器：授权后在 durable step 内调用 `writer.begin(event)`，再创建只含项目和 run 的空结果 Store、执行 workflow、读取 `store.getSnapshot()` 并调用 `writer.persist(...)`；异常时调用 `writer.fail(...)` 后继续抛出，让现有 3 次重试生效。Handler 测试固定调用顺序为 `authorize -> step -> begin -> execute -> persist`。
 
-- [ ] **步骤 4：验证 GREEN**
+- [x] **步骤 4：验证 GREEN**
 
 运行：
 
@@ -362,7 +368,7 @@ npm run test:unit -- tests/unit/supabase-workflow-writer.test.ts tests/unit/inng
 
 预期：Writer 顺序、边界、错误处理通过，现有确定性工作流测试不变。
 
-- [ ] **步骤 5：提交**
+- [x] **步骤 5：提交**
 
 ```bash
 git add src/features/research/supabase-workflow-writer.ts src/inngest/functions/run-research.ts tests/unit
