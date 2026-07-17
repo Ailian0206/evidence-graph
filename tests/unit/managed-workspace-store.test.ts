@@ -100,6 +100,39 @@ const rows: ManagedWorkspaceRows = {
       error_code: null,
     },
   ],
+  reports: [
+    {
+      id: "report_1",
+      run_id: "run_1",
+      project_id: "project_1",
+      slug: null,
+      markdown: "## 结论\n\n持久化结果保留精确证据。[link_1]",
+      sections: [
+        {
+          id: "section_1",
+          heading: "结论",
+          factual: true,
+          markdown: "持久化结果保留精确证据。[link_1]",
+          citationIds: ["link_1"],
+        },
+      ],
+      citations: [
+        {
+          evidenceLinkId: "link_1",
+          claimId: "claim_1",
+          chunkId: "chunk_1",
+          sourceId: "source_1",
+          quote: "保留精确证据",
+          sourceUrl: "https://example.com/source",
+          sourceTitle: "研究来源",
+        },
+      ],
+      version: 1,
+      status: "draft",
+      published_at: null,
+      created_at: "2026-07-17T08:07:00.000Z",
+    },
+  ],
 };
 
 const createQueries = (
@@ -113,6 +146,7 @@ const createQueries = (
   listEvidenceLinks: vi.fn(async () => rows.evidenceLinks),
   listClaimRelations: vi.fn(async () => rows.claimRelations),
   listRunLogs: vi.fn(async () => rows.runLogs),
+  listReports: vi.fn(async () => rows.reports),
   ...overrides,
 });
 
@@ -126,6 +160,7 @@ describe("managed workspace store", () => {
     ).resolves.toEqual({ state: "not-found" });
     expect(queries.getLatestRun).not.toHaveBeenCalled();
     expect(queries.listSources).not.toHaveBeenCalled();
+    expect(queries.listReports).not.toHaveBeenCalled();
   });
 
   it.each(["queued", "running"] as const)(
@@ -144,6 +179,7 @@ describe("managed workspace store", () => {
         store.load({ ownerId: "owner_1", projectId: "project_1", locale: "zh" }),
       ).resolves.toEqual({ state: status, runId: "run_1" });
       expect(queries.listSources).not.toHaveBeenCalled();
+      expect(queries.listReports).not.toHaveBeenCalled();
     },
   );
 
@@ -167,6 +203,7 @@ describe("managed workspace store", () => {
       canRetryDispatch: true,
     });
     expect(queries.listClaims).not.toHaveBeenCalled();
+    expect(queries.listReports).not.toHaveBeenCalled();
   });
 
   it("maps a ready snapshot and scopes every query to its owner or project", async () => {
@@ -192,6 +229,13 @@ describe("managed workspace store", () => {
         evidenceLinks: [expect.objectContaining({ id: "link_1", relation: "supports" })],
         claimRelations: [],
         runLogs: [expect.objectContaining({ id: "log_1", errorCode: undefined })],
+        reports: [
+          expect.objectContaining({
+            id: "report_1",
+            status: "draft",
+            publishedAt: undefined,
+          }),
+        ],
       },
     });
 
@@ -216,5 +260,6 @@ describe("managed workspace store", () => {
       projectId: "project_1",
       runId: "run_1",
     });
+    expect(queries.listReports).toHaveBeenCalledWith({ projectId: "project_1" });
   });
 });

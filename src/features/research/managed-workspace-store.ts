@@ -1,6 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
+  mapReportRow,
+  reportColumns,
+  type ReportRow,
+} from "@/features/reports/report-store";
+import {
   claimRelationSchema,
   claimSchema,
   evidenceLinkSchema,
@@ -146,6 +151,7 @@ export type ManagedWorkspaceRows = {
   evidenceLinks: EvidenceLinkRow[];
   claimRelations: ClaimRelationRow[];
   runLogs: RunLogRow[];
+  reports: ReportRow[];
 };
 
 export type ManagedWorkspaceQueryAdapter = {
@@ -163,6 +169,7 @@ export type ManagedWorkspaceQueryAdapter = {
   listEvidenceLinks: (input: { projectId: string }) => Promise<EvidenceLinkRow[]>;
   listClaimRelations: (input: { projectId: string }) => Promise<ClaimRelationRow[]>;
   listRunLogs: (input: { projectId: string; runId: string }) => Promise<RunLogRow[]>;
+  listReports: (input: { projectId: string }) => Promise<ReportRow[]>;
 };
 
 export type ManagedWorkspaceResult =
@@ -280,6 +287,15 @@ export const createSupabaseManagedWorkspaceQueryAdapter = (
       .order("occurred_at", { ascending: true });
     throwQueryError(error);
     return (data ?? []) as RunLogRow[];
+  },
+  listReports: async ({ projectId }) => {
+    const { data, error } = await client
+      .from("reports")
+      .select(reportColumns)
+      .eq("project_id", projectId)
+      .order("version", { ascending: false });
+    throwQueryError(error);
+    return (data ?? []) as ReportRow[];
   },
 });
 
@@ -427,7 +443,7 @@ export const createManagedWorkspaceStore = (queries: ManagedWorkspaceQueryAdapte
       };
     }
 
-    const [sources, chunks, claims, evidenceLinks, claimRelations, runLogs] =
+    const [sources, chunks, claims, evidenceLinks, claimRelations, runLogs, reports] =
       await Promise.all([
         queries.listSources({ projectId }),
         queries.listChunks({ projectId }),
@@ -435,6 +451,7 @@ export const createManagedWorkspaceStore = (queries: ManagedWorkspaceQueryAdapte
         queries.listEvidenceLinks({ projectId }),
         queries.listClaimRelations({ projectId }),
         queries.listRunLogs({ projectId, runId: run.id }),
+        queries.listReports({ projectId }),
       ]);
 
     return {
@@ -449,6 +466,7 @@ export const createManagedWorkspaceStore = (queries: ManagedWorkspaceQueryAdapte
         evidenceLinks: evidenceLinks.map(mapEvidenceLink),
         claimRelations: claimRelations.map(mapClaimRelation),
         runLogs: runLogs.map(mapRunLog),
+        reports: reports.map(mapReportRow),
       },
     };
   },
