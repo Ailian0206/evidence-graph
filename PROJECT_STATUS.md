@@ -8,6 +8,7 @@
 - 分支：`feat/managed-deployment` 已推送远端；`feat/durable-research-results` 与 `feat/report-publishing` 均仅在本地完成，尚未 push。
 - PR：持久化研究结果和报告发布均未创建 PR；必须先完成并合并托管部署 PR，再按父子顺序各创建唯一 Draft PR。
 - 当前任务：等待 Vercel 账号恢复审核结果；报告发布保持本地，不提前 push、不创建堆叠 PR，也不进入下一个模块。
+- UI 优化：已登记为报告发布之后的独立里程碑；集中解决过小字号、过大间距、首屏重点不清、左侧装饰边线和明显 AI 化视觉，不在当前功能分支零碎修改。
 - 外部 Provider 调用：已禁用。
 - Embedding Provider：已决定后续接入阿里云百炼 `text-embedding-v4` 并固定输出 1536 维；等待用户提供账号和密钥，当前不接入、不调用真实服务。
 - 生产部署：数据库和外部服务配置进行中，Vercel 尚未部署。
@@ -37,6 +38,7 @@
 | 托管部署 | 进行中 | 获得账号授权后完成 Supabase、Inngest、Vercel 配置和生产冒烟测试 |
 | 持久化研究结果 | 本地已完成 | 原子研究事务、幂等 Writer、真实工作台和审核写回完成；等待托管部署合并后创建单一 Draft PR |
 | 报告发布 | 本地已完成 | 原子发布/撤销、稳定 slug、版本切换、工作台报告视图和双语只读分享页完整通过本地门禁；等待父分支依次合并 |
+| 全局 UI 体验优化 | 已规划 | 前置模块合并后，以稳定完整页面为基线统一字号、密度和信息层级；移除左侧装饰边线与 AI 化样式，并完成桌面端、平板和移动端视觉回归 |
 
 ## 验证摘要
 
@@ -115,3 +117,4 @@
 2. 配置两套 Supabase Site URL 和 Redirect allow list，同步 Inngest 应用并运行不含付费 Provider 的生产冒烟和 Vercel 回滚演练，完成托管部署 PR 闭环。
 3. 托管部署合并后，为 `feat/durable-research-results` 创建唯一 Draft PR，执行独立 Claude 审核、CI 和 merge commit 闭环。
 4. 持久化研究结果合并后，再为本地 `feat/report-publishing` 创建唯一 Draft PR，执行独立 Claude 审核、CI 和 merge commit 闭环；此前保持不 push、不创建堆叠 PR。
+5. 报告发布合并后，从最新 `main` 创建 `feat/ui-experience-refresh`；先调用前端界面技能完成全站审计和统一设计规范，再集中实现，整个 UI 里程碑只创建一个 Draft PR。

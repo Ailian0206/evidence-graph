@@ -15,6 +15,7 @@
 | 7 | `feat/managed-deployment` | Supabase Auth/RLS/pgvector、Inngest、Sentry 和 Vercel | 本地门禁已完成；等待 Vercel 账号恢复后执行生产冒烟与回滚演练 |
 | 8 | `feat/durable-research-results` | 原子创建研究、Inngest 快照持久化、真实工作台和 Claim 审核 | 本地完成；`test:managed` 通过 51 个数据库测试、142 个单元测试和 36 个 E2E；等待父分支合并后再创建一个 Draft PR |
 | 9 | `feat/report-publishing` | 报告发布、撤销、公开 slug、版本切换和分享页 | 本地完成；`test:managed` 通过 86 个数据库测试、167 个单元测试和 45 个 E2E；等待父分支合并后再创建一个 Draft PR |
+| 10 | `feat/ui-experience-refresh` | 全站字体、间距、信息层级和视觉语言统一，移除左侧装饰边线与明显 AI 化样式 | 前置模块全部合并后启动；先用前端界面技能完成全站审计和设计规范，再通过三档截图对比、可访问性检查与完整门禁 |
 
 ## 跨模块规则
 
@@ -30,4 +31,4 @@
 
 ## 当前模块
 
-`feat/managed-deployment` 正等待 Vercel 账号恢复结果；`feat/durable-research-results` 和 `feat/report-publishing` 已分别在独立 worktree 完成本地门禁。三个里程碑必须依次完成 PR 闭环；报告发布分支在两个父分支合并前不得 push 或创建堆叠 PR，当前也不提前进入下一个模块。
+`feat/managed-deployment` 正等待 Vercel 账号恢复结果；`feat/durable-research-results` 和 `feat/report-publishing` 已分别在独立 worktree 完成本地门禁。三个里程碑必须依次完成 PR 闭环；报告发布分支在两个父分支合并前不得 push 或创建堆叠 PR。它们全部合并后再从最新 `main` 开始 `feat/ui-experience-refresh`，不把全局视觉改动分散混入现有功能分支。
