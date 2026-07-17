@@ -154,4 +154,6 @@ export type WorkflowStep = z.infer<typeof workflowStepSchema>;
 export type WorkflowCheckpoint = z.infer<typeof workflowCheckpointSchema>;
 export type RunLogEntry = z.infer<typeof runLogEntrySchema>;
 export type EmbeddedChunk = z.infer<typeof embeddedChunkSchema>;
+export type ReportSection = z.infer<typeof reportSectionSchema>;
+export type ReportCitation = z.infer<typeof reportCitationSchema>;
 export type ResearchReport = z.infer<typeof researchReportSchema>;
