@@ -1,13 +1,13 @@
 # Evidence Graph 项目状态
 
-更新时间：2026-07-17
+更新时间：2026-07-20
 
 ## 当前阶段
 
 - 阶段：托管部署里程碑开发中。
 - 分支：`feat/managed-deployment`，在隔离 worktree 中开发。
-- PR：[#11](https://github.com/Ailian0206/evidence-graph/pull/11) 已通过独立 Claude 审核和 GitHub CI，并以 merge commit `74c3b49` 合并。
-- 当前任务：Supabase、GitHub OAuth、Inngest 和 Sentry 免费资源已完成基础配置，等待 Vercel 账号恢复审核结果。
+- PR：[#12](https://github.com/Ailian0206/evidence-graph/pull/12) 已对 head `222e3f3` 通过独立 Claude 审核和 GitHub CI，并以 merge commit `b0fe0e6` 合并。
+- 当前任务：Supabase、GitHub OAuth、Inngest 和 Sentry 免费资源已完成基础配置；Vercel 账号仍要求进一步验证，等待恢复审核结果。
 - 外部 Provider 调用：已禁用。
 - 生产部署：数据库和外部服务配置进行中，Vercel 尚未部署。
 - Node.js：本地和 CI 使用 `v22.22.1`。
@@ -93,7 +93,7 @@
 - Preview 备份恢复演练已完成：远端 `public` 数据通过官方 CLI 导出，在本地用仓库迁移重建后恢复，33 个 pgTAP 和 Schema lint 通过，临时备份已删除。
 - `feat/managed-deployment` 已推送远端但未创建 PR；HTTPS 凭据缺少 `workflow` scope，因此 push URL 已改为本机现有 SSH 凭据，fetch URL 保持 HTTPS。
 - 托管部署里程碑预检 `npm run test:managed` 已通过 Provider 边界扫描、33 个数据库测试、Schema lint、lint、类型检查、118 个单元测试、生产构建和 36 个 E2E；运行时显式禁用真实托管连接和付费 Provider。
-- Vercel 账号恢复申请已提交，官方邮件给出的典型审核时间为 1 个工作日；当前没有站点 URL、Inngest 应用同步、生产冒烟或 Vercel 回滚结果。
+- Vercel 恢复工单于 2026-07-17 提交；2026-07-20 重新核验时邮箱仍无后续回复，GitHub 登录返回 `user_blocked` 并提示账号需要进一步验证。当前没有站点 URL、Inngest 应用同步、生产冒烟或 Vercel 回滚结果。
 
 ## 下一步
 
