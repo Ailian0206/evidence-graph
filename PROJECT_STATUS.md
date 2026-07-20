@@ -1,13 +1,13 @@
 # Evidence Graph 项目状态
 
-更新时间：2026-07-17
+更新时间：2026-07-20
 
 ## 当前阶段
 
-- 阶段：托管部署等待外部收口；持久化研究结果和报告发布均已完成本地里程碑。
+- 阶段：先闭环现有 PR #12，再继续托管部署外部收口；持久化研究结果和报告发布均已完成本地里程碑。
 - 分支：`feat/managed-deployment` 已推送远端；`feat/durable-research-results` 与 `feat/report-publishing` 均仅在本地完成，尚未 push。
-- PR：持久化研究结果和报告发布均未创建 PR；必须先完成并合并托管部署 PR，再按父子顺序各创建唯一 Draft PR。
-- 当前任务：等待 Vercel 账号恢复审核结果；报告发布保持本地，不提前 push、不创建堆叠 PR，也不进入下一个模块。
+- PR：[#12](https://github.com/Ailian0206/evidence-graph/pull/12) 可合并且 CI 成功，但尚未执行独立 Claude 审核；持久化研究结果和报告发布均未创建 PR。
+- 当前任务：先完成 PR #12 自动审核闭环，再重新核验 Vercel 账号状态；报告发布保持本地，不提前 push、不创建堆叠 PR。
 - UI 优化：已登记为报告发布之后的独立里程碑；集中解决过小字号、过大间距、首屏重点不清、左侧装饰边线和明显 AI 化视觉，不在当前功能分支零碎修改。
 - 外部 Provider 调用：已禁用。
 - Embedding Provider：已决定后续接入阿里云百炼 `text-embedding-v4` 并固定输出 1536 维；等待用户提供账号和密钥，当前不接入、不调用真实服务。
@@ -113,8 +113,9 @@
 
 ## 下一步
 
-1. 等待 Vercel 账号恢复审核通过，创建免费项目并取得稳定 Preview 与 Production 默认域名。
-2. 配置两套 Supabase Site URL 和 Redirect allow list，同步 Inngest 应用并运行不含付费 Provider 的生产冒烟和 Vercel 回滚演练，完成托管部署 PR 闭环。
-3. 托管部署合并后，为 `feat/durable-research-results` 创建唯一 Draft PR，执行独立 Claude 审核、CI 和 merge commit 闭环。
-4. 持久化研究结果合并后，再为本地 `feat/report-publishing` 创建唯一 Draft PR，执行独立 Claude 审核、CI 和 merge commit 闭环；此前保持不 push、不创建堆叠 PR。
-5. 报告发布合并后，从最新 `main` 创建 `feat/ui-experience-refresh`；先调用前端界面技能完成全站审计和统一设计规范，再集中实现，整个 UI 里程碑只创建一个 Draft PR。
+1. 对 PR #12 运行独立 Claude 审核；审核和 CI 对当前 head 均通过后使用 merge commit 合并。
+2. 重新核验 Vercel 账号恢复结果；账号可用后创建免费项目并取得稳定 Preview 与 Production 默认域名。
+3. 配置两套 Supabase Site URL 和 Redirect allow list，同步 Inngest 应用并运行不含付费 Provider 的生产冒烟和 Vercel 回滚演练，完成托管部署 PR 闭环。
+4. 托管部署合并后，为 `feat/durable-research-results` 创建唯一 Draft PR，执行独立 Claude 审核、CI 和 merge commit 闭环。
+5. 持久化研究结果合并后，再为本地 `feat/report-publishing` 创建唯一 Draft PR，执行独立 Claude 审核、CI 和 merge commit 闭环；此前保持不 push、不创建堆叠 PR。
+6. 报告发布合并后，从最新 `main` 创建 `feat/ui-experience-refresh`；先调用前端界面技能完成全站审计和统一设计规范，再集中实现，整个 UI 里程碑只创建一个 Draft PR。
