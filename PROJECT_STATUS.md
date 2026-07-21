@@ -4,11 +4,11 @@
 
 ## 当前阶段
 
-- 阶段：报告发布已合并；全局 UI 体验优化设计已确认。
+- 阶段：全局 UI 体验优化本地实现与完整门禁已通过，等待唯一 Draft PR 审核。
 - 分支：`feat/ui-experience-refresh` 已从最新 `main` 创建，并在独立 worktree 中进行。
-- PR：报告发布 PR [#15](https://github.com/Ailian0206/evidence-graph/pull/15) 已通过独立 Claude 审核和 GitHub CI 后合并。
-- 当前任务：审核已确认的全站设计规格；确认后编写中文实施计划并按页面组集中实现。
-- UI 优化：已登记为报告发布之后的独立里程碑；集中解决过小字号、过大间距、首屏重点不清、左侧装饰边线和明显 AI 化视觉，不在当前功能分支零碎修改。
+- PR：报告发布 PR [#15](https://github.com/Ailian0206/evidence-graph/pull/15) 已合并；UI 里程碑尚未创建 PR，下一步创建唯一 Draft PR。
+- 当前任务：推送 `feat/ui-experience-refresh`，创建唯一 Draft PR，并依次完成独立 Claude 审核、GitHub CI 和 merge commit 合并。
+- UI 优化：中文优先的 Neutral Product Studio 与均衡密度已覆盖公共页面、认证/项目页、工作台全部状态和公开报告；本地完整门禁已通过。
 - 外部 Provider 调用：已禁用。
 - Embedding Provider：已决定后续接入阿里云百炼 `text-embedding-v4` 并固定输出 1536 维；等待用户提供账号和密钥，当前不接入、不调用真实服务。
 - 生产部署：数据库和外部服务配置进行中，Vercel 尚未部署。
@@ -38,7 +38,7 @@
 | 托管部署 | 代码已合并，发布待完成 | PR [#13](https://github.com/Ailian0206/evidence-graph/pull/13) 已合并；Vercel 生产验证仍是后置发布门禁 |
 | 持久化研究结果 | 已完成 | PR [#14](https://github.com/Ailian0206/evidence-graph/pull/14) 已通过独立审核和 CI，并以 merge commit `ce4b1a2` 合并 |
 | 报告发布 | 已完成 | PR [#15](https://github.com/Ailian0206/evidence-graph/pull/15) 已通过独立审核和 CI，并以 merge commit `f42ae20` 合并 |
-| 全局 UI 体验优化 | 设计已确认 | 用户选择中文优先的 Neutral Product Studio 与均衡密度；逐页范围、设计系统和验收标准已写入规格 |
+| 全局 UI 体验优化 | 本地门禁已通过 | 中文优先的 Neutral Product Studio 与均衡密度已完成实现；89 个数据库测试、177 个单元测试、81 个 E2E 和三档视觉矩阵通过，等待唯一 Draft PR 审核 |
 
 ## 验证摘要
 
@@ -121,9 +121,14 @@
 - 报告发布分支已推送并创建唯一 Draft PR #15；Vercel 生产 URL、Inngest 同步、生产冒烟和回滚仍作为独立发布门禁，不随本 PR 宣称上线。
 - PR #15 独立 Claude 审核对 head `b970acd` 返回 `pass`，两个 GitHub CI job 成功后以 merge commit `f42ae20` 合并；远端模块分支已删除。
 - 全局 UI 体验优化已完成现状审计和三套方向对比；用户选择中文优先的 Neutral Product Studio 与均衡密度，并确认覆盖公共页面、认证/项目页、工作台全部状态和公开报告。
+- 全局 UI 体验优化已统一系统字体、颜色、焦点、40px 触控目标、移动菜单和 active navigation；首页、作品、案例、笔记、证据预览、登录、项目页、工作台各运行状态和公开报告均完成中文优先的均衡密度改版，英文路由继续保留。
+- 最终视觉矩阵覆盖 `/zh`、`/en`、`/zh/work`、Evidence Graph 案例、`/zh/notes`、`/zh/evidence`、登录、demo 工作台和公开报告，在 390x844、1024x768、1440x1000 三档共 27 个场景中验证无横向溢出、非图谱文字小于 12px、左侧装饰线、文字裁切、异常重叠或主要空白。
+- 导航键盘操作、skip link、工作台图谱联动、Cytoscape canvas 像素、打印模式、120 字项目标题和 2000 字研究问题回归均通过；截图输出保留在本地忽略目录 `output/playwright/ui-refresh/`，未提交生成物。
+- UI 里程碑完整 `npm run test:managed` 通过 Provider 边界扫描、89 个数据库测试、Schema lint、全仓 lint、typecheck、177 个单元测试、生产构建和 81 个 E2E；运行时显式清空托管与付费 Provider 变量，未调用真实 Supabase、Inngest、Sentry、OpenAI 或 Tavily 远端。
+- Vercel 账号恢复仍未完成；当前 UI 里程碑只证明代码和本地门禁完成，不代表生产上线，生产 URL、Supabase Redirect、Inngest 同步、生产冒烟和回滚演练继续作为合并后的独立发布门禁。
 
 ## 下一步
 
-1. 审核 `docs/superpowers/specs/2026-07-21-ui-experience-refresh-design.md`，确认后编写中文实施计划。
-2. 按计划集中优化作品集、登录页、项目页、研究工作台和公开报告，并执行三档视觉与完整模块门禁。
+1. 推送 `feat/ui-experience-refresh` 并创建唯一 Draft PR，完成独立 Claude 审核与 GitHub CI 闭环后使用 merge commit 合并。
+2. 合并后同步本地 `main`，记录最终 PR、审核 SHA、CI 与 merge commit 状态。
 3. Vercel 账号恢复后取得 Preview 与 Production URL，配置 Supabase Redirect、同步 Inngest，并完成生产冒烟和回滚演练。
