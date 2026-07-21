@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(18);
+select plan(21);
 
 insert into auth.users (id, email)
 values
@@ -69,6 +69,50 @@ select is(
   ),
   1,
   'atomic creation increments monthly run usage once'
+);
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-000000000021', true);
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"00000000-0000-4000-8000-000000000021","role":"authenticated"}',
+  true
+);
+
+select throws_ok(
+  $$
+    select * from public.create_managed_research(
+      'durable_project_active_conflict',
+      'durable_run_active_conflict',
+      'Concurrent research',
+      'Can another run start while one is queued?',
+      'en',
+      'research-durable-active-conflict',
+      '[]'::jsonb
+    )
+  $$,
+  'P0001',
+  'ACTIVE_RESEARCH_RUN_EXISTS',
+  'owners cannot create another research while a run is active'
+);
+
+reset role;
+
+select is(
+  (select count(*) from public.projects where id = 'durable_project_active_conflict'),
+  0::bigint,
+  'an active run conflict rolls back the new project'
+);
+
+select is(
+  (
+    select run_count
+    from public.usage_monthly
+    where owner_id = '00000000-0000-4000-8000-000000000021'
+      and month = date_trunc('month', now())::date
+  ),
+  1,
+  'an active run conflict does not consume monthly quota'
 );
 
 set local role authenticated;

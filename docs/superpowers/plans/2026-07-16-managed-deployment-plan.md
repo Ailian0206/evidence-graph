@@ -1,6 +1,6 @@
 # 托管部署实施计划
 
-> **执行方式：** 当前会话按任务顺序执行。每个行为先验证 RED，再实现最小 GREEN；中间只做小粒度提交，不创建 PR。全部本地门禁和授权后的生产冒烟通过后，只创建一个里程碑 Draft PR。
+> **执行方式：** 当前会话按任务顺序执行。每个行为先验证 RED，再实现最小 GREEN；中间只做小粒度提交，不创建 PR。代码里程碑通过完整本地门禁后只创建一个 Draft PR；Vercel 生产验证作为合并后的独立发布门禁，不把未部署状态表述为已上线。
 
 **目标：** 把当前确定性 Evidence Graph 接入 Supabase Auth/Postgres/RLS/pgvector、Inngest、Sentry、Vercel Analytics 和 Vercel 部署门禁，同时保证日常测试不调用真实 OpenAI 或 Tavily。
 
@@ -497,11 +497,13 @@ git add docs/deployment.md scripts package.json README.md tests/unit/production-
 git commit -m "docs(deploy): 增加上线与回滚流程"
 ```
 
-### 任务 10：授权后的托管资源与生产验证
+### 任务 10：授权后的生产发布门禁
 
 **前置门禁：** 用户明确授权创建或连接 Vercel、Supabase、Inngest、Sentry 资源，并提供 GitHub OAuth 与域名处理方式。未获授权时停在本任务之前，但前九项本地开发继续完成。
 
-**进度记录（2026-07-17）：** Supabase Preview/Production 迁移、RLS 验证和 GitHub OAuth Provider 已完成；Inngest Production/Preview 环境和 Sentry EU 项目已创建；Preview 数据备份恢复演练和里程碑预检门禁已通过。Vercel 账号恢复申请已提交，官方邮件给出的典型审核时间为 1 个工作日；站点部署、Supabase Site URL、Inngest 应用同步、生产冒烟和 Vercel 回滚演练等待审核通过后执行。
+**进度记录（2026-07-20）：** Supabase Preview/Production 迁移、RLS 验证和 GitHub OAuth Provider 已完成；Inngest Production/Preview 环境和 Sentry EU 项目已创建；Preview 数据备份恢复演练和里程碑预检门禁已通过。Vercel 恢复工单暂无后续回复，GitHub 登录仍返回 `user_blocked` 并提示账号需要进一步验证；站点部署、Supabase Site URL、Inngest 应用同步、生产冒烟和 Vercel 回滚演练等待审核通过后执行。
+
+**里程碑拆分（2026-07-21）：** 用户确认 Vercel 账号审核不再阻塞代码里程碑合并。任务 11 可在完整本地门禁、独立 Claude 审核和 GitHub CI 通过后闭环；本任务仍是生产上线前的必需门禁，账号恢复后单独完成并记录结果。
 
 - [ ] **步骤 1：创建免费层资源并记录非敏感标识**
 
@@ -534,9 +536,9 @@ git add docs/deployment.md PROJECT_STATUS.md
 git commit -m "docs(status): 记录托管部署验证"
 ```
 
-### 任务 11：完成里程碑门禁并创建唯一 Draft PR
+### 任务 11：完成代码里程碑门禁并创建唯一 Draft PR
 
-- [ ] **步骤 1：检查差异与敏感信息**
+- [x] **步骤 1：检查差异与敏感信息**
 
 运行：
 
@@ -548,7 +550,7 @@ npm run check:provider-boundary
 rg -n "sk-[A-Za-z0-9]{20,}|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY" . --glob '!node_modules/**' --glob '!package-lock.json'
 ```
 
-- [ ] **步骤 2：运行完整本地门禁**
+- [x] **步骤 2：运行完整本地门禁**
 
 运行：
 
@@ -559,17 +561,17 @@ npm run test:ci
 
 预期：数据库约束/RLS、lint、typecheck、全部单元测试、production build 和全部 E2E 通过。
 
-- [ ] **步骤 3：更新项目状态**
+- [x] **步骤 3：更新项目状态**
 
 在 `PROJECT_STATUS.md` 记录本地验证数量、Provider 调用状态、外部资源状态和剩余授权项。
 
-- [ ] **步骤 4：推送分支并只创建一个 Draft PR**
+- [x] **步骤 4：推送分支并只创建一个 Draft PR**
 
 ```bash
 git push -u origin feat/managed-deployment
 gh pr create --draft --base main --head feat/managed-deployment --title "feat: 完成托管部署里程碑" --body-file /tmp/evidence-graph-managed-deployment-pr.md
 ```
 
-- [ ] **步骤 5：按自动审核流程闭环**
+- [x] **步骤 5：按自动审核流程闭环**
 
 运行独立 Claude 审核；有问题就在原 PR 修复、验证、提交并重审。当前 head 审核 `pass` 且 CI 成功后使用 merge commit 合并；不创建第二个 PR。

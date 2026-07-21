@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import messages from "../../messages/zh.json";
 import { NewResearchForm } from "@/components/projects/new-research-form";
 import { ProjectDashboard } from "@/components/projects/project-dashboard";
-import { deleteProject } from "@/features/projects/actions";
+import { createResearch, deleteProject } from "@/features/projects/actions";
 import type { ManagedProject } from "@/features/projects/project-store";
 
 vi.mock("@/features/projects/actions", () => ({
@@ -89,6 +89,23 @@ describe("managed project workspace UI", () => {
     await user.click(screen.getAllByRole("button", { name: /移除来源链接/ })[0]);
     expect(screen.getAllByRole("textbox", { name: /来源链接/ })).toHaveLength(4);
     expect(addButton).toBeEnabled();
+  });
+
+  it("explains when another research run is already active", async () => {
+    const user = userEvent.setup();
+    vi.mocked(createResearch).mockResolvedValueOnce({
+      status: "error",
+      code: "ACTIVE_RESEARCH_RUN_EXISTS",
+    } as never);
+    renderWithMessages(<NewResearchForm locale="zh" />);
+
+    await user.type(screen.getByRole("textbox", { name: "项目标题" }), "并发研究");
+    await user.type(screen.getByRole("textbox", { name: "研究问题" }), "何时可以再次创建研究？");
+    await user.click(screen.getByRole("button", { name: "创建研究" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "已有研究正在处理，请等待完成后再创建新的研究。",
+    );
   });
 
   it("does not delete a project when confirmation is cancelled", async () => {

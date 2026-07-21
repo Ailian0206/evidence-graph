@@ -116,6 +116,28 @@ describe("managed research submission", () => {
     expect(sendEvent).not.toHaveBeenCalled();
   });
 
+  it("returns a stable error without dispatching when an active run exists", async () => {
+    const store = createStore({
+      createResearch: vi.fn(async () => {
+        throw { message: "ACTIVE_RESEARCH_RUN_EXISTS" };
+      }),
+    });
+    const sendEvent = vi.fn();
+
+    await expect(
+      submitManagedResearch({
+        locale: "zh",
+        input,
+        dependencies: {
+          requireUser: async () => ({ id: "owner_1" }),
+          createStore: async () => store,
+          sendEvent,
+        },
+      }),
+    ).resolves.toEqual({ ok: false, code: "ACTIVE_RESEARCH_RUN_EXISTS" });
+    expect(sendEvent).not.toHaveBeenCalled();
+  });
+
   it("marks the created run when dispatch fails", async () => {
     const markResearchDispatchFailed = vi.fn(async () => undefined);
     const store = createStore({ markResearchDispatchFailed });

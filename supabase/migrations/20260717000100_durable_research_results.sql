@@ -26,6 +26,7 @@ as $$
 declare
   current_owner uuid := auth.uid();
   current_month date := date_trunc('month', now())::date;
+  violated_constraint text;
 begin
   if current_owner is null then
     raise exception 'AUTH_REQUIRED' using errcode = '42501';
@@ -94,34 +95,45 @@ begin
     requested_slug
   );
 
-  insert into public.research_runs (
-    id,
-    project_id,
-    owner_id,
-    status,
-    step,
-    source_limit,
-    manual_url_limit,
-    manual_urls,
-    max_content_chars,
-    estimated_cost_usd,
-    search_count,
-    token_count
-  )
-  values (
-    requested_run_id,
-    requested_project_id,
-    current_owner,
-    'queued',
-    'queued',
-    12,
-    5,
-    requested_manual_urls,
-    200000,
-    0,
-    0,
-    0
-  );
+  begin
+    insert into public.research_runs (
+      id,
+      project_id,
+      owner_id,
+      status,
+      step,
+      source_limit,
+      manual_url_limit,
+      manual_urls,
+      max_content_chars,
+      estimated_cost_usd,
+      search_count,
+      token_count
+    )
+    values (
+      requested_run_id,
+      requested_project_id,
+      current_owner,
+      'queued',
+      'queued',
+      12,
+      5,
+      requested_manual_urls,
+      200000,
+      0,
+      0,
+      0
+    );
+  exception
+    when unique_violation then
+      get stacked diagnostics violated_constraint = constraint_name;
+
+      if violated_constraint = 'research_runs_one_active_per_owner_key' then
+        raise exception 'ACTIVE_RESEARCH_RUN_EXISTS';
+      end if;
+
+      raise;
+  end;
 
   return query
   select requested_project_id, requested_run_id, requested_slug;

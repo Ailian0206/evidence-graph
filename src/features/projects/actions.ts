@@ -22,7 +22,10 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type CreateResearchFormState = {
   status: "idle" | "error";
-  code?: "INVALID_INPUT" | "MONTHLY_RUN_LIMIT_EXCEEDED";
+  code?:
+    | "INVALID_INPUT"
+    | "MONTHLY_RUN_LIMIT_EXCEEDED"
+    | "ACTIVE_RESEARCH_RUN_EXISTS";
   fieldErrors?: Partial<Record<keyof CreateResearchInput, string[]>>;
 };
 

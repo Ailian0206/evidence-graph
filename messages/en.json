@@ -79,7 +79,8 @@
         "language": "Select a supported research language.",
         "manualUrls": "Source links must be valid URLs, with no more than 5 entries.",
         "invalid": "Check the errors in the form.",
-        "monthlyLimit": "The monthly limit of 3 research runs has been reached."
+        "monthlyLimit": "The monthly limit of 3 research runs has been reached.",
+        "activeRun": "Another research run is already in progress. Wait for it to finish before creating a new one."
       }
     }
   },

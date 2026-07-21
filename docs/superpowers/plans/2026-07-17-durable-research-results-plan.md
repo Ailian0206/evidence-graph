@@ -578,3 +578,13 @@ git log --oneline feat/managed-deployment..HEAD
 ```
 
 预期：工作树干净、提交只属于本模块。Vercel 审核完成前不 push 本分支、不创建 PR；先回到 `feat/managed-deployment` 完成部署闭环。
+
+### 任务 7：对齐父模块并闭环唯一 Draft PR
+
+- [x] **步骤 1：以 merge commit 对齐最新 `main` 并解决冲突**
+- [x] **步骤 2：重新运行 `npm run test:managed`**
+- [x] **步骤 3：检查差异、推送分支并创建唯一 Draft PR**
+- [x] **步骤 4：执行独立 Claude 审核、CI 和 merge commit 闭环**
+  - [x] 首轮审核发现 active run 冲突暴露 `23505`，已按 RED-GREEN 转换为稳定错误码并补双语提示。
+  - [x] 审核修复后的 `npm run test:managed` 通过 54 个数据库测试、145 个单元测试和 36 个 E2E。
+  - [x] 推送修复后对新 head 重新审核；Claude 和 CI 均通过后 merge commit 合并。
