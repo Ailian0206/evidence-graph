@@ -16,6 +16,28 @@ const projectActionMocks = vi.hoisted(() => ({
 const researchActionMocks = vi.hoisted(() => ({
   reviewClaim: vi.fn(async () => ({ ok: true as const })),
 }));
+const reportActionMocks = vi.hoisted(() => ({
+  publishReport: vi.fn(
+    async (): Promise<
+      | {
+          ok: true;
+          slug: string;
+          version: number;
+          publishedAt: string;
+        }
+      | { ok: false; code: string }
+    > => ({
+      ok: true,
+      slug: "traceable-citations-review-zh",
+      version: 2,
+      publishedAt: "2026-07-17T10:00:00.000Z",
+    }),
+  ),
+  revokeReport: vi.fn(async () => ({
+    ok: true as const,
+    slug: "traceable-citations-review-zh",
+  })),
+}));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: navigationMocks.refresh }),
@@ -23,14 +45,15 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/features/projects/actions", () => projectActionMocks);
 vi.mock("@/features/research/actions", () => researchActionMocks);
+vi.mock("@/features/reports/actions", () => reportActionMocks);
 
-const renderWorkspace = (persistence: "demo" | "managed" = "demo") =>
+const renderWorkspace = (
+  persistence: "demo" | "managed" = "demo",
+  initialData = createEvidenceWorkspaceFixture("zh"),
+) =>
   render(
     <NextIntlClientProvider locale="zh" messages={messages}>
-      <EvidenceWorkspace
-        initialData={createEvidenceWorkspaceFixture("zh")}
-        persistence={persistence}
-      />
+      <EvidenceWorkspace initialData={initialData} persistence={persistence} />
     </NextIntlClientProvider>,
   );
 
@@ -157,6 +180,105 @@ describe("evidence workspace graph keyboard navigation", () => {
       "aria-pressed",
       "true",
     );
+  });
+});
+
+describe("evidence workspace reports", () => {
+  it("switches the middle panel from the graph to structured report sections", async () => {
+    const user = userEvent.setup();
+    const workspace = createEvidenceWorkspaceFixture("zh");
+    renderWorkspace();
+
+    await user.click(screen.getByRole("tab", { name: "报告" }));
+
+    expect(
+      screen.getByRole("heading", { name: workspace.reports[0].sections[0].heading }),
+    ).toBeVisible();
+    expect(screen.queryByTestId("workspace-graph")).toBeNull();
+  });
+
+  it("publishes a selected managed report version and updates its local status", async () => {
+    const user = userEvent.setup();
+    const workspace = createEvidenceWorkspaceFixture("zh");
+    const draft = {
+      ...workspace.reports[0],
+      id: "report_v2",
+      slug: undefined,
+      version: 2,
+      status: "draft" as const,
+      publishedAt: undefined,
+    };
+    renderWorkspace("managed", { ...workspace, reports: [draft, workspace.reports[0]] });
+
+    await user.click(screen.getByRole("tab", { name: "报告" }));
+    await user.selectOptions(screen.getByLabelText("报告版本"), "report_v2");
+    await user.click(screen.getByRole("button", { name: "发布此版本" }));
+
+    await waitFor(() =>
+      expect(reportActionMocks.publishReport).toHaveBeenCalledWith(
+        "zh",
+        workspace.project.id,
+        "report_v2",
+      ),
+    );
+    expect(screen.getByText("已发布", { selector: "[role='status']" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "撤销公开报告" })).toBeVisible();
+  });
+
+  it("keeps the selected draft unchanged when managed publication fails", async () => {
+    reportActionMocks.publishReport.mockResolvedValueOnce({
+      ok: false as const,
+      code: "REPORT_NOT_PUBLISHABLE",
+    });
+    const user = userEvent.setup();
+    const workspace = createEvidenceWorkspaceFixture("zh");
+    const draft = {
+      ...workspace.reports[0],
+      id: "report_draft",
+      slug: undefined,
+      status: "draft" as const,
+      publishedAt: undefined,
+    };
+    renderWorkspace("managed", { ...workspace, reports: [draft] });
+
+    await user.click(screen.getByRole("tab", { name: "报告" }));
+    await user.click(screen.getByRole("button", { name: "发布此版本" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("报告发布失败，请重试。");
+    expect(screen.getByText("草稿", { selector: "[role='status']" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "撤销公开报告" })).toBeNull();
+  });
+
+  it("synchronizes a report citation with the existing claim and source panels", async () => {
+    const user = userEvent.setup();
+    const workspace = createEvidenceWorkspaceFixture("zh");
+    const citation = workspace.reports[0].citations[1];
+    renderWorkspace();
+
+    await user.click(screen.getByRole("tab", { name: "报告" }));
+    await user.click(screen.getByRole("button", { name: citation.sourceTitle }));
+
+    expect(
+      screen.getByRole("button", { name: workspace.claims[1].statement }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("workspace-source")).toHaveTextContent(citation.sourceTitle);
+    expect(screen.getByTestId("workspace-source")).toHaveTextContent(citation.quote);
+  });
+
+  it("shows the deterministic public link without calling write actions in demo mode", async () => {
+    const user = userEvent.setup();
+    const workspace = createEvidenceWorkspaceFixture("zh");
+    renderWorkspace();
+
+    await user.click(screen.getByRole("tab", { name: "报告" }));
+
+    expect(screen.getByRole("link", { name: "打开公开报告" })).toHaveAttribute(
+      "href",
+      `/r/${workspace.reports[0].slug}`,
+    );
+    expect(screen.queryByRole("button", { name: "撤销公开报告" })).toBeNull();
+    expect(reportActionMocks.publishReport).not.toHaveBeenCalled();
+    expect(reportActionMocks.revokeReport).not.toHaveBeenCalled();
   });
 });
 

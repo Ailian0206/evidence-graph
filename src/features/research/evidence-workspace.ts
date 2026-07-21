@@ -7,6 +7,7 @@ import type {
   Source,
   SourceChunk,
 } from "@/features/research/domain";
+import type { PublishableReport } from "@/features/reports/report-store";
 import type { RunLogEntry } from "@/features/research/workflow-types";
 import type { AppLocale } from "@/i18n/routing";
 
@@ -29,6 +30,7 @@ export type EvidenceWorkspaceData = {
   evidenceLinks: EvidenceLink[];
   claimRelations: ClaimRelation[];
   runLogs: RunLogEntry[];
+  reports: PublishableReport[];
 };
 
 export type WorkspaceClaimSummary = {

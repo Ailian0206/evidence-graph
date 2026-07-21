@@ -5,6 +5,10 @@ import type {
   Source,
   SourceChunk,
 } from "@/features/research/domain";
+import {
+  createWorkspaceReportFixture,
+  publicReportSlugs,
+} from "@/features/reports/report-fixture";
 import type { EvidenceWorkspaceData } from "@/features/research/evidence-workspace";
 import type { WorkflowStep } from "@/features/research/workflow-types";
 import type { AppLocale } from "@/i18n/routing";
@@ -119,8 +123,8 @@ export const createEvidenceWorkspaceFixture = (
     title: copy.title,
     question: copy.question,
     status: "active" as const,
-    visibility: "private" as const,
-    slug: "traceable-citations-review",
+    visibility: "public" as const,
+    slug: publicReportSlugs[locale],
     createdAt: FIXED_NOW,
     updatedAt: FIXED_NOW,
   };
@@ -226,5 +230,6 @@ export const createEvidenceWorkspaceFixture = (
       attempt: 1,
       timestamp: `2026-07-16T08:${String(index).padStart(2, "0")}:00.000Z`,
     })),
+    reports: [createWorkspaceReportFixture(locale)],
   };
 };

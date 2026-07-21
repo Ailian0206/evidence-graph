@@ -115,6 +115,34 @@
       "sourceNode": "来源",
       "labelSeparator": "："
     },
+    "report": {
+      "modeLabel": "图谱内容",
+      "graphTabLabel": "图谱视图",
+      "title": "可核查报告",
+      "tabs": {
+        "graph": "图谱",
+        "report": "报告"
+      },
+      "versionLabel": "报告版本",
+      "versionOption": "版本 {version}",
+      "status": {
+        "draft": "草稿",
+        "published": "已发布",
+        "revoked": "已撤销"
+      },
+      "publish": "发布此版本",
+      "publishing": "正在发布...",
+      "revoke": "撤销公开报告",
+      "revoking": "正在撤销...",
+      "openPublic": "打开公开报告",
+      "copy": "复制公开链接",
+      "copySuccess": "公开链接已复制。",
+      "copyError": "复制失败，请直接选择链接。",
+      "publishError": "报告发布失败，请重试。",
+      "revokeError": "报告撤销失败，请重试。",
+      "citationsLabel": "本节引用",
+      "empty": "当前研究还没有报告版本。"
+    },
     "panels": {
       "claims": "Claims",
       "graph": "Graph",

@@ -12,7 +12,10 @@ for (const viewport of viewports) {
     await page.goto("/zh/app/research/demo");
 
     if (viewport.name === "mobile") {
-      await page.getByRole("tab", { name: "图谱" }).click();
+      await page
+        .getByRole("tablist", { name: "工作台视图" })
+        .getByRole("tab", { name: "图谱", exact: true })
+        .click();
     }
 
     const graph = page.getByTestId("workspace-graph");
@@ -42,7 +45,9 @@ for (const viewport of viewports) {
         '[data-workspace-state="ready"] > header',
       );
       const visiblePanels = Array.from(
-        document.querySelectorAll<HTMLElement>('[role="tabpanel"]'),
+        document.querySelectorAll<HTMLElement>(
+          "#workspace-panel-claims, #workspace-panel-graph, #workspace-panel-source, #workspace-panel-log",
+        ),
       ).filter((panel) => getComputedStyle(panel).display !== "none");
       const canvases = graphRoot
         ? Array.from(graphRoot.querySelectorAll("canvas")).filter(
@@ -104,6 +109,22 @@ for (const viewport of viewports) {
 
     await page.screenshot({
       path: `output/playwright/evidence-workspace-${viewport.name}.png`,
+      fullPage: false,
+    });
+
+    await page.getByRole("tab", { name: "报告", exact: true }).click();
+    const reportMetrics = await page.evaluate(() => ({
+      viewportWidth: window.innerWidth,
+      documentWidth: document.documentElement.scrollWidth,
+      reportWidth:
+        document.querySelector<HTMLElement>('[data-testid="workspace-report"]')
+          ?.getBoundingClientRect().width ?? 0,
+    }));
+
+    expect(reportMetrics.documentWidth).toBeLessThanOrEqual(reportMetrics.viewportWidth);
+    expect(reportMetrics.reportWidth).toBeGreaterThan(viewport.name === "mobile" ? 340 : 360);
+    await page.screenshot({
+      path: `output/playwright/evidence-workspace-report-${viewport.name}.png`,
       fullPage: false,
     });
   });

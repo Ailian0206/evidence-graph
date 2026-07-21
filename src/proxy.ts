@@ -12,6 +12,10 @@ const localeSegmentPattern = /^[a-z]{2}(?:-[a-z]{2})?$/i;
 export default async function proxy(request: NextRequest) {
   const localeSegment = request.nextUrl.pathname.split("/")[1];
 
+  if (/^\/r\/[^/]+$/.test(request.nextUrl.pathname)) {
+    return NextResponse.next();
+  }
+
   if (
     localeSegmentPattern.test(localeSegment) &&
     !hasLocale(routing.locales, localeSegment)

@@ -113,6 +113,32 @@ test.describe("evidence workspace graph", () => {
   });
 });
 
+test.describe("evidence workspace report", () => {
+  test("opens a deterministic report and follows a citation back to its evidence", async ({
+    page,
+  }) => {
+    await page.goto("/zh/app/research/demo");
+    await page.getByRole("tab", { name: "报告", exact: true }).click();
+
+    await expect(
+      page.getByRole("heading", { name: "精确引用降低核查成本" }),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: "可引用报告的产品约束与反例记录" })
+      .click();
+
+    await expect(
+      page.getByRole("button", {
+        name: "只有页面级链接也足以证明报告中的事实段落。",
+        exact: true,
+      }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("workspace-source")).toContainText(
+      "只保留页面级链接不足以证明事实段落",
+    );
+  });
+});
+
 test.describe("evidence workspace responsive navigation", () => {
   test("switches the four mobile workspace tabs with keyboard controls", async ({
     page,
@@ -120,25 +146,27 @@ test.describe("evidence workspace responsive navigation", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/zh/app/research/demo");
 
-    const claimsTab = page.getByRole("tab", { name: "主张" });
-    const graphTab = page.getByRole("tab", { name: "图谱" });
-    const sourceTab = page.getByRole("tab", { name: "来源" });
-    const logTab = page.getByRole("tab", { name: "日志" });
+    const workspaceTabs = page.getByRole("tablist", { name: "工作台视图" });
+    const claimsTab = workspaceTabs.getByRole("tab", { name: "主张", exact: true });
+    const graphTab = workspaceTabs.getByRole("tab", { name: "图谱", exact: true });
+    const sourceTab = workspaceTabs.getByRole("tab", { name: "来源", exact: true });
+    const logTab = workspaceTabs.getByRole("tab", { name: "日志", exact: true });
+    await expect(workspaceTabs.getByRole("tab")).toHaveCount(4);
     await expect(claimsTab).toHaveAttribute("aria-selected", "true");
     await expect(page.getByRole("tabpanel", { name: "主张" })).toBeVisible();
-    await expect(page.getByRole("tabpanel", { name: "图谱" })).toBeHidden();
+    await expect(page.getByRole("tabpanel", { name: "图谱", exact: true })).toBeHidden();
 
     await claimsTab.focus();
     await claimsTab.press("ArrowRight");
     await expect(graphTab).toHaveAttribute("aria-selected", "true");
-    await expect(page.getByRole("tabpanel", { name: "图谱" })).toBeVisible();
-    await expect(page.getByRole("tabpanel", { name: "来源" })).toBeHidden();
+    await expect(page.getByRole("tabpanel", { name: "图谱", exact: true })).toBeVisible();
+    await expect(page.getByRole("tabpanel", { name: "来源", exact: true })).toBeHidden();
 
     await sourceTab.click();
-    await expect(page.getByRole("tabpanel", { name: "来源" })).toBeVisible();
+    await expect(page.getByRole("tabpanel", { name: "来源", exact: true })).toBeVisible();
 
     await logTab.click();
-    await expect(page.getByRole("tabpanel", { name: "日志" })).toBeVisible();
+    await expect(page.getByRole("tabpanel", { name: "日志", exact: true })).toBeVisible();
   });
 
   test("expands the run log and exposes every deterministic workflow step", async ({

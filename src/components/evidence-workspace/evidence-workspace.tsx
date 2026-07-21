@@ -3,6 +3,7 @@
 import {
   Check,
   CircleDot,
+  FileText,
   Network,
   RotateCcw,
   X,
@@ -21,11 +22,13 @@ import {
   type EvidenceGraphElementData,
   type EvidenceWorkspaceData,
 } from "@/features/research/evidence-workspace";
+import type { ReportCitation } from "@/features/research/workflow-types";
 
 import styles from "./evidence-workspace.module.css";
 import { WorkspaceClaimList } from "./workspace-claim-list";
 import { WorkspaceGraph } from "./workspace-graph";
 import { WorkspaceRunLog } from "./workspace-run-log";
+import { WorkspaceReport } from "./workspace-report";
 import { WorkspaceSourceViewer } from "./workspace-source-viewer";
 import { WorkspaceState } from "./workspace-state";
 
@@ -36,7 +39,9 @@ const reviewFilters: ClaimReviewFilter[] = [
   "rejected",
 ];
 const mobileTabs = ["claims", "graph", "source", "log"] as const;
+const workspaceModes = ["graph", "report"] as const;
 type MobileTab = (typeof mobileTabs)[number];
+type WorkspaceMode = (typeof workspaceModes)[number];
 
 export function EvidenceWorkspace({
   initialData,
@@ -70,6 +75,7 @@ function EvidenceWorkspaceReady({
     initialData.evidenceLinks[0]?.id ?? "",
   );
   const [activeMobileTab, setActiveMobileTab] = useState<MobileTab>("claims");
+  const [activeWorkspaceMode, setActiveWorkspaceMode] = useState<WorkspaceMode>("graph");
   const [reviewError, setReviewError] = useState(false);
   const [reviewPending, startReview] = useTransition();
   const workspace = useMemo(() => ({ ...initialData, claims }), [claims, initialData]);
@@ -192,6 +198,20 @@ function EvidenceWorkspaceReady({
       }
     }
   };
+  const handleSelectReportCitation = (citation: ReportCitation) => {
+    const evidence = workspace.evidenceLinks.find(
+      (link) => link.id === citation.evidenceLinkId && link.claimId === citation.claimId,
+    );
+
+    if (!evidence) {
+      return;
+    }
+
+    setSelectedClaimId(evidence.claimId);
+    setSelectedEvidenceLinkId(evidence.id);
+    setActiveRelations((current) => new Set(current).add(evidence.relation));
+    setActiveMobileTab("source");
+  };
   const toggleRelation = (relation: (typeof workspaceEvidenceRelations)[number]) => {
     setActiveRelations((current) => {
       const next = new Set(current);
@@ -224,6 +244,28 @@ function EvidenceWorkspaceReady({
     const nextTab = mobileTabs[nextIndex];
     setActiveMobileTab(nextTab);
     requestAnimationFrame(() => document.getElementById(`workspace-tab-${nextTab}`)?.focus());
+  };
+  const handleWorkspaceModeKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    currentIndex: number,
+  ) => {
+    if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(event.key)) {
+      return;
+    }
+
+    event.preventDefault();
+    const nextIndex =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? workspaceModes.length - 1
+          : (currentIndex + (event.key === "ArrowRight" ? 1 : -1) + workspaceModes.length) %
+            workspaceModes.length;
+    const nextMode = workspaceModes[nextIndex];
+    setActiveWorkspaceMode(nextMode);
+    requestAnimationFrame(() =>
+      document.getElementById(`workspace-mode-tab-${nextMode}`)?.focus(),
+    );
   };
 
   return (
@@ -380,44 +422,96 @@ function EvidenceWorkspaceReady({
           <header className={styles.panelHeader}>
             <div>
               <p>{t("panels.graph")}</p>
-              <h2 id="graph-title">{t("graphTitle")}</h2>
+              <h2 id="graph-title">
+                {activeWorkspaceMode === "graph" ? t("graphTitle") : t("report.title")}
+              </h2>
             </div>
-            <Network aria-hidden="true" size={19} />
+            {activeWorkspaceMode === "graph" ? (
+              <Network aria-hidden="true" size={19} />
+            ) : (
+              <FileText aria-hidden="true" size={19} />
+            )}
           </header>
-          <fieldset className={styles.relationFilters}>
-            <legend>{t("relationFilter")}</legend>
-            {workspaceEvidenceRelations.map((relation) => (
-              <label key={relation} data-relation={relation}>
-                <input
-                  type="checkbox"
-                  checked={activeRelations.has(relation)}
-                  onChange={() => toggleRelation(relation)}
-                />
-                <span aria-hidden="true" />
-                {t(`relation.${relation}`)}
-              </label>
+          <div
+            className={styles.workspaceModeTabs}
+            role="tablist"
+            aria-label={t("report.modeLabel")}
+          >
+            {workspaceModes.map((mode, index) => (
+              <button
+                key={mode}
+                id={`workspace-mode-tab-${mode}`}
+                type="button"
+                role="tab"
+                aria-label={mode === "graph" ? t("report.graphTabLabel") : undefined}
+                aria-controls={`workspace-mode-panel-${mode}`}
+                aria-selected={activeWorkspaceMode === mode}
+                tabIndex={activeWorkspaceMode === mode ? 0 : -1}
+                onClick={() => setActiveWorkspaceMode(mode)}
+                onKeyDown={(event) => handleWorkspaceModeKeyDown(event, index)}
+              >
+                {t(`report.tabs.${mode}`)}
+              </button>
             ))}
-          </fieldset>
-          <div className={styles.graphCanvas}>
-            <WorkspaceGraph
-              elements={graphElements}
-              selectedNodeId={
-                selectedEvidence
-                  ? `evidence:${selectedEvidence.id}`
-                  : `claim:${selectedClaim?.id ?? ""}`
-              }
-              labels={{
-                ariaLabel: t("graph.ariaLabel"),
-                navigatorLabel: t("graph.navigatorLabel"),
-                keyboardHint: t("graph.keyboardHint"),
-                claim: t("graph.claimNode"),
-                evidence: t("graph.evidenceNode"),
-                source: t("graph.sourceNode"),
-                separator: t("graph.labelSeparator"),
-              }}
-              onSelect={handleSelectGraphNode}
-            />
           </div>
+          {activeWorkspaceMode === "graph" ? (
+            <div
+              id="workspace-mode-panel-graph"
+              className={styles.graphMode}
+              role="tabpanel"
+              aria-labelledby="workspace-mode-tab-graph"
+            >
+              <fieldset className={styles.relationFilters}>
+                <legend>{t("relationFilter")}</legend>
+                {workspaceEvidenceRelations.map((relation) => (
+                  <label key={relation} data-relation={relation}>
+                    <input
+                      type="checkbox"
+                      checked={activeRelations.has(relation)}
+                      onChange={() => toggleRelation(relation)}
+                    />
+                    <span aria-hidden="true" />
+                    {t(`relation.${relation}`)}
+                  </label>
+                ))}
+              </fieldset>
+              <div className={styles.graphCanvas}>
+                <WorkspaceGraph
+                  elements={graphElements}
+                  selectedNodeId={
+                    selectedEvidence
+                      ? `evidence:${selectedEvidence.id}`
+                      : `claim:${selectedClaim?.id ?? ""}`
+                  }
+                  labels={{
+                    ariaLabel: t("graph.ariaLabel"),
+                    navigatorLabel: t("graph.navigatorLabel"),
+                    keyboardHint: t("graph.keyboardHint"),
+                    claim: t("graph.claimNode"),
+                    evidence: t("graph.evidenceNode"),
+                    source: t("graph.sourceNode"),
+                    separator: t("graph.labelSeparator"),
+                  }}
+                  onSelect={handleSelectGraphNode}
+                />
+              </div>
+            </div>
+          ) : (
+            <div
+              id="workspace-mode-panel-report"
+              className={styles.reportMode}
+              role="tabpanel"
+              aria-labelledby="workspace-mode-tab-report"
+            >
+              <WorkspaceReport
+                locale={workspace.locale}
+                projectId={workspace.project.id}
+                reports={workspace.reports}
+                persistence={persistence}
+                onSelectCitation={handleSelectReportCitation}
+              />
+            </div>
+          )}
         </section>
 
         <WorkspaceSourceViewer

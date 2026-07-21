@@ -14,7 +14,8 @@
 | 6 | `feat/evidence-workspace` | 主张列表、图谱、来源查看器、审核动作和响应式应用 | 已完成；PR [#11](https://github.com/Ailian0206/evidence-graph/pull/11) 已通过独立审核和 CI 后合并 |
 | 7 | `feat/managed-deployment` | Supabase Auth/RLS/pgvector、Inngest、Sentry 和 Vercel | 代码已通过 PR #13 合并；Vercel 生产验证后置为独立发布门禁 |
 | 8 | `feat/durable-research-results` | 原子创建研究、Inngest 快照持久化、真实工作台和 Claim 审核 | 已完成；PR #14 通过独立审核和 CI 后以 merge commit `ce4b1a2` 合并 |
-| 9 | `feat/report-publishing` | 报告发布、撤销、公开 slug、版本切换和分享页 | 已在独立本地 worktree 完成；持久化结果合并前不 push、不创建堆叠 PR |
+| 9 | `feat/report-publishing` | 报告发布、撤销、公开 slug、版本切换和分享页 | 唯一 Draft PR #15 已创建；最新 `main` 基线门禁通过 89 个数据库测试、170 个单元测试和 45 个 E2E，等待审核与 CI |
+| 10 | `feat/ui-experience-refresh` | 全站字体、间距、信息层级和视觉语言统一，移除左侧装饰边线与明显 AI 化样式 | 前置模块全部合并后启动；先用前端界面技能完成全站审计和设计规范，再通过三档截图对比、可访问性检查与完整门禁 |
 
 ## 跨模块规则
 
@@ -31,4 +32,4 @@
 
 ## 当前模块
 
-`feat/managed-deployment` 与 `feat/durable-research-results` 已依次通过 PR #13、#14 合并，Vercel 生产验证保留为后置发布门禁。当前开始将本地 `feat/report-publishing` 对齐最新 `main`，重新通过完整门禁后再创建唯一 Draft PR。
+`feat/managed-deployment` 与 `feat/durable-research-results` 已依次通过 PR #13、#14 合并，Vercel 生产验证保留为后置发布门禁。`feat/report-publishing` 的唯一 Draft PR #15 已创建，正在闭环独立 Claude 审核和 GitHub CI；合并后再开始 `feat/ui-experience-refresh`。

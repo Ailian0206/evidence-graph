@@ -115,6 +115,34 @@
       "sourceNode": "Source",
       "labelSeparator": ": "
     },
+    "report": {
+      "modeLabel": "Graph content",
+      "graphTabLabel": "Graph view",
+      "title": "Reviewable report",
+      "tabs": {
+        "graph": "Graph",
+        "report": "Report"
+      },
+      "versionLabel": "Report version",
+      "versionOption": "Version {version}",
+      "status": {
+        "draft": "Draft",
+        "published": "Published",
+        "revoked": "Revoked"
+      },
+      "publish": "Publish this version",
+      "publishing": "Publishing...",
+      "revoke": "Revoke public report",
+      "revoking": "Revoking...",
+      "openPublic": "Open public report",
+      "copy": "Copy public link",
+      "copySuccess": "Public link copied.",
+      "copyError": "Copy failed. Select the link directly.",
+      "publishError": "Report publishing failed. Try again.",
+      "revokeError": "Report revocation failed. Try again.",
+      "citationsLabel": "Section citations",
+      "empty": "This research project has no report versions yet."
+    },
     "panels": {
       "claims": "Claims",
       "graph": "Graph",
