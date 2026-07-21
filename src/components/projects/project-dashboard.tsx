@@ -29,6 +29,7 @@ function ProjectActionButton({
       type="submit"
       aria-label={label}
       title={label}
+      data-variant={icon === "delete" ? "danger" : "secondary"}
       disabled={pending}
     >
       {icon === "archive" ? (

@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -72,6 +72,37 @@ describe("managed project workspace UI", () => {
     expect(screen.getByText(/2026/)).toBeVisible();
     expect(screen.getByRole("button", { name: "归档可核查的 AI 研究" })).toBeVisible();
     expect(screen.getByRole("button", { name: "删除可核查的 AI 研究" })).toBeVisible();
+  });
+
+  it("keeps project rows and destructive actions semantically separate", () => {
+    renderWithMessages(<ProjectDashboard locale="zh" projects={[project]} />);
+
+    const row = screen.getByRole("listitem");
+    expect(within(row).getByRole("link", { name: project.title })).toBeVisible();
+    expect(within(row).getByText("进行中")).toHaveAttribute("data-status", "active");
+    expect(within(row).getByRole("button", { name: /删除/ })).toHaveAttribute(
+      "data-variant",
+      "danger",
+    );
+  });
+
+  it("declares autocomplete and stable form regions", () => {
+    renderWithMessages(<NewResearchForm locale="zh" />);
+
+    expect(screen.getByRole("textbox", { name: "项目标题" })).toHaveAttribute(
+      "autocomplete",
+      "off",
+    );
+    expect(screen.getByRole("textbox", { name: "研究问题" })).toHaveAttribute(
+      "autocomplete",
+      "off",
+    );
+    expect(screen.getByTestId("research-primary-fields")).toBeVisible();
+    expect(screen.getByTestId("research-source-fields")).toBeVisible();
+    expect(screen.getByTestId("research-form-actions")).toHaveAttribute(
+      "aria-live",
+      "polite",
+    );
   });
 
   it("adds no more than five manual URL fields", async () => {
