@@ -4,10 +4,10 @@
 
 ## 当前阶段
 
-- 阶段：托管部署代码里程碑已合并；持久化研究结果正在闭环 PR 审核。
-- 分支：`feat/durable-research-results` 在独立 worktree 中完成审核修复和本地复验。
-- PR：持久化研究结果唯一 Draft PR [#14](https://github.com/Ailian0206/evidence-graph/pull/14) 已修复首轮独立 Claude finding，等待对新 head 重新审核和 GitHub CI。
-- 当前任务：闭环 PR #14；报告发布分支继续保持本地，不创建堆叠 PR。
+- 阶段：持久化研究结果已合并；开始对齐和闭环报告发布模块。
+- 分支：`main` 已包含 PR #14；`feat/report-publishing` 仍在独立本地 worktree，尚未 push。
+- PR：持久化研究结果 PR [#14](https://github.com/Ailian0206/evidence-graph/pull/14) 已通过独立 Claude 审核和 GitHub CI 后合并。
+- 当前任务：将报告发布分支对齐最新 `main`，重新运行完整门禁后创建唯一 Draft PR。
 - 外部 Provider 调用：已禁用。
 - Embedding Provider：已决定后续接入阿里云百炼 `text-embedding-v4` 并固定输出 1536 维；等待用户提供账号和密钥，当前不接入、不调用真实服务。
 - 生产部署：数据库和外部服务配置进行中，Vercel 尚未部署。
@@ -35,7 +35,7 @@
 | Source hash 项目隔离 | 已完成 | PR [#7](https://github.com/Ailian0206/evidence-graph/pull/7) 已通过 merge commit `8bc6f39` 合并 |
 | 证据工作台 | 已完成 | PR [#11](https://github.com/Ailian0206/evidence-graph/pull/11) 已通过独立审核和 CI，并以 merge commit `74c3b49` 合并 |
 | 托管部署 | 代码已合并，发布待完成 | PR [#13](https://github.com/Ailian0206/evidence-graph/pull/13) 已合并；Vercel 生产验证仍是后置发布门禁 |
-| 持久化研究结果 | PR 审核中 | 原子研究事务、幂等 Writer、真实工作台和审核写回完成；首轮审核问题已修复并通过完整本地门禁 |
+| 持久化研究结果 | 已完成 | PR [#14](https://github.com/Ailian0206/evidence-graph/pull/14) 已通过独立审核和 CI，并以 merge commit `ce4b1a2` 合并 |
 
 ## 验证摘要
 
@@ -108,9 +108,10 @@
 - 对齐 PR #13 与状态提交 `fd89aaf` 后，持久化研究结果 `npm run test:managed` 通过 Provider 扫描、51 个数据库测试、Schema lint、lint、typecheck、143 个单元测试、生产构建和 36 个 E2E。
 - PR #14 首轮独立 Claude 审核对 head `861084c` 返回 `changes_requested`：已有 queued/running run 时再次创建会暴露数据库 `23505`。修复后该约束冲突转换为 `ACTIVE_RESEARCH_RUN_EXISTS`，表单提供双语提示，且失败事务不创建项目、不消耗额度、不投递 Inngest 事件。
 - PR #14 审核修复后的 `npm run test:managed` 通过 Provider 边界扫描、54 个数据库测试、Schema lint、lint、typecheck、145 个单元测试、生产构建和 36 个 E2E；运行时清空托管与付费 Provider 变量。
+- PR #14 独立 Claude 审核对修复 head `01d889e` 返回 `pass`，两个 GitHub CI job 成功后以 merge commit `ce4b1a2` 合并；远端模块分支已删除。
 
 ## 下一步
 
-1. 推送 PR #14 审核修复，对新 head 重新执行独立 Claude 审核和 GitHub CI，均通过后使用 merge commit 合并。
-2. 持久化研究结果合并后，再对齐并闭环报告发布模块。
+1. 将本地 `feat/report-publishing` 对齐最新 `main`，解决冲突并重新运行完整门禁。
+2. 为报告发布创建唯一 Draft PR，执行独立 Claude 审核、CI 和 merge commit 闭环。
 3. Vercel 账号恢复后取得 Preview 与 Production URL，配置 Supabase Redirect、同步 Inngest，并完成生产冒烟和回滚演练。
