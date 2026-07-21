@@ -131,6 +131,18 @@ test("English portfolio copy stays inside the mobile viewport", async ({ page })
   expect(widths.document).toBeLessThanOrEqual(widths.viewport);
 });
 
+test("secondary hero action remains readable on hover", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/zh");
+
+  const contactLink = page.locator(".portfolio-hero .secondary-action");
+  await contactLink.hover();
+
+  await expect
+    .poll(() => contactLink.evaluate((element) => getComputedStyle(element).color))
+    .toBe("rgb(255, 255, 255)");
+});
+
 test("mobile hero graph nodes remain interactive", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/zh");

@@ -342,7 +342,6 @@ dd {
   border-color: var(--ink);
   background: var(--ink);
   color: #fff;
-  color: var(--ink);
 }
 
 .hero-scroll {
