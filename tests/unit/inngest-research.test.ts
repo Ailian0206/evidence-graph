@@ -2,7 +2,10 @@ import { NonRetriableError } from "inngest";
 import { describe, expect, it, vi } from "vitest";
 
 import { authorizeResearchRun } from "@/inngest/authorize-run";
-import { createResearchRequestedPayload } from "@/inngest/client";
+import {
+  createResearchRequestedPayload,
+  resolveInngestModeOverride,
+} from "@/inngest/client";
 import { researchRequestedEventSchema } from "@/inngest/events";
 import {
   createRunResearchHandler,
@@ -32,6 +35,14 @@ describe("Inngest research workflow entry", () => {
       id: "run_1",
       data: eventData,
     });
+  });
+
+  it("delegates explicit Inngest dev mode to the SDK in production", () => {
+    expect(
+      resolveInngestModeOverride({ NODE_ENV: "production", INNGEST_DEV: "1" }),
+    ).toBeUndefined();
+    expect(resolveInngestModeOverride({ NODE_ENV: "development" })).toBe(true);
+    expect(resolveInngestModeOverride({ NODE_ENV: "production" })).toBe(false);
   });
 
   it("authorizes a run only when all three identifiers match", async () => {

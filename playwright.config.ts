@@ -25,11 +25,12 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `npm run dev -- --hostname 127.0.0.1 --port ${port}`,
+    command: `npm run start -- --hostname 127.0.0.1 --port ${port}`,
     url: `${baseURL}/favicon.ico`,
     reuseExistingServer: false,
     timeout: 120_000,
     env: {
+      INNGEST_DEV: "1",
       NEXT_TELEMETRY_DISABLED: "1",
     },
   },
