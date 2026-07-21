@@ -12,7 +12,7 @@ export async function SelectedWork() {
   return (
     <section className="portfolio-section selected-work" id="selected-work">
       <header className="section-heading content-width">
-        <p className="section-index">01 / Work</p>
+        <p className="section-index">{t("sections.work")}</p>
         <div>
           <h2>{t("selectedWork")}</h2>
           <p>{t("selectedWorkDescription")}</p>

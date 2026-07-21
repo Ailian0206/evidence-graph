@@ -19,7 +19,18 @@
     "about": "关于",
     "viewProject": "查看项目",
     "viewRepository": "查看源码",
-    "contact": "联系我"
+    "viewReport": "查看公开报告",
+    "openProduct": "进入产品",
+    "contact": "联系我",
+    "sections": {
+      "work": "01 / 作品",
+      "notes": "02 / 笔记",
+      "about": "03 / 关于",
+      "caseStudy": "案例 / {status}",
+      "problem": "01 / 问题",
+      "approach": "02 / 方法",
+      "proof": "03 / 当前结果"
+    }
   },
   "Evidence": {
     "title": "Evidence Graph",

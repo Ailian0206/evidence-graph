@@ -19,7 +19,18 @@
     "about": "About",
     "viewProject": "View project",
     "viewRepository": "View repository",
-    "contact": "Contact"
+    "viewReport": "View public report",
+    "openProduct": "Open product",
+    "contact": "Contact",
+    "sections": {
+      "work": "01 / Work",
+      "notes": "02 / Notes",
+      "about": "03 / About",
+      "caseStudy": "Case study / {status}",
+      "problem": "01 / Problem",
+      "approach": "02 / Approach",
+      "proof": "03 / Current proof"
+    }
   },
   "Evidence": {
     "title": "Evidence Graph",

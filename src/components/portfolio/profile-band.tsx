@@ -11,7 +11,7 @@ export async function ProfileBand() {
   return (
     <section className="profile-band">
       <div className="content-width profile-band-inner">
-        <p className="section-index">03 / {t("about")}</p>
+        <p className="section-index">{t("sections.about")}</p>
         <div>
           <h2>{profile.focus[locale]}</h2>
           <p>{profile.role[locale]}</p>

@@ -78,6 +78,7 @@ for (const viewport of viewports) {
         selectedWorkTop: selectedWork.getBoundingClientRect().top,
         graphNodePosition: getComputedStyle(graphNode).position,
         canvasBackground: getComputedStyle(canvas).backgroundColor,
+        heroBackground: getComputedStyle(hero).backgroundColor,
         heroControlsOverlap: rectanglesOverlap(heroScrollBounds, heroInspectorBounds),
         heroTextOverlapsNodes: heroCopyBounds.some((copyBounds) =>
           heroNodeBounds.some((nodeBounds) => rectanglesOverlap(copyBounds, nodeBounds)),
@@ -98,6 +99,7 @@ for (const viewport of viewports) {
     expect(metrics.selectedWorkTop).toBeLessThan(metrics.viewportHeight);
     expect(metrics.graphNodePosition).toBe("absolute");
     expect(metrics.canvasBackground).not.toBe("rgba(0, 0, 0, 0)");
+    expect(metrics.heroBackground).not.toBe("rgb(17, 23, 19)");
     expect(metrics.heroControlsOverlap).toBe(false);
     expect(metrics.heroTextOverlapsNodes).toBe(false);
     expect(metrics.heroNodesInsideViewport).toBe(true);

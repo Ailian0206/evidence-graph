@@ -21,7 +21,9 @@ export function ProjectRows({
           <div className="project-main">
             <header>
               <p>{project.statusLabel[locale]}</p>
-              <h3>{project.name[locale]}</h3>
+              <h3>
+                <Link href={`/work/${project.slug}`}>{project.name[locale]}</Link>
+              </h3>
             </header>
             <p>{project.summary[locale]}</p>
             {expanded ? <p className="project-proof">{project.proof[locale]}</p> : null}
@@ -35,7 +37,11 @@ export function ProjectRows({
             <Link
               className="icon-action"
               href={`/work/${project.slug}`}
-              aria-label={`${project.name[locale]} case study`}
+              aria-label={
+                locale === "zh"
+                  ? `查看${project.name[locale]}案例`
+                  : `View ${project.name[locale]} case study`
+              }
             >
               <ArrowUpRight aria-hidden="true" size={19} />
             </Link>
