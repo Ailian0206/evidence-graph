@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { inspectVisibleUi } from "./support/ui-visual-audit";
+
 const viewports = [
   { name: "mobile", width: 390, height: 844 },
   { name: "tablet", width: 1024, height: 768 },
@@ -34,11 +36,30 @@ for (const viewport of viewports) {
             : false,
       };
     });
+    const audit = await inspectVisibleUi(page, [
+      "[data-public-report-section='true']",
+      "[data-public-citations='true'] blockquote",
+    ]);
+    const reading = await page.evaluate(() => {
+      const paragraph = document.querySelector<HTMLElement>("[data-public-report-section] p");
+      if (!paragraph) {
+        throw new Error("public report paragraph is missing");
+      }
+
+      return {
+        paragraphSize: Number.parseFloat(getComputedStyle(paragraph).fontSize),
+        paragraphWidth: paragraph.getBoundingClientRect().width,
+      };
+    });
 
     expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewportWidth);
     expect(metrics.reportWidth).toBeGreaterThan(viewport.name === "mobile" ? 340 : 700);
     expect(metrics.sectionsDoNotOverlap).toBe(true);
     expect(metrics.citationsFollowSections).toBe(true);
+    expect(audit.fontSizeViolations).toEqual([]);
+    expect(audit.leftRuleViolations).toEqual([]);
+    expect(reading.paragraphSize).toBeGreaterThanOrEqual(16);
+    expect(reading.paragraphWidth).toBeLessThanOrEqual(760);
 
     await page.screenshot({
       path: `output/playwright/public-report-${viewport.name}.png`,

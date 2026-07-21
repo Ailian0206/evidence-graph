@@ -14,11 +14,13 @@ const copy = {
     snapshot: "公开研究快照",
     published: "发布于",
     version: "版本",
+    findings: "结论",
     copy: "复制公开链接",
     print: "打印报告",
     copied: "链接已复制",
     copyError: "复制失败",
     citations: "引用来源",
+    evidenceIndex: "证据索引",
     source: "打开原始来源",
     citation: "查看引用",
   },
@@ -26,11 +28,13 @@ const copy = {
     snapshot: "Public research snapshot",
     published: "Published",
     version: "Version",
+    findings: "Findings",
     copy: "Copy public link",
     print: "Print report",
     copied: "Link copied",
     copyError: "Copy failed",
     citations: "Sources",
+    evidenceIndex: "Evidence index",
     source: "Open original source",
     citation: "View citation",
   },
@@ -144,6 +148,10 @@ export function PublicReport({ report }: { report: PublicReportData }) {
               <dt>{labels.published}</dt>
               <dd>{publishedDate}</dd>
             </div>
+            <div>
+              <dt>{labels.findings}</dt>
+              <dd>{report.report.sections.length}</dd>
+            </div>
           </dl>
         </header>
 
@@ -173,7 +181,7 @@ export function PublicReport({ report }: { report: PublicReportData }) {
 
         <section className={styles.reportSources} data-public-citations="true">
           <div>
-            <p>Evidence Index</p>
+            <p>{labels.evidenceIndex}</p>
             <h2>{labels.citations}</h2>
           </div>
           <ol aria-label={labels.citations}>

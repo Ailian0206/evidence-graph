@@ -56,4 +56,12 @@ test.describe("public report publishing", () => {
     expect(response.status()).toBe(404);
     expect(response.headers().location).toBeUndefined();
   });
+
+  test("uses one Chinese branded recovery page for unavailable reports", async ({ page }) => {
+    await page.goto("/r/missing-report");
+
+    await expect(page.getByRole("heading", { name: "报告不可用" })).toBeVisible();
+    await expect(page.getByText("Report unavailable or revoked.")).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "返回 Evidence Graph" })).toBeVisible();
+  });
 });
