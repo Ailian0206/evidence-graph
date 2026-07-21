@@ -15,7 +15,7 @@
 | 7 | `feat/managed-deployment` | Supabase Auth/RLS/pgvector、Inngest、Sentry 和 Vercel | 代码已通过 PR #13 合并；Vercel 生产验证后置为独立发布门禁 |
 | 8 | `feat/durable-research-results` | 原子创建研究、Inngest 快照持久化、真实工作台和 Claim 审核 | 已完成；PR #14 通过独立审核和 CI 后以 merge commit `ce4b1a2` 合并 |
 | 9 | `feat/report-publishing` | 报告发布、撤销、公开 slug、版本切换和分享页 | 已完成；PR #15 通过独立审核和 CI 后以 merge commit `f42ae20` 合并 |
-| 10 | `feat/ui-experience-refresh` | 全站字体、间距、信息层级和视觉语言统一，移除左侧装饰边线与明显 AI 化样式 | 唯一 Draft PR #16 首轮 finding 已按 TDD 修复；89 个数据库测试、177 个单元测试、82 个 E2E 和三档视觉矩阵通过，等待重审 |
+| 10 | `feat/ui-experience-refresh` | 全站字体、间距、信息层级和视觉语言统一，移除左侧装饰边线与明显 AI 化样式 | 已完成；PR #16 通过独立重审和两个 CI job 后以 merge commit `72d3f55` 合并 |
 
 ## 跨模块规则
 
@@ -33,4 +33,4 @@
 
 ## 当前模块
 
-`feat/managed-deployment`、`feat/durable-research-results` 与 `feat/report-publishing` 已依次通过 PR #13、#14、#15 合并，Vercel 生产验证保留为后置发布门禁。`feat/ui-experience-refresh` 已创建唯一 Draft PR #16，首轮次按钮 hover 对比度 finding 已按 TDD 修复并通过完整非付费门禁；下一步 push 后重审，并在当前 head 的独立 Claude 审核和 GitHub CI 通过后使用 merge commit 合并。
+`feat/managed-deployment`、`feat/durable-research-results`、`feat/report-publishing` 与 `feat/ui-experience-refresh` 已依次通过 PR #13、#14、#15、#16 合并。当前规划内的非发布代码里程碑均已完成；Vercel 生产 URL、Supabase Redirect、Inngest 同步、生产冒烟和回滚演练继续保留为账号恢复后的独立发布门禁。

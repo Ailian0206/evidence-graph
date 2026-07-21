@@ -4,11 +4,11 @@
 
 ## 当前阶段
 
-- 阶段：全局 UI 体验优化已创建唯一 Draft PR；首轮独立审核 finding 已修复并通过完整门禁，等待 push 后重审。
-- 分支：`feat/ui-experience-refresh` 已从最新 `main` 创建，并在独立 worktree 中进行。
-- PR：UI 里程碑唯一 Draft PR [#16](https://github.com/Ailian0206/evidence-graph/pull/16) 已创建；首轮独立 Claude 审核请求修复次按钮 hover 对比度。
-- 当前任务：push 已验证的审核修复，重新运行独立 Claude 审核，并在当前 head 的 GitHub CI 成功后使用 merge commit 合并。
-- UI 优化：中文优先的 Neutral Product Studio 与均衡密度已覆盖公共页面、认证/项目页、工作台全部状态和公开报告；本地完整门禁已通过。
+- 阶段：全局 UI 体验优化已通过独立审核和 GitHub CI，并使用 merge commit 合并；Vercel 生产发布仍为后置门禁。
+- 分支：`main` 已同步 UI 里程碑 merge commit `72d3f55`；远端 `feat/ui-experience-refresh` 已删除。
+- PR：UI 里程碑唯一 PR [#16](https://github.com/Ailian0206/evidence-graph/pull/16) 已通过修复重审和 GitHub CI 后合并。
+- 当前任务：提供合并后本地效果预览；Vercel 账号恢复后继续生产发布门禁。
+- UI 优化：中文优先的 Neutral Product Studio 与均衡密度已覆盖公共页面、认证/项目页、工作台全部状态和公开报告，并合并到 `main`。
 - 外部 Provider 调用：已禁用。
 - Embedding Provider：已决定后续接入阿里云百炼 `text-embedding-v4` 并固定输出 1536 维；等待用户提供账号和密钥，当前不接入、不调用真实服务。
 - 生产部署：数据库和外部服务配置进行中，Vercel 尚未部署。
@@ -38,7 +38,7 @@
 | 托管部署 | 代码已合并，发布待完成 | PR [#13](https://github.com/Ailian0206/evidence-graph/pull/13) 已合并；Vercel 生产验证仍是后置发布门禁 |
 | 持久化研究结果 | 已完成 | PR [#14](https://github.com/Ailian0206/evidence-graph/pull/14) 已通过独立审核和 CI，并以 merge commit `ce4b1a2` 合并 |
 | 报告发布 | 已完成 | PR [#15](https://github.com/Ailian0206/evidence-graph/pull/15) 已通过独立审核和 CI，并以 merge commit `f42ae20` 合并 |
-| 全局 UI 体验优化 | 审核修复待重审 | 唯一 Draft PR [#16](https://github.com/Ailian0206/evidence-graph/pull/16) 首轮 finding 已按 TDD 修复；89 个数据库测试、177 个单元测试、82 个 E2E 和三档视觉矩阵通过 |
+| 全局 UI 体验优化 | 已完成 | PR [#16](https://github.com/Ailian0206/evidence-graph/pull/16) 首轮 finding 已按 TDD 修复，重审与两个 CI job 通过后以 merge commit `72d3f55` 合并 |
 
 ## 验证摘要
 
@@ -126,10 +126,10 @@
 - 导航键盘操作、skip link、工作台图谱联动、Cytoscape canvas 像素、打印模式、120 字项目标题和 2000 字研究问题回归均通过；截图输出保留在本地忽略目录 `output/playwright/ui-refresh/`，未提交生成物。
 - UI 里程碑初始完整 `npm run test:managed` 通过 Provider 边界扫描、89 个数据库测试、Schema lint、全仓 lint、typecheck、177 个单元测试、生产构建和 81 个 E2E；运行时显式清空托管与付费 Provider 变量，未调用真实 Supabase、Inngest、Sentry、OpenAI 或 Tavily 远端。
 - PR #16 首轮独立 Claude 审核对 head `1c2e9b9` 返回 `changes_requested`：`.secondary-action:hover` 的重复前景色声明使“联系我 / Contact”文字与深色背景同色。修复先用 Playwright 复现 `rgb(24, 32, 28)` 的 RED，再删除错误声明并验证白色前景 GREEN；修复后完整门禁通过 89 个数据库测试、177 个单元测试、生产构建和 82 个 E2E。
+- PR #16 独立 Claude 重审对 head `73a8f855c3ea0c66dcc88de4e61012b5d5194ebd` 返回 `pass`；GitHub 的质量与数据库两个 job 均成功，随后以 merge commit `72d3f55facbd196d634caeaad6de1ed06e8d259f` 合并，远端模块分支已删除。
 - Vercel 账号恢复仍未完成；当前 UI 里程碑只证明代码和本地门禁完成，不代表生产上线，生产 URL、Supabase Redirect、Inngest 同步、生产冒烟和回滚演练继续作为合并后的独立发布门禁。
 
 ## 下一步
 
-1. 推送 PR #16 审核修复并重新运行独立 Claude 审核，当前 head 审核与 GitHub CI 通过后使用 merge commit 合并。
-2. 合并后同步本地 `main`，记录最终 PR、审核 SHA、CI 与 merge commit 状态。
-3. Vercel 账号恢复后取得 Preview 与 Production URL，配置 Supabase Redirect、同步 Inngest，并完成生产冒烟和回滚演练。
+1. Vercel 账号恢复后取得 Preview 与 Production URL，配置 Supabase Redirect、同步 Inngest，并完成生产冒烟和回滚演练。
+2. 用户提供阿里云百炼账号和密钥后，在专用门禁与成本上限下接入 `text-embedding-v4`，当前不调用真实服务。
