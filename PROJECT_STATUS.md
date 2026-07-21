@@ -4,10 +4,10 @@
 
 ## 当前阶段
 
-- 阶段：托管部署代码里程碑收口；生产发布门禁后置。
-- 分支：`feat/managed-deployment`，在隔离 worktree 中开发。
-- PR：托管部署唯一 Draft PR [#13](https://github.com/Ailian0206/evidence-graph/pull/13) 已创建，等待独立 Claude 审核和 GitHub CI。
-- 当前任务：闭环 PR #13；Vercel 生产验证不再阻塞代码合并。
+- 阶段：托管部署代码里程碑已合并；开始持久化研究结果模块对齐。
+- 分支：`main`，下一步处理 `feat/durable-research-results`。
+- PR：托管部署 PR [#13](https://github.com/Ailian0206/evidence-graph/pull/13) 已通过独立 Claude 审核和 GitHub CI，并以 merge commit `ad40664` 合并。
+- 当前任务：将持久化研究结果分支对齐最新 `main`，重新运行完整门禁并创建唯一 Draft PR。
 - 外部 Provider 调用：已禁用。
 - 生产部署：数据库和外部服务配置进行中，Vercel 尚未部署。
 - Node.js：本地和 CI 使用 `v22.22.1`。
@@ -33,7 +33,7 @@
 | 全自动 PR 审核 | 已完成 | PR [#6](https://github.com/Ailian0206/evidence-graph/pull/6)、[#8](https://github.com/Ailian0206/evidence-graph/pull/8) 和 [#10](https://github.com/Ailian0206/evidence-graph/pull/10) 已合并；当前进程串行完成 PR 闭环 |
 | Source hash 项目隔离 | 已完成 | PR [#7](https://github.com/Ailian0206/evidence-graph/pull/7) 已通过 merge commit `8bc6f39` 合并 |
 | 证据工作台 | 已完成 | PR [#11](https://github.com/Ailian0206/evidence-graph/pull/11) 已通过独立审核和 CI，并以 merge commit `74c3b49` 合并 |
-| 托管部署 | 代码收口中 | 完整本地门禁、独立 Claude 审核和 CI 通过后合并；Vercel 生产验证作为后置发布门禁 |
+| 托管部署 | 代码已合并，发布待完成 | PR [#13](https://github.com/Ailian0206/evidence-graph/pull/13) 已合并；Vercel 生产验证仍是后置发布门禁 |
 
 ## 验证摘要
 
@@ -91,14 +91,15 @@
 - Sentry EU 组织 `ailian0206` 和 Next.js 项目 `evidence-graph` 已创建；运行时 DSN 已配置，Source Map Token 保持可选未配置，尚未发送受控异常。
 - `verify:managed-env` 已通过 Supabase、Inngest 和 Sentry 必需变量检查；真实密钥只存在于权限为 `0600` 的 `.env.local`，未进入 Git。
 - Preview 备份恢复演练已完成：远端 `public` 数据通过官方 CLI 导出，在本地用仓库迁移重建后恢复，33 个 pgTAP 和 Schema lint 通过，临时备份已删除。
-- `feat/managed-deployment` 已推送远端但未创建 PR；HTTPS 凭据缺少 `workflow` scope，因此 push URL 已改为本机现有 SSH 凭据，fetch URL 保持 HTTPS。
+- `feat/managed-deployment` 使用本机 SSH 凭据推送，HTTPS fetch 保持不变；PR #13 合并后远端模块分支已删除。
 - 托管部署里程碑预检 `npm run test:managed` 已通过 Provider 边界扫描、33 个数据库测试、Schema lint、lint、类型检查、118 个单元测试、生产构建和 36 个 E2E；运行时显式禁用真实托管连接和付费 Provider。
 - 同步 PR #12 后的 `npm run test:managed` 通过 Provider 边界扫描、33 个数据库测试、Schema lint、lint、类型检查、119 个单元测试、生产构建和 36 个 E2E；Playwright 改用 `next start`，消除了开发服务器首轮编译导致的导航竞态，并显式保持 Inngest 本地模式。
 - Vercel 恢复工单于 2026-07-17 提交；截至 2026-07-21 仍无审核结果，已在原邮件线程跟进。当前没有站点 URL、Inngest 应用同步、生产冒烟或 Vercel 回滚结果。
 - 用户于 2026-07-21 确认将 Vercel 生产验证拆为合并后的独立发布门禁；托管代码不得被表述为已生产上线。
+- PR #13 独立 Claude 审核对 head `dadabf3` 返回 `pass`，两个 GitHub CI job 成功后以 merge commit `ad40664` 合并。
 
 ## 下一步
 
-1. 在最新 `main` 基线上运行托管部署完整门禁，只创建一个 Draft PR 并完成自动审核闭环。
-2. 托管部署合并后依次对齐并闭环持久化研究结果与报告发布模块，不创建堆叠 PR。
+1. 对齐并闭环持久化研究结果模块，不创建堆叠 PR。
+2. 持久化研究结果合并后，再对齐并闭环报告发布模块。
 3. Vercel 账号恢复后取得 Preview 与 Production URL，配置 Supabase Redirect、同步 Inngest，并完成生产冒烟和回滚演练。

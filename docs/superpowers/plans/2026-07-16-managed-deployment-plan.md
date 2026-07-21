@@ -572,6 +572,6 @@ git push -u origin feat/managed-deployment
 gh pr create --draft --base main --head feat/managed-deployment --title "feat: 完成托管部署里程碑" --body-file /tmp/evidence-graph-managed-deployment-pr.md
 ```
 
-- [ ] **步骤 5：按自动审核流程闭环**
+- [x] **步骤 5：按自动审核流程闭环**
 
 运行独立 Claude 审核；有问题就在原 PR 修复、验证、提交并重审。当前 head 审核 `pass` 且 CI 成功后使用 merge commit 合并；不创建第二个 PR。
