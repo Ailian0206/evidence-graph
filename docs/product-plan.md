@@ -38,6 +38,7 @@
 | 长任务 | Inngest | 适合搜索、抓取、抽取、综合等多步骤任务，支持重试和步骤恢复 |
 | 搜索与正文 | Tavily Search | MVP 用单一接口获得搜索结果和正文，减少抓取服务数量 |
 | LLM | OpenAI Responses API | `gpt-5.6-luna` 处理高频抽取，`gpt-5.6-terra` 处理冲突和报告综合 |
+| Embedding | 阿里云百炼 | `text-embedding-v4` 使用 OpenAI 兼容接口并固定输出 1536 维向量 |
 | 向量检索 | Supabase pgvector | 避免额外引入 Pinecone/Qdrant |
 | 图谱界面 | Cytoscape.js | 使用成熟图库处理布局、缩放、选择和大图性能 |
 | 错误监控 | Sentry | Vercel Marketplace 可直接接入，覆盖前后端异常 |
@@ -52,6 +53,7 @@
 - [Inngest on Vercel](https://www.inngest.com/docs/deploy/vercel)
 - [Tavily Search API](https://docs.tavily.com/documentation/api-reference/endpoint/search)
 - [OpenAI GPT-5.6 model guidance](https://developers.openai.com/api/docs/guides/latest-model.md)
+- [阿里云百炼通用文本向量 API](https://help.aliyun.com/zh/model-studio/text-embedding-synchronous-api)
 - [Sentry for Vercel](https://vercel.com/marketplace/sentry)
 
 ### 2.2 未采用方案
@@ -268,7 +270,7 @@ flowchart LR
 - Cytoscape.js 负责图谱画布。
 - Inngest step functions 负责研究任务。
 - `gpt-5.6-luna` 使用低推理强度完成搜索计划、Claim 抽取和 Evidence Link；`gpt-5.6-terra` 使用中等推理强度完成冲突判断和最终报告。
-- `text-embedding-3-small` 生成 1536 维向量；模型名和维度写入 Chunk，未来升级时不原地混用向量。
+- 阿里云百炼 `text-embedding-v4` 通过 OpenAI 兼容接口生成 1536 维向量；模型名和维度写入 Chunk，未来升级时不原地混用向量。账号和密钥由用户后续提供，接入前继续使用确定性 fixtures。
 - Vitest、Testing Library、Playwright。
 - Sentry、Vercel Analytics。
 
@@ -280,7 +282,7 @@ flowchart LR
 - `LanguageModel.generateStructured(schema, input)`
 - `EmbeddingProvider.embed(texts)`
 
-MVP 默认实现 Tavily 和 OpenAI，但领域逻辑不直接依赖它们，便于以后替换供应商。
+MVP 默认实现 Tavily、OpenAI Responses 和阿里云百炼 Embedding，但领域逻辑不直接依赖它们，便于以后替换供应商。
 
 ## 9. 数据模型
 

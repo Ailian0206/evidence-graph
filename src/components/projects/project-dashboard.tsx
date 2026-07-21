@@ -82,7 +82,9 @@ export function ProjectDashboard({
                 <li key={project.id} className={styles.projectRow}>
                   <article>
                     <div className={styles.projectTitleLine}>
-                      <h2>{project.title}</h2>
+                      <h2>
+                        <Link href={`/app/research/${project.id}`}>{project.title}</Link>
+                      </h2>
                       <span className={styles.status} data-status={project.status}>
                         {t(`status.${project.status}`)}
                       </span>

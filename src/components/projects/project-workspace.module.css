@@ -115,6 +115,17 @@
   line-height: 1.25;
 }
 
+.projectTitleLine h2 a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 4px;
+}
+
+.projectTitleLine h2 a:hover {
+  text-decoration-color: currentColor;
+}
+
 .status {
   padding: 2px 8px;
   border: 1px solid var(--line-strong);

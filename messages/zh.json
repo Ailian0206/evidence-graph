@@ -79,7 +79,8 @@
         "language": "请选择支持的研究语言。",
         "manualUrls": "来源链接必须是有效 URL，且不能超过 5 个。",
         "invalid": "请检查表单中的错误。",
-        "monthlyLimit": "本月 3 次研究额度已用完。"
+        "monthlyLimit": "本月 3 次研究额度已用完。",
+        "activeRun": "已有研究正在处理，请等待完成后再创建新的研究。"
       }
     }
   },
@@ -174,6 +175,7 @@
       "reject": "拒绝主张",
       "reset": "恢复待审核"
     },
+    "reviewError": "审核状态保存失败，请重试。",
     "sourceMeta": {
       "title": "来源标题",
       "author": "作者",
@@ -189,7 +191,20 @@
     "errorDescription": "数据没有被修改，可以重新载入当前研究项目。",
     "retry": "重新载入",
     "notFoundTitle": "没有找到这个研究项目",
-    "notFoundDescription": "项目可能已删除，或者当前链接不再有效。"
+    "notFoundDescription": "项目可能已删除，或者当前链接不再有效。",
+    "managed": {
+      "queuedTitle": "研究已进入队列",
+      "queuedDescription": "研究任务正在等待执行，结果准备好后会自动显示。",
+      "runningTitle": "正在生成可核查研究",
+      "runningDescription": "来源、主张和证据关系正在处理中。",
+      "failedTitle": "研究运行失败",
+      "failedDescription": "项目和已有运行已保留，没有重复创建或扣除额度。",
+      "errorCode": "错误代码：{code}",
+      "retry": "重新投递研究",
+      "retrying": "正在重新投递...",
+      "retrySentDescription": "原研究运行已重新投递，正在等待执行。",
+      "retryError": "重新投递失败，请稍后再试。"
+    }
   },
   "Footer": {
     "statement": "以证据和可运行结果为准。"

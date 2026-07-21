@@ -5,6 +5,7 @@ import {
   createSupabaseProjectRepository,
   type ProjectQueryAdapter,
   type ProjectRow,
+  type ResearchRunRow,
 } from "@/features/projects/supabase-project-repository";
 
 const projectRow: ProjectRow = {
@@ -20,23 +21,41 @@ const projectRow: ProjectRow = {
   updated_at: "2026-07-16T08:00:00.000Z",
 };
 
+const runRow: ResearchRunRow = {
+  id: "run_1",
+  project_id: "project_1",
+  owner_id: "owner_1",
+  status: "queued",
+  step: "queued",
+  source_limit: 12,
+  manual_url_limit: 5,
+  manual_urls: ["https://research.example.com/source-1"],
+  max_content_chars: 200000,
+  estimated_cost_usd: 0,
+  search_count: 0,
+  token_count: 0,
+  error_message: null,
+  created_at: "2026-07-16T08:00:00.000Z",
+  updated_at: "2026-07-16T08:00:00.000Z",
+};
+
 const createQueries = (
   overrides: Partial<ProjectQueryAdapter> = {},
 ): ProjectQueryAdapter => ({
   listProjects: vi.fn(async () => [projectRow]),
   getProject: vi.fn(async () => projectRow),
-  insertProject: vi.fn(async () => projectRow),
+  createResearch: vi.fn(async () => ({ project: projectRow, run: runRow })),
+  markResearchDispatchFailed: vi.fn(async () => undefined),
   updateProject: vi.fn(async () => projectRow),
   deleteProject: vi.fn(async () => projectRow),
-  getMonthlyUsage: vi.fn(async () => null),
   ...overrides,
 });
 
 const createRepository = (queries: ProjectQueryAdapter) =>
   createSupabaseProjectRepository({
     queries,
-    createId: () => "project_1",
-    now: () => new Date("2026-07-16T08:00:00.000Z"),
+    createProjectId: () => "project_1",
+    createRunId: () => "run_1",
   });
 
 describe("Supabase project repository", () => {
@@ -131,65 +150,88 @@ describe("Supabase project repository", () => {
     const repository = createRepository(queries);
 
     await expect(
-      repository.createProject({
+      repository.createResearch({
         ownerId: "owner_1",
-        input: { title: " ", question: "", language: "zh" },
+        input: { title: " ", question: "", language: "zh", manualUrls: [] },
       }),
     ).rejects.toThrow();
-    expect(queries.getMonthlyUsage).not.toHaveBeenCalled();
-    expect(queries.insertProject).not.toHaveBeenCalled();
+    expect(queries.createResearch).not.toHaveBeenCalled();
   });
 
-  it("blocks a fourth monthly research run before writing", async () => {
+  it("maps the atomic RPC monthly limit error", async () => {
     const queries = createQueries({
-      getMonthlyUsage: vi.fn(async () => ({ run_count: 3 })),
+      createResearch: vi.fn(async () => {
+        throw new Error("MONTHLY_RUN_LIMIT_EXCEEDED");
+      }),
     });
     const repository = createRepository(queries);
 
     await expect(
-      repository.createProject({
+      repository.createResearch({
         ownerId: "owner_1",
         input: {
           title: "新的研究项目",
           question: "不同来源的主张冲突应该如何呈现？",
           language: "zh",
+          manualUrls: [],
         },
       }),
     ).rejects.toThrow("MONTHLY_RUN_LIMIT_EXCEEDED");
-    expect(queries.getMonthlyUsage).toHaveBeenCalledWith({
-      ownerId: "owner_1",
-      month: "2026-07-01",
-    });
-    expect(queries.insertProject).not.toHaveBeenCalled();
+    expect(queries.createResearch).toHaveBeenCalledTimes(1);
   });
 
-  it("creates a private active project from validated input", async () => {
+  it("creates a project and queued run from one atomic query", async () => {
     const queries = createQueries();
     const repository = createRepository(queries);
 
-    await repository.createProject({
-      ownerId: "owner_1",
-      input: {
-        title: " 可核查的 AI 研究 ",
-        question: " 精确引用如何降低研究审核成本？ ",
-        language: "zh",
-      },
+    await expect(
+      repository.createResearch({
+        ownerId: "owner_1",
+        input: {
+          title: " 可核查的 AI 研究 ",
+          question: " 精确引用如何降低研究审核成本？ ",
+          language: "zh",
+          manualUrls: ["https://research.example.com/source-1"],
+        },
+      }),
+    ).resolves.toEqual({
+      project: expect.objectContaining({ id: "project_1", ownerId: "owner_1" }),
+      run: expect.objectContaining({
+        id: "run_1",
+        ownerId: "owner_1",
+        projectId: "project_1",
+        status: "queued",
+      }),
     });
 
-    expect(queries.insertProject).toHaveBeenCalledWith({
+    expect(queries.createResearch).toHaveBeenCalledWith({
       ownerId: "owner_1",
-      row: {
-        id: "project_1",
-        owner_id: "owner_1",
+      projectId: "project_1",
+      runId: "run_1",
+      slug: "research-project_1",
+      input: {
         title: "可核查的 AI 研究",
         question: "精确引用如何降低研究审核成本？",
         language: "zh",
-        status: "active",
-        visibility: "private",
-        slug: "research-project_1",
-        created_at: "2026-07-16T08:00:00.000Z",
-        updated_at: "2026-07-16T08:00:00.000Z",
+        manualUrls: ["https://research.example.com/source-1"],
       },
+    });
+  });
+
+  it("marks only the owned run as dispatch failed", async () => {
+    const queries = createQueries();
+    const repository = createRepository(queries);
+
+    await repository.markResearchDispatchFailed({
+      ownerId: "owner_1",
+      projectId: "project_1",
+      runId: "run_1",
+    });
+
+    expect(queries.markResearchDispatchFailed).toHaveBeenCalledWith({
+      ownerId: "owner_1",
+      projectId: "project_1",
+      runId: "run_1",
     });
   });
 

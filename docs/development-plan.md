@@ -12,7 +12,9 @@
 | 4 | `chore/pr-review-skill-setup` | 独立 Claude Code PR 审核流程 | PR [#6](https://github.com/Ailian0206/evidence-graph/pull/6) 和 [#8](https://github.com/Ailian0206/evidence-graph/pull/8) 已合并；当前补充串行闭环约束 |
 | 5 | `fix/source-hash-project-scope-v2` | 来源内容哈希限制为项目内唯一 | PR [#7](https://github.com/Ailian0206/evidence-graph/pull/7) 已通过完整门禁和独立审核后合并 |
 | 6 | `feat/evidence-workspace` | 主张列表、图谱、来源查看器、审核动作和响应式应用 | 已完成；PR [#11](https://github.com/Ailian0206/evidence-graph/pull/11) 已通过独立审核和 CI 后合并 |
-| 7 | `feat/managed-deployment` | Supabase Auth/RLS/pgvector、Inngest、Sentry 和 Vercel | 代码里程碑通过完整本地门禁；Vercel 生产验证后置为独立发布门禁 |
+| 7 | `feat/managed-deployment` | Supabase Auth/RLS/pgvector、Inngest、Sentry 和 Vercel | 代码已通过 PR #13 合并；Vercel 生产验证后置为独立发布门禁 |
+| 8 | `feat/durable-research-results` | 原子创建研究、Inngest 快照持久化、真实工作台和 Claim 审核 | Draft PR #14 首轮审核问题已修复；门禁通过 54 个数据库测试、145 个单元测试和 36 个 E2E，等待重审与 CI |
+| 9 | `feat/report-publishing` | 报告发布、撤销、公开 slug、版本切换和分享页 | 已在独立本地 worktree 完成；持久化结果合并前不 push、不创建堆叠 PR |
 
 ## 跨模块规则
 
@@ -29,4 +31,4 @@
 
 ## 当前模块
 
-`feat/managed-deployment` 正在完成代码里程碑收口。完整本地门禁、独立 Claude 审核和 GitHub CI 通过后合并；Vercel 账号恢复后再执行生产发布门禁。创建付费资源、写入新密钥和运行付费 Provider 前仍须取得明确授权。
+`feat/managed-deployment` 已通过 PR #13 合并，Vercel 生产验证保留为后置发布门禁。`feat/durable-research-results` 的唯一 Draft PR #14 已完成首轮审核修复和完整本地门禁，等待对新 head 重审与 CI；闭环前不推送或创建报告发布 PR。

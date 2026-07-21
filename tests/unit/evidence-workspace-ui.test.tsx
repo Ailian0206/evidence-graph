@@ -1,21 +1,44 @@
-import { act, cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import messages from "../../messages/zh.json";
 import { EvidenceWorkspace } from "@/components/evidence-workspace/evidence-workspace";
+import { ManagedWorkspaceState } from "@/components/evidence-workspace/managed-workspace-state";
 import { WorkspaceState } from "@/components/evidence-workspace/workspace-state";
 import { createEvidenceWorkspaceFixture } from "@/features/research/evidence-workspace-fixture";
 
-const renderWorkspace = () =>
+const navigationMocks = vi.hoisted(() => ({ refresh: vi.fn() }));
+const projectActionMocks = vi.hoisted(() => ({
+  retryResearchDispatch: vi.fn(async () => ({ ok: true as const })),
+}));
+const researchActionMocks = vi.hoisted(() => ({
+  reviewClaim: vi.fn(async () => ({ ok: true as const })),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: navigationMocks.refresh }),
+}));
+
+vi.mock("@/features/projects/actions", () => projectActionMocks);
+vi.mock("@/features/research/actions", () => researchActionMocks);
+
+const renderWorkspace = (persistence: "demo" | "managed" = "demo") =>
   render(
     <NextIntlClientProvider locale="zh" messages={messages}>
-      <EvidenceWorkspace initialData={createEvidenceWorkspaceFixture("zh")} />
+      <EvidenceWorkspace
+        initialData={createEvidenceWorkspaceFixture("zh")}
+        persistence={persistence}
+      />
     </NextIntlClientProvider>,
   );
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+  vi.clearAllMocks();
+});
 
 describe("evidence workspace claim review", () => {
   it("filters the claim list by human review status", async () => {
@@ -56,6 +79,51 @@ describe("evidence workspace claim review", () => {
     expect(
       within(selectedClaim).getByRole("status", { name: "当前审核状态" }),
     ).toHaveTextContent("已拒绝");
+    expect(researchActionMocks.reviewClaim).not.toHaveBeenCalled();
+  });
+
+  it("keeps a successful managed review result", async () => {
+    const user = userEvent.setup();
+    const workspace = createEvidenceWorkspaceFixture("zh");
+    const targetClaim = workspace.claims[0];
+    renderWorkspace("managed");
+
+    await user.click(screen.getByRole("button", { name: targetClaim.statement }));
+    await user.click(screen.getByRole("button", { name: "接受主张" }));
+
+    await waitFor(() =>
+      expect(researchActionMocks.reviewClaim).toHaveBeenCalledWith(
+        "zh",
+        workspace.project.id,
+        targetClaim.id,
+        "accepted",
+      ),
+    );
+    expect(
+      within(screen.getByTestId("selected-claim")).getByRole("status", {
+        name: "当前审核状态",
+      }),
+    ).toHaveTextContent("已接受");
+  });
+
+  it("rolls back a managed review when persistence fails", async () => {
+    researchActionMocks.reviewClaim.mockRejectedValueOnce(new Error("DATABASE_UNAVAILABLE"));
+    const user = userEvent.setup();
+    const workspace = createEvidenceWorkspaceFixture("zh");
+    const targetClaim = workspace.claims[0];
+    renderWorkspace("managed");
+
+    await user.click(screen.getByRole("button", { name: targetClaim.statement }));
+    await user.click(screen.getByRole("button", { name: "拒绝主张" }));
+
+    await waitFor(() =>
+      expect(
+        within(screen.getByTestId("selected-claim")).getByRole("status", {
+          name: "当前审核状态",
+        }),
+      ).toHaveTextContent("待审核"),
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent("审核状态保存失败，请重试。");
   });
 
   it("hides claims when their only evidence relation is disabled", async () => {
@@ -140,5 +208,55 @@ describe("evidence workspace states", () => {
     await user.click(screen.getByRole("button", { name: "重新载入" }));
 
     expect(retry).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(["queued", "running"] as const)(
+    "refreshes a managed %s run without changing layout",
+    (state) => {
+      vi.useFakeTimers();
+      render(
+        <NextIntlClientProvider locale="zh" messages={messages}>
+          <ManagedWorkspaceState
+            locale="zh"
+            projectId="project_1"
+            result={{ state, runId: "run_1" }}
+          />
+        </NextIntlClientProvider>,
+      );
+
+      expect(screen.getByTestId("workspace-state")).toHaveAttribute(
+        "data-workspace-state",
+        state,
+      );
+      act(() => vi.advanceTimersByTime(3000));
+      expect(navigationMocks.refresh).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it("retries only the original dispatch-failed run", async () => {
+    render(
+      <NextIntlClientProvider locale="zh" messages={messages}>
+        <ManagedWorkspaceState
+          locale="zh"
+          projectId="project_1"
+          result={{
+            state: "failed",
+            runId: "run_1",
+            errorCode: "RESEARCH_DISPATCH_FAILED",
+            canRetryDispatch: true,
+          }}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "重新投递研究" }));
+
+    await waitFor(() =>
+      expect(projectActionMocks.retryResearchDispatch).toHaveBeenCalledWith(
+        "zh",
+        "project_1",
+        "run_1",
+      ),
+    );
   });
 });

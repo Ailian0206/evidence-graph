@@ -146,6 +146,11 @@ export function NewResearchForm({ locale }: { locale: AppLocale }) {
               {t("form.errors.monthlyLimit")}
             </p>
           ) : null}
+          {state.code === "ACTIVE_RESEARCH_RUN_EXISTS" ? (
+            <p className={styles.formError} role="alert">
+              {t("form.errors.activeRun")}
+            </p>
+          ) : null}
           {state.code === "INVALID_INPUT" ? (
             <p className={styles.formError} role="alert">
               {t("form.errors.invalid")}

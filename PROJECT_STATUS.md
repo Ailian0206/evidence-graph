@@ -4,11 +4,12 @@
 
 ## 当前阶段
 
-- 阶段：托管部署代码里程碑已合并；开始持久化研究结果模块对齐。
-- 分支：`main`，下一步处理 `feat/durable-research-results`。
-- PR：托管部署 PR [#13](https://github.com/Ailian0206/evidence-graph/pull/13) 已通过独立 Claude 审核和 GitHub CI，并以 merge commit `ad40664` 合并。
-- 当前任务：将持久化研究结果分支对齐最新 `main`，重新运行完整门禁并创建唯一 Draft PR。
+- 阶段：托管部署代码里程碑已合并；持久化研究结果正在闭环 PR 审核。
+- 分支：`feat/durable-research-results` 在独立 worktree 中完成审核修复和本地复验。
+- PR：持久化研究结果唯一 Draft PR [#14](https://github.com/Ailian0206/evidence-graph/pull/14) 已修复首轮独立 Claude finding，等待对新 head 重新审核和 GitHub CI。
+- 当前任务：闭环 PR #14；报告发布分支继续保持本地，不创建堆叠 PR。
 - 外部 Provider 调用：已禁用。
+- Embedding Provider：已决定后续接入阿里云百炼 `text-embedding-v4` 并固定输出 1536 维；等待用户提供账号和密钥，当前不接入、不调用真实服务。
 - 生产部署：数据库和外部服务配置进行中，Vercel 尚未部署。
 - Node.js：本地和 CI 使用 `v22.22.1`。
 - Cursor Bugbot：本月额度已耗尽，不等待、不重复触发，也不作为当前合并门禁。
@@ -34,6 +35,7 @@
 | Source hash 项目隔离 | 已完成 | PR [#7](https://github.com/Ailian0206/evidence-graph/pull/7) 已通过 merge commit `8bc6f39` 合并 |
 | 证据工作台 | 已完成 | PR [#11](https://github.com/Ailian0206/evidence-graph/pull/11) 已通过独立审核和 CI，并以 merge commit `74c3b49` 合并 |
 | 托管部署 | 代码已合并，发布待完成 | PR [#13](https://github.com/Ailian0206/evidence-graph/pull/13) 已合并；Vercel 生产验证仍是后置发布门禁 |
+| 持久化研究结果 | PR 审核中 | 原子研究事务、幂等 Writer、真实工作台和审核写回完成；首轮审核问题已修复并通过完整本地门禁 |
 
 ## 验证摘要
 
@@ -93,13 +95,22 @@
 - Preview 备份恢复演练已完成：远端 `public` 数据通过官方 CLI 导出，在本地用仓库迁移重建后恢复，33 个 pgTAP 和 Schema lint 通过，临时备份已删除。
 - `feat/managed-deployment` 使用本机 SSH 凭据推送，HTTPS fetch 保持不变；PR #13 合并后远端模块分支已删除。
 - 托管部署里程碑预检 `npm run test:managed` 已通过 Provider 边界扫描、33 个数据库测试、Schema lint、lint、类型检查、118 个单元测试、生产构建和 36 个 E2E；运行时显式禁用真实托管连接和付费 Provider。
+- `create_managed_research` 已把项目、queued run 和月度次数收进同一事务；投递失败保留原项目/run，重投复用同一个 `runId`，不会重复创建或计费。
+- Inngest 执行顺序已收敛为 `authorize -> begin -> execute -> persist/finalize`；Writer 在完整 Zod 与 owner/project/run 校验后按外键顺序幂等写入，最后才把 run 标记为 ready。
+- 非 `demo` 工作台已通过 RLS Store 读取 queued/running/failed/ready 四态；排队与运行每 3 秒刷新，只有 `RESEARCH_DISPATCH_FAILED` 可以重投原事件。
+- managed Claim 审核已写回 Supabase，并同时限定 `claimId + projectId`；保存失败会回滚目标 Claim，demo 继续保持纯客户端行为。
+- 持久化研究结果聚焦门禁通过 Provider 扫描、51 个数据库测试、49 个闭环单测和 14 个 Auth/工作台/项目/Inngest E2E。
+- 持久化研究结果初始 `npm run test:managed` 通过 Schema lint、全仓 lint、typecheck、142 个单元测试、生产构建和 36 个 E2E；运行时清空托管变量，未调用真实 OpenAI、Tavily、Supabase、Inngest 或 Sentry 远端。
 - 同步 PR #12 后的 `npm run test:managed` 通过 Provider 边界扫描、33 个数据库测试、Schema lint、lint、类型检查、119 个单元测试、生产构建和 36 个 E2E；Playwright 改用 `next start`，消除了开发服务器首轮编译导致的导航竞态，并显式保持 Inngest 本地模式。
 - Vercel 恢复工单于 2026-07-17 提交；截至 2026-07-21 仍无审核结果，已在原邮件线程跟进。当前没有站点 URL、Inngest 应用同步、生产冒烟或 Vercel 回滚结果。
 - 用户于 2026-07-21 确认将 Vercel 生产验证拆为合并后的独立发布门禁；托管代码不得被表述为已生产上线。
 - PR #13 独立 Claude 审核对 head `dadabf3` 返回 `pass`，两个 GitHub CI job 成功后以 merge commit `ad40664` 合并。
+- 对齐 PR #13 与状态提交 `fd89aaf` 后，持久化研究结果 `npm run test:managed` 通过 Provider 扫描、51 个数据库测试、Schema lint、lint、typecheck、143 个单元测试、生产构建和 36 个 E2E。
+- PR #14 首轮独立 Claude 审核对 head `861084c` 返回 `changes_requested`：已有 queued/running run 时再次创建会暴露数据库 `23505`。修复后该约束冲突转换为 `ACTIVE_RESEARCH_RUN_EXISTS`，表单提供双语提示，且失败事务不创建项目、不消耗额度、不投递 Inngest 事件。
+- PR #14 审核修复后的 `npm run test:managed` 通过 Provider 边界扫描、54 个数据库测试、Schema lint、lint、typecheck、145 个单元测试、生产构建和 36 个 E2E；运行时清空托管与付费 Provider 变量。
 
 ## 下一步
 
-1. 对齐并闭环持久化研究结果模块，不创建堆叠 PR。
+1. 推送 PR #14 审核修复，对新 head 重新执行独立 Claude 审核和 GitHub CI，均通过后使用 merge commit 合并。
 2. 持久化研究结果合并后，再对齐并闭环报告发布模块。
 3. Vercel 账号恢复后取得 Preview 与 Production URL，配置 Supabase Redirect、同步 Inngest，并完成生产冒烟和回滚演练。

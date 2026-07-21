@@ -41,6 +41,18 @@
   font-size: 13px;
 }
 
+.stateCode {
+  max-width: min(520px, 100%);
+  margin: -4px 0 8px;
+  overflow-wrap: anywhere;
+  color: #8f2f26;
+  font-size: 11px;
+}
+
+.stateError {
+  color: #8f2f26 !important;
+}
+
 @keyframes workspace-spin {
   to {
     transform: rotate(360deg);
@@ -391,9 +403,20 @@
   border-color: #2f362f;
 }
 
+.reviewActions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .reviewActions .iconButton {
   width: 34px;
   padding: 0;
+}
+
+.reviewError {
+  margin: 10px 0 0 !important;
+  color: #8f2f26;
+  font-size: 10px !important;
 }
 
 .graphPanel {
