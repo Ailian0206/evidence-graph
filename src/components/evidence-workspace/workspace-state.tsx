@@ -15,10 +15,14 @@ const stateIcons = {
 };
 
 const stateTranslationKeys = {
-  loading: { title: "loadingTitle", description: "loadingDescription" },
-  failed: { title: "errorTitle", description: "errorDescription" },
-  empty: { title: "emptyTitle", description: "emptyDescription" },
-  "not-found": { title: "notFoundTitle", description: "notFoundDescription" },
+  loading: { title: "loadingTitle", description: "loadingDescription", detail: "loadingDetail" },
+  failed: { title: "errorTitle", description: "errorDescription", detail: "errorDetail" },
+  empty: { title: "emptyTitle", description: "emptyDescription", detail: "emptyDetail" },
+  "not-found": {
+    title: "notFoundTitle",
+    description: "notFoundDescription",
+    detail: "notFoundDetail",
+  },
 } as const;
 
 export function WorkspaceState({
@@ -41,22 +45,26 @@ export function WorkspaceState({
       className={styles.workspaceState}
       data-testid="workspace-state"
       data-workspace-state={state}
+      data-state-shell="stable"
       aria-live={state === "loading" ? "polite" : undefined}
     >
       <Icon aria-hidden="true" size={28} />
       <h1>{t(copy.title)}</h1>
       <p>{t(copy.description)}</p>
-      {onAction && (
-        <button className="primary-action" type="button" onClick={onAction}>
-          <RotateCcw aria-hidden="true" size={17} />
-          {actionLabel}
-        </button>
-      )}
-      {actionHref && (
-        <a className="primary-action" href={`/${locale}${actionHref}`}>
-          {actionLabel}
-        </a>
-      )}
+      <p className={styles.stateDetail}>{t(copy.detail)}</p>
+      <div className={styles.stateAction}>
+        {onAction && (
+          <button className="primary-action" type="button" onClick={onAction}>
+            <RotateCcw aria-hidden="true" size={17} />
+            {actionLabel}
+          </button>
+        )}
+        {actionHref && (
+          <a className="primary-action" href={`/${locale}${actionHref}`}>
+            {actionLabel}
+          </a>
+        )}
+      </div>
     </section>
   );
 }

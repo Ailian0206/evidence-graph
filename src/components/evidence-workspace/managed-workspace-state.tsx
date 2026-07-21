@@ -69,35 +69,45 @@ export function ManagedWorkspaceState({
       : visibleState === "running"
         ? t("runningDescription")
         : t("failedDescription");
+  const detail =
+    visibleState === "queued"
+      ? t("queuedDetail")
+      : visibleState === "running"
+        ? t("runningDetail")
+        : t("failedDetail");
 
   return (
     <section
       className={styles.workspaceState}
       data-testid="workspace-state"
       data-workspace-state={visibleState}
+      data-state-shell="stable"
       aria-live={shouldPoll ? "polite" : undefined}
     >
       <Icon aria-hidden="true" size={28} />
       <h1>{title}</h1>
       <p>{description}</p>
+      <p className={styles.stateDetail}>{detail}</p>
       {visibleState === "failed" && result.state === "failed" && result.errorCode ? (
         <code className={styles.stateCode}>
           {t("errorCode", { code: result.errorCode })}
         </code>
       ) : null}
-      {visibleState === "failed" &&
-      result.state === "failed" &&
-      result.canRetryDispatch ? (
-        <button
-          className="primary-action"
-          type="button"
-          onClick={retry}
-          disabled={retryPending}
-        >
-          <RefreshCw aria-hidden="true" size={17} />
-          {retryPending ? t("retrying") : t("retry")}
-        </button>
-      ) : null}
+      <div className={styles.stateAction}>
+        {visibleState === "failed" &&
+        result.state === "failed" &&
+        result.canRetryDispatch ? (
+          <button
+            className="primary-action"
+            type="button"
+            onClick={retry}
+            disabled={retryPending}
+          >
+            <RefreshCw aria-hidden="true" size={17} />
+            {retryPending ? t("retrying") : t("retry")}
+          </button>
+        ) : null}
+      </div>
       {retryError ? (
         <p className={styles.stateError} role="alert">
           {t("retryError")}

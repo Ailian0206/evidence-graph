@@ -8,10 +8,12 @@
   display: grid;
   min-height: calc(100svh - var(--header-height));
   padding: 48px 24px;
+  align-content: center;
   place-content: center;
   place-items: center;
-  background: #e9ebe6;
-  color: #1d211d;
+  background: var(--paper-muted);
+  color: var(--ink);
+  grid-template-rows: auto auto auto auto minmax(44px, auto);
   gap: 10px;
   text-align: center;
 }
@@ -28,17 +30,30 @@
 .workspaceState h1 {
   max-width: 520px;
   margin: 5px 0 0;
-  font-family: var(--font-display);
-  font-size: 32px;
-  font-weight: 600;
+  font-family: var(--font-ui);
+  font-size: 24px;
+  font-weight: 720;
   line-height: 1.2;
 }
 
 .workspaceState p {
   max-width: 520px;
-  margin: 0 0 12px;
+  margin: 0;
   color: #5e655d;
-  font-size: 13px;
+  font-size: 14px;
+}
+
+.workspaceState .stateDetail {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.stateAction {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
 }
 
 .stateCode {
@@ -46,7 +61,7 @@
   margin: -4px 0 8px;
   overflow-wrap: anywhere;
   color: #8f2f26;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .stateError {
