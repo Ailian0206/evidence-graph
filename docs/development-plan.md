@@ -12,7 +12,7 @@
 | 4 | `chore/pr-review-skill-setup` | 独立 Claude Code PR 审核流程 | PR [#6](https://github.com/Ailian0206/evidence-graph/pull/6) 和 [#8](https://github.com/Ailian0206/evidence-graph/pull/8) 已合并；当前补充串行闭环约束 |
 | 5 | `fix/source-hash-project-scope-v2` | 来源内容哈希限制为项目内唯一 | PR [#7](https://github.com/Ailian0206/evidence-graph/pull/7) 已通过完整门禁和独立审核后合并 |
 | 6 | `feat/evidence-workspace` | 主张列表、图谱、来源查看器、审核动作和响应式应用 | 已完成；PR [#11](https://github.com/Ailian0206/evidence-graph/pull/11) 已通过独立审核和 CI 后合并 |
-| 7 | `feat/managed-deployment` | Supabase Auth/RLS/pgvector、Inngest、Sentry 和 Vercel | 本地门禁加上授权后的生产冒烟测试 |
+| 7 | `feat/managed-deployment` | Supabase Auth/RLS/pgvector、Inngest、Sentry 和 Vercel | 代码里程碑通过完整本地门禁；Vercel 生产验证后置为独立发布门禁 |
 
 ## 跨模块规则
 
@@ -22,10 +22,11 @@
 - 每个模块使用小粒度中文 Conventional Commits，并且只创建一个 Draft PR；中间提交不单独开 PR。
 - 分支、PR、CI 或里程碑状态变化时更新 `PROJECT_STATUS.md`。
 - 模块只有在 lint、typecheck、unit、build 和相关 Playwright 测试通过后才算完成。
+- Vercel 账号审核不阻塞托管代码里程碑合并；生产 URL、Inngest 同步、生产冒烟和回滚演练仍是上线前的必需发布门禁。
 - `docs/bugbot-autofix-workflow.md` 定义自动审核流程。Bugbot 不可用时不阻塞本地开发，由独立 Claude 审核承担必需门禁。
 - PR 创建后由当前进程依次完成 Claude 审核、问题修复、重新审核、CI 等待和合并；当前 PR 完整闭环前不开始下一个模块。
 - Claude 审核和 CI 通过后由 Codex 自动 merge commit，不包含人工审核步骤。
 
 ## 当前模块
 
-`feat/managed-deployment` 是下一模块。先在隔离 worktree 编写中文实施计划并完成不依赖真实账号和付费 Provider 的本地集成；创建外部资源、写入密钥和运行生产冒烟测试前必须取得明确授权。
+`feat/managed-deployment` 正在完成代码里程碑收口。完整本地门禁、独立 Claude 审核和 GitHub CI 通过后合并；Vercel 账号恢复后再执行生产发布门禁。创建付费资源、写入新密钥和运行付费 Provider 前仍须取得明确授权。

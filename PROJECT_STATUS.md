@@ -1,13 +1,13 @@
 # Evidence Graph 项目状态
 
-更新时间：2026-07-20
+更新时间：2026-07-21
 
 ## 当前阶段
 
-- 阶段：托管部署里程碑开发中。
+- 阶段：托管部署代码里程碑收口；生产发布门禁后置。
 - 分支：`feat/managed-deployment`，在隔离 worktree 中开发。
 - PR：[#12](https://github.com/Ailian0206/evidence-graph/pull/12) 已对 head `222e3f3` 通过独立 Claude 审核和 GitHub CI，并以 merge commit `b0fe0e6` 合并。
-- 当前任务：Supabase、GitHub OAuth、Inngest 和 Sentry 免费资源已完成基础配置；Vercel 账号仍要求进一步验证，等待恢复审核结果。
+- 当前任务：最新 `main` 基线上的完整门禁已通过，准备创建托管部署唯一 Draft PR；Vercel 生产验证不再阻塞代码合并。
 - 外部 Provider 调用：已禁用。
 - 生产部署：数据库和外部服务配置进行中，Vercel 尚未部署。
 - Node.js：本地和 CI 使用 `v22.22.1`。
@@ -33,7 +33,7 @@
 | 全自动 PR 审核 | 已完成 | PR [#6](https://github.com/Ailian0206/evidence-graph/pull/6)、[#8](https://github.com/Ailian0206/evidence-graph/pull/8) 和 [#10](https://github.com/Ailian0206/evidence-graph/pull/10) 已合并；当前进程串行完成 PR 闭环 |
 | Source hash 项目隔离 | 已完成 | PR [#7](https://github.com/Ailian0206/evidence-graph/pull/7) 已通过 merge commit `8bc6f39` 合并 |
 | 证据工作台 | 已完成 | PR [#11](https://github.com/Ailian0206/evidence-graph/pull/11) 已通过独立审核和 CI，并以 merge commit `74c3b49` 合并 |
-| 托管部署 | 进行中 | 获得账号授权后完成 Supabase、Inngest、Vercel 配置和生产冒烟测试 |
+| 托管部署 | 代码收口中 | 完整本地门禁、独立 Claude 审核和 CI 通过后合并；Vercel 生产验证作为后置发布门禁 |
 
 ## 验证摘要
 
@@ -93,10 +93,12 @@
 - Preview 备份恢复演练已完成：远端 `public` 数据通过官方 CLI 导出，在本地用仓库迁移重建后恢复，33 个 pgTAP 和 Schema lint 通过，临时备份已删除。
 - `feat/managed-deployment` 已推送远端但未创建 PR；HTTPS 凭据缺少 `workflow` scope，因此 push URL 已改为本机现有 SSH 凭据，fetch URL 保持 HTTPS。
 - 托管部署里程碑预检 `npm run test:managed` 已通过 Provider 边界扫描、33 个数据库测试、Schema lint、lint、类型检查、118 个单元测试、生产构建和 36 个 E2E；运行时显式禁用真实托管连接和付费 Provider。
-- Vercel 恢复工单于 2026-07-17 提交；2026-07-20 重新核验时邮箱仍无后续回复，GitHub 登录返回 `user_blocked` 并提示账号需要进一步验证。当前没有站点 URL、Inngest 应用同步、生产冒烟或 Vercel 回滚结果。
+- 同步 PR #12 后的 `npm run test:managed` 通过 Provider 边界扫描、33 个数据库测试、Schema lint、lint、类型检查、119 个单元测试、生产构建和 36 个 E2E；Playwright 改用 `next start`，消除了开发服务器首轮编译导致的导航竞态，并显式保持 Inngest 本地模式。
+- Vercel 恢复工单于 2026-07-17 提交；截至 2026-07-21 仍无审核结果，已在原邮件线程跟进。当前没有站点 URL、Inngest 应用同步、生产冒烟或 Vercel 回滚结果。
+- 用户于 2026-07-21 确认将 Vercel 生产验证拆为合并后的独立发布门禁；托管代码不得被表述为已生产上线。
 
 ## 下一步
 
-1. 等待 Vercel 账号恢复审核通过，创建免费项目并取得稳定 Preview 与 Production 默认域名。
-2. 配置两套 Supabase Site URL 和 Redirect allow list，同步 Inngest 应用并运行不含付费 Provider 的生产冒烟和 Vercel 回滚演练。
-3. 完成任务 10 后运行里程碑完整门禁，并只创建一个 Draft PR 进入自动审核闭环。
+1. 在最新 `main` 基线上运行托管部署完整门禁，只创建一个 Draft PR 并完成自动审核闭环。
+2. 托管部署合并后依次对齐并闭环持久化研究结果与报告发布模块，不创建堆叠 PR。
+3. Vercel 账号恢复后取得 Preview 与 Production URL，配置 Supabase Redirect、同步 Inngest，并完成生产冒烟和回滚演练。
