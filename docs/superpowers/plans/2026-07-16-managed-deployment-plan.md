@@ -565,7 +565,7 @@ npm run test:ci
 
 在 `PROJECT_STATUS.md` 记录本地验证数量、Provider 调用状态、外部资源状态和剩余授权项。
 
-- [ ] **步骤 4：推送分支并只创建一个 Draft PR**
+- [x] **步骤 4：推送分支并只创建一个 Draft PR**
 
 ```bash
 git push -u origin feat/managed-deployment

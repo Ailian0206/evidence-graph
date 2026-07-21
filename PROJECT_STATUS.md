@@ -6,8 +6,8 @@
 
 - 阶段：托管部署代码里程碑收口；生产发布门禁后置。
 - 分支：`feat/managed-deployment`，在隔离 worktree 中开发。
-- PR：[#12](https://github.com/Ailian0206/evidence-graph/pull/12) 已对 head `222e3f3` 通过独立 Claude 审核和 GitHub CI，并以 merge commit `b0fe0e6` 合并。
-- 当前任务：最新 `main` 基线上的完整门禁已通过，准备创建托管部署唯一 Draft PR；Vercel 生产验证不再阻塞代码合并。
+- PR：托管部署唯一 Draft PR [#13](https://github.com/Ailian0206/evidence-graph/pull/13) 已创建，等待独立 Claude 审核和 GitHub CI。
+- 当前任务：闭环 PR #13；Vercel 生产验证不再阻塞代码合并。
 - 外部 Provider 调用：已禁用。
 - 生产部署：数据库和外部服务配置进行中，Vercel 尚未部署。
 - Node.js：本地和 CI 使用 `v22.22.1`。
