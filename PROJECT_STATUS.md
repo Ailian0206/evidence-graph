@@ -7,7 +7,7 @@
 - 阶段：托管部署代码里程碑已合并；持久化研究结果正在对齐收口。
 - 分支：`feat/durable-research-results` 在独立 worktree 中完成本地实现，尚未 push。
 - PR：托管部署 PR [#13](https://github.com/Ailian0206/evidence-graph/pull/13) 已合并；持久化研究结果尚未创建 PR。
-- 当前任务：在最新 `main` 基线上重新运行完整门禁并创建持久化研究结果唯一 Draft PR。
+- 当前任务：最新 `main` 基线上的完整门禁已通过，准备创建持久化研究结果唯一 Draft PR。
 - 外部 Provider 调用：已禁用。
 - Embedding Provider：已决定后续接入阿里云百炼 `text-embedding-v4` 并固定输出 1536 维；等待用户提供账号和密钥，当前不接入、不调用真实服务。
 - 生产部署：数据库和外部服务配置进行中，Vercel 尚未部署。
@@ -100,11 +100,12 @@
 - 非 `demo` 工作台已通过 RLS Store 读取 queued/running/failed/ready 四态；排队与运行每 3 秒刷新，只有 `RESEARCH_DISPATCH_FAILED` 可以重投原事件。
 - managed Claim 审核已写回 Supabase，并同时限定 `claimId + projectId`；保存失败会回滚目标 Claim，demo 继续保持纯客户端行为。
 - 持久化研究结果聚焦门禁通过 Provider 扫描、51 个数据库测试、49 个闭环单测和 14 个 Auth/工作台/项目/Inngest E2E。
-- 持久化研究结果完整 `npm run test:managed` 通过 Schema lint、全仓 lint、typecheck、142 个单元测试、生产构建和 36 个 E2E；运行时清空托管变量，未调用真实 OpenAI、Tavily、Supabase、Inngest 或 Sentry 远端。
+- 持久化研究结果初始 `npm run test:managed` 通过 Schema lint、全仓 lint、typecheck、142 个单元测试、生产构建和 36 个 E2E；运行时清空托管变量，未调用真实 OpenAI、Tavily、Supabase、Inngest 或 Sentry 远端。
 - 同步 PR #12 后的 `npm run test:managed` 通过 Provider 边界扫描、33 个数据库测试、Schema lint、lint、类型检查、119 个单元测试、生产构建和 36 个 E2E；Playwright 改用 `next start`，消除了开发服务器首轮编译导致的导航竞态，并显式保持 Inngest 本地模式。
 - Vercel 恢复工单于 2026-07-17 提交；截至 2026-07-21 仍无审核结果，已在原邮件线程跟进。当前没有站点 URL、Inngest 应用同步、生产冒烟或 Vercel 回滚结果。
 - 用户于 2026-07-21 确认将 Vercel 生产验证拆为合并后的独立发布门禁；托管代码不得被表述为已生产上线。
 - PR #13 独立 Claude 审核对 head `dadabf3` 返回 `pass`，两个 GitHub CI job 成功后以 merge commit `ad40664` 合并。
+- 对齐 PR #13 与状态提交 `fd89aaf` 后，持久化研究结果 `npm run test:managed` 通过 Provider 扫描、51 个数据库测试、Schema lint、lint、typecheck、143 个单元测试、生产构建和 36 个 E2E。
 
 ## 下一步
 
