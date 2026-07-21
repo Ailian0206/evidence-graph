@@ -4,7 +4,11 @@
     "work": "作品",
     "notes": "笔记",
     "evidence": "Evidence Graph",
-    "language": "English"
+    "language": "English",
+    "primary": "主导航",
+    "openMenu": "打开菜单",
+    "closeMenu": "关闭菜单",
+    "skip": "跳到主要内容"
   },
   "Portfolio": {
     "eyebrow": "AI 产品工程",
@@ -15,11 +19,23 @@
     "about": "关于",
     "viewProject": "查看项目",
     "viewRepository": "查看源码",
-    "contact": "联系我"
+    "viewReport": "查看公开报告",
+    "openProduct": "进入产品",
+    "contact": "联系我",
+    "sections": {
+      "work": "01 / 作品",
+      "notes": "02 / 笔记",
+      "about": "03 / 关于",
+      "caseStudy": "案例 / {status}",
+      "problem": "01 / 问题",
+      "approach": "02 / 方法",
+      "proof": "03 / 当前结果"
+    }
   },
   "Evidence": {
     "title": "Evidence Graph",
     "status": "正在构建",
+    "previewLabel": "产品预览 / {status}",
     "description": "把研究结论连接回可以检查的原文证据。",
     "sample": "示例工作台使用确定性研究数据，不调用真实 Provider。",
     "openWorkspace": "打开示例工作台"
@@ -144,10 +160,10 @@
       "empty": "当前研究还没有报告版本。"
     },
     "panels": {
-      "claims": "Claims",
-      "graph": "Graph",
-      "source": "Source",
-      "log": "Run Log"
+      "claims": "主张列表",
+      "graph": "证据图谱",
+      "source": "来源详情",
+      "log": "运行日志"
     },
     "tabs": {
       "claims": "主张",
@@ -213,20 +229,27 @@
     },
     "loadingTitle": "正在载入研究工作台",
     "loadingDescription": "正在准备主张、证据关系和保存的原文。",
+    "loadingDetail": "数据尚未修改，加载完成后会显示当前研究结果。",
     "emptyTitle": "还没有可审核的主张",
     "emptyDescription": "研究运行完成提取后，主张和关联证据会显示在这里。",
+    "emptyDetail": "当前没有可审核内容，研究完成后这里会自动更新。",
     "errorTitle": "研究工作台载入失败",
     "errorDescription": "数据没有被修改，可以重新载入当前研究项目。",
+    "errorDetail": "已保存的数据不会受影响，重新载入不会创建新的运行。",
     "retry": "重新载入",
     "notFoundTitle": "没有找到这个研究项目",
     "notFoundDescription": "项目可能已删除，或者当前链接不再有效。",
+    "notFoundDetail": "返回产品入口可查看示例工作台或重新选择项目。",
     "managed": {
       "queuedTitle": "研究已进入队列",
       "queuedDescription": "研究任务正在等待执行，结果准备好后会自动显示。",
+      "queuedDetail": "项目和运行记录已保存，无需重复提交。",
       "runningTitle": "正在生成可核查研究",
       "runningDescription": "来源、主张和证据关系正在处理中。",
+      "runningDetail": "结果会自动刷新，离开页面不会取消当前运行。",
       "failedTitle": "研究运行失败",
       "failedDescription": "项目和已有运行已保留，没有重复创建或扣除额度。",
+      "failedDetail": "只有投递失败可以重新投递，其他失败不会重复执行。",
       "errorCode": "错误代码：{code}",
       "retry": "重新投递研究",
       "retrying": "正在重新投递...",
@@ -235,6 +258,7 @@
     }
   },
   "Footer": {
-    "statement": "以证据和可运行结果为准。"
+    "statement": "以证据和可运行结果为准。",
+    "language": "English"
   }
 }

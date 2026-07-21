@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { inspectVisibleUi } from "./support/ui-visual-audit";
+
 const viewports = [
   { name: "mobile", width: 390, height: 844 },
   { name: "tablet", width: 1024, height: 768 },
@@ -95,6 +97,12 @@ for (const viewport of viewports) {
         projectBarTop: projectBarBounds?.top ?? -1,
       };
     });
+    const audit = await inspectVisibleUi(page, [
+      "[data-testid='selected-claim']",
+      "[data-testid='workspace-source'] blockquote",
+      "[data-testid='workspace-report'] q",
+      "[data-run-log-entry]",
+    ]);
 
     expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewportWidth);
     expect(metrics.graphWidth).toBeGreaterThan(viewport.name === "mobile" ? 340 : 360);
@@ -106,6 +114,9 @@ for (const viewport of viewports) {
     expect(metrics.siteHeaderTop).toBeGreaterThanOrEqual(0);
     expect(metrics.siteHeaderTop).toBeLessThanOrEqual(1);
     expect(metrics.projectBarTop).toBeGreaterThanOrEqual(metrics.siteHeaderBottom - 1);
+    expect(audit.documentWidth).toBeLessThanOrEqual(audit.viewportWidth);
+    expect(audit.fontSizeViolations).toEqual([]);
+    expect(audit.leftRuleViolations).toEqual([]);
 
     await page.screenshot({
       path: `output/playwright/evidence-workspace-${viewport.name}.png`,

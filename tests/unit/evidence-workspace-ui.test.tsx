@@ -332,6 +332,38 @@ describe("evidence workspace states", () => {
     expect(retry).toHaveBeenCalledTimes(1);
   });
 
+  it.each([
+    ["loading", "正在载入研究工作台", false],
+    ["failed", "研究工作台载入失败", true],
+    ["empty", "还没有可审核的主张", false],
+    ["not-found", "没有找到这个研究项目", true],
+  ] as const)("renders the %s state with stable guidance", async (state, title, hasAction) => {
+    const user = userEvent.setup();
+    const action = vi.fn();
+    render(
+      <NextIntlClientProvider locale="zh" messages={messages}>
+        <WorkspaceState
+          state={state}
+          onAction={state === "failed" ? action : undefined}
+          actionHref={state === "not-found" ? "/evidence" : undefined}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    expect(screen.getByRole("heading", { name: title })).toBeVisible();
+    expect(screen.getByTestId("workspace-state")).toHaveAttribute(
+      "data-state-shell",
+      "stable",
+    );
+    expect(
+      screen.queryAllByRole("button").length + screen.queryAllByRole("link").length,
+    ).toBe(hasAction ? 1 : 0);
+    if (state === "failed") {
+      await user.click(screen.getByRole("button", { name: "重新载入" }));
+      expect(action).toHaveBeenCalledOnce();
+    }
+  });
+
   it.each(["queued", "running"] as const)(
     "refreshes a managed %s run without changing layout",
     (state) => {
@@ -350,6 +382,11 @@ describe("evidence workspace states", () => {
         "data-workspace-state",
         state,
       );
+      expect(screen.getByTestId("workspace-state")).toHaveAttribute(
+        "data-state-shell",
+        "stable",
+      );
+      expect(screen.queryByRole("button", { name: "重新投递研究" })).toBeNull();
       act(() => vi.advanceTimersByTime(3000));
       expect(navigationMocks.refresh).toHaveBeenCalledTimes(1);
     },

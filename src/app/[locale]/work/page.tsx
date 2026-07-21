@@ -30,7 +30,7 @@ export default async function WorkPage({
   return (
     <div className="public-page">
       <header className="page-intro content-width">
-        <p className="section-index">01 / Work</p>
+        <p className="section-index">{t("sections.work")}</p>
         <h1>{t("selectedWork")}</h1>
         <p>{t("selectedWorkDescription")}</p>
       </header>

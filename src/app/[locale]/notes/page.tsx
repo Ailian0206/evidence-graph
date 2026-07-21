@@ -30,7 +30,7 @@ export default async function NotesPage({
   return (
     <div className="public-page">
       <header className="page-intro content-width">
-        <p className="section-index">02 / Notes</p>
+        <p className="section-index">{t("sections.notes")}</p>
         <h1>{t("practiceNotes")}</h1>
         <p>{t("practiceNotesDescription")}</p>
       </header>

@@ -43,8 +43,16 @@ export default async function LoginPage({ params, searchParams }: LoginPageProps
             {t("github")}
           </button>
         </form>
-        {!configured ? <p className={styles.status}>{t("unconfigured")}</p> : null}
-        {error ? <p className={styles.error}>{t("error")}</p> : null}
+        {!configured ? (
+          <p className={styles.status} role="status">
+            {t("unconfigured")}
+          </p>
+        ) : null}
+        {error ? (
+          <p className={styles.error} role="alert">
+            {t("error")}
+          </p>
+        ) : null}
       </section>
     </div>
   );

@@ -12,7 +12,7 @@ export async function PracticeNotes() {
   return (
     <section className="portfolio-section practice-notes">
       <header className="section-heading content-width">
-        <p className="section-index">02 / Notes</p>
+        <p className="section-index">{t("sections.notes")}</p>
         <div>
           <h2>{t("practiceNotes")}</h2>
           <p>{t("practiceNotesDescription")}</p>

@@ -1,10 +1,14 @@
 import { ArrowUpRight } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import { profile } from "@/content/profile";
+import { Link } from "@/i18n/navigation";
+import type { AppLocale } from "@/i18n/routing";
 
 export async function SiteFooter() {
   const t = await getTranslations("Footer");
+  const locale = (await getLocale()) as AppLocale;
+  const alternateLocale: AppLocale = locale === "zh" ? "en" : "zh";
 
   return (
     <footer className="site-footer">
@@ -18,6 +22,9 @@ export async function SiteFooter() {
           GitHub
           <ArrowUpRight aria-hidden="true" size={15} />
         </a>
+        <Link href="/" locale={alternateLocale}>
+          {t("language")}
+        </Link>
       </div>
     </footer>
   );

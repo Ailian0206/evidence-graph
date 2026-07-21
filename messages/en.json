@@ -4,7 +4,11 @@
     "work": "Work",
     "notes": "Notes",
     "evidence": "Evidence Graph",
-    "language": "中文"
+    "language": "中文",
+    "primary": "Primary navigation",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "skip": "Skip to main content"
   },
   "Portfolio": {
     "eyebrow": "AI product engineering",
@@ -15,11 +19,23 @@
     "about": "About",
     "viewProject": "View project",
     "viewRepository": "View repository",
-    "contact": "Contact"
+    "viewReport": "View public report",
+    "openProduct": "Open product",
+    "contact": "Contact",
+    "sections": {
+      "work": "01 / Work",
+      "notes": "02 / Notes",
+      "about": "03 / About",
+      "caseStudy": "Case study / {status}",
+      "problem": "01 / Problem",
+      "approach": "02 / Approach",
+      "proof": "03 / Current proof"
+    }
   },
   "Evidence": {
     "title": "Evidence Graph",
     "status": "Building",
+    "previewLabel": "Product preview / {status}",
     "description": "Connect research claims back to source evidence readers can inspect.",
     "sample": "The sample workspace uses deterministic research data and makes no real provider calls.",
     "openWorkspace": "Open sample workspace"
@@ -147,7 +163,7 @@
       "claims": "Claims",
       "graph": "Graph",
       "source": "Source",
-      "log": "Run Log"
+      "log": "Run log"
     },
     "tabs": {
       "claims": "Claims",
@@ -213,20 +229,27 @@
     },
     "loadingTitle": "Loading research workspace",
     "loadingDescription": "Preparing claims, evidence relations, and saved source text.",
+    "loadingDetail": "No data has changed; the current research result will appear when loading completes.",
     "emptyTitle": "No claims are ready for review",
     "emptyDescription": "Claims and linked evidence will appear here after extraction completes.",
+    "emptyDetail": "There is nothing to review yet; this view updates when research completes.",
     "errorTitle": "Research workspace failed to load",
     "errorDescription": "No data was changed. You can reload the current research project.",
+    "errorDetail": "Saved data is unaffected, and reloading will not create a new run.",
     "retry": "Reload workspace",
     "notFoundTitle": "Research project not found",
     "notFoundDescription": "The project may have been deleted or this link is no longer valid.",
+    "notFoundDetail": "Return to the product entry to open the sample workspace or choose another project.",
     "managed": {
       "queuedTitle": "Research is queued",
       "queuedDescription": "The research run is waiting to start. Results will appear automatically when ready.",
+      "queuedDetail": "The project and run record are saved; do not submit it again.",
       "runningTitle": "Building traceable research",
       "runningDescription": "Sources, claims, and evidence relations are being processed.",
+      "runningDetail": "Results refresh automatically, and leaving this page does not cancel the run.",
       "failedTitle": "Research run failed",
       "failedDescription": "The project and original run were kept without creating or charging for another run.",
+      "failedDetail": "Only dispatch failures can be retried; other failures will not execute again.",
       "errorCode": "Error code: {code}",
       "retry": "Retry research dispatch",
       "retrying": "Retrying dispatch...",
@@ -235,6 +258,7 @@
     }
   },
   "Footer": {
-    "statement": "Evidence and runnable outcomes first."
+    "statement": "Evidence and runnable outcomes first.",
+    "language": "中文"
   }
 }

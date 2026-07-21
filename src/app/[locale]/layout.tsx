@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/react";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
-import { getMessages, setRequestLocale } from "next-intl/server";
+import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 
 import { SiteFooter } from "@/components/site/site-footer";
@@ -51,14 +51,20 @@ export default async function LocaleLayout({
 
   setRequestLocale(locale);
   const messages = await getMessages();
+  const navigation = await getTranslations("Navigation");
 
   return (
     <html lang={locale} data-scroll-behavior="smooth">
       <body>
         <NextIntlClientProvider messages={messages}>
+          <a className="skip-link" href="#main-content">
+            {navigation("skip")}
+          </a>
           <div className="site-shell">
             <SiteHeader />
-            <main>{children}</main>
+            <main id="main-content" tabIndex={-1}>
+              {children}
+            </main>
             <SiteFooter />
           </div>
           <Analytics />

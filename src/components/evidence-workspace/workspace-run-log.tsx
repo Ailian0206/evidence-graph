@@ -62,7 +62,7 @@ export function WorkspaceRunLog({
             const StatusIcon = failed ? TriangleAlert : Check;
 
             return (
-              <li key={entry.id} data-status={entry.status}>
+              <li key={entry.id} data-status={entry.status} data-run-log-entry>
                 <StatusIcon aria-hidden="true" size={14} />
                 <div>
                   <strong>{t(`steps.${entry.step}`)}</strong>

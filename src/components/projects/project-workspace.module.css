@@ -1,11 +1,11 @@
 .page {
   min-height: calc(100svh - var(--header-height));
-  padding: 64px var(--page-gutter) 96px;
-  background: #eeefeb;
+  padding: 48px var(--page-gutter) 64px;
+  background: var(--paper-muted);
 }
 
 .shell {
-  width: min(1040px, 100%);
+  width: min(1080px, 100%);
   margin: 0 auto;
 }
 
@@ -14,22 +14,22 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
   gap: 32px;
-  padding-bottom: 28px;
-  border-bottom: 2px solid var(--ink);
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--line-strong);
 }
 
 .eyebrow {
-  margin: 0 0 12px;
-  color: var(--muted);
+  margin: 0 0 8px;
+  color: var(--teal);
   font-size: 12px;
   font-weight: 750;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .header h1,
 .formHeader h1 {
   margin: 0;
-  font-size: 44px;
+  font-size: 30px;
   font-weight: 700;
   line-height: 1.05;
 }
@@ -48,9 +48,9 @@
   justify-content: center;
   gap: 9px;
   padding: 0 18px;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--teal);
   border-radius: var(--radius);
-  background: var(--ink);
+  background: var(--teal);
   color: #fff;
   cursor: pointer;
   font-size: 13px;
@@ -65,7 +65,7 @@
 }
 
 .empty {
-  padding: 72px 0;
+  padding: 48px 0;
   border-bottom: 1px solid var(--line);
 }
 
@@ -89,8 +89,8 @@
 .projectRow {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 28px;
-  padding: 28px 0;
+  gap: 24px;
+  padding: 24px 0;
   border-bottom: 1px solid var(--line);
 }
 
@@ -127,11 +127,11 @@
 }
 
 .status {
-  padding: 2px 8px;
+  padding: 3px 8px;
   border: 1px solid var(--line-strong);
-  border-radius: 999px;
+  border-radius: 3px;
   color: #4c534d;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 750;
 }
 
@@ -180,6 +180,15 @@
   background: var(--paper-strong);
 }
 
+.iconButton[data-variant="danger"] {
+  color: var(--vermilion-dark);
+}
+
+.iconButton[data-variant="danger"]:hover:not(:disabled) {
+  border-color: var(--vermilion);
+  background: #fff5f3;
+}
+
 .iconButton:disabled,
 .submitButton:disabled,
 .secondaryButton:disabled {
@@ -188,19 +197,40 @@
 }
 
 .formShell {
-  width: min(760px, 100%);
+  width: min(1040px, 100%);
   margin: 0 auto;
 }
 
 .formHeader {
-  padding-bottom: 28px;
-  border-bottom: 2px solid var(--ink);
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--line-strong);
 }
 
 .form {
   display: grid;
-  gap: 26px;
-  padding-top: 32px;
+  gap: 20px;
+  padding-top: 28px;
+}
+
+.formColumns {
+  display: grid;
+  align-items: start;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  gap: 28px;
+}
+
+.formPrimary,
+.formSources {
+  display: grid;
+  min-width: 0;
+  gap: 22px;
+}
+
+.formSources {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper-strong);
 }
 
 .field {
@@ -210,7 +240,7 @@
 
 .field label,
 .urlHeader strong {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 750;
 }
 
@@ -243,8 +273,8 @@
 .field textarea:focus,
 .field select:focus,
 .urlRow input:focus {
-  border-color: var(--vermilion);
-  outline: 1px solid var(--vermilion);
+  border-color: var(--teal);
+  outline: 1px solid var(--teal);
 }
 
 .fieldError,
@@ -281,7 +311,7 @@
 
 .secondaryButton {
   display: inline-flex;
-  min-height: 36px;
+  min-height: 40px;
   align-items: center;
   gap: 7px;
   padding: 0 11px;
@@ -298,6 +328,7 @@
 }
 
 .formActions {
+  min-height: 44px;
   justify-content: space-between;
   gap: 20px;
   padding-top: 6px;
@@ -321,7 +352,7 @@
 
   .header h1,
   .formHeader h1 {
-    font-size: 34px;
+    font-size: 26px;
   }
 
   .header {
@@ -334,6 +365,14 @@
 
   .projectRow {
     gap: 18px;
+  }
+
+  .formColumns {
+    grid-template-columns: 1fr;
+  }
+
+  .formSources {
+    padding: 16px;
   }
 
   .projectActions {

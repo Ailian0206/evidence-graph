@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { inspectVisibleUi } from "./support/ui-visual-audit";
+
 test.describe("managed authentication boundary", () => {
   test("keeps the deterministic demo public", async ({ page }) => {
     await page.goto("/zh/app/research/demo");
@@ -32,5 +34,19 @@ test.describe("managed authentication boundary", () => {
     );
     await expect(page.getByRole("heading", { name: "Sign in to Evidence Graph" })).toBeVisible();
     await expect(page.getByText("Managed sign-in is not configured")).toBeVisible();
+  });
+
+  test("keeps localized login states accessible and stable on mobile", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/zh/auth/login?error=oauth");
+
+    await expect(page.getByRole("heading", { name: "登录 Evidence Graph" })).toBeVisible();
+    await expect(page.getByRole("status")).toHaveText("托管登录尚未配置");
+    await expect(page.locator("p[role='alert']")).toHaveText("登录没有完成，请重新尝试。");
+
+    const audit = await inspectVisibleUi(page);
+    expect(audit.documentWidth).toBeLessThanOrEqual(audit.viewportWidth);
+    expect(audit.fontSizeViolations).toEqual([]);
+    await page.screenshot({ path: "output/playwright/login-mobile.png", fullPage: true });
   });
 });

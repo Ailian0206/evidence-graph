@@ -48,98 +48,113 @@ export function NewResearchForm({ locale }: { locale: AppLocale }) {
         </header>
 
         <form action={formAction} className={styles.form} noValidate>
-          <div className={styles.field}>
-            <label htmlFor="research-title">{t("form.fields.title")}</label>
-            <input
-              id="research-title"
-              name="title"
-              type="text"
-              maxLength={120}
-              required
-              aria-invalid={Boolean(fieldError("title"))}
-              aria-describedby={fieldError("title") ? "research-title-error" : undefined}
-            />
-            {fieldError("title") ? (
-              <p id="research-title-error" className={styles.fieldError}>
-                {fieldError("title")}
-              </p>
-            ) : null}
-          </div>
-
-          <div className={styles.field}>
-            <label htmlFor="research-question">{t("form.fields.question")}</label>
-            <textarea
-              id="research-question"
-              name="question"
-              maxLength={2000}
-              required
-              aria-invalid={Boolean(fieldError("question"))}
-              aria-describedby={fieldError("question") ? "research-question-error" : undefined}
-            />
-            {fieldError("question") ? (
-              <p id="research-question-error" className={styles.fieldError}>
-                {fieldError("question")}
-              </p>
-            ) : null}
-          </div>
-
-          <div className={styles.field}>
-            <label htmlFor="research-language">{t("form.fields.language")}</label>
-            <select id="research-language" name="language" defaultValue={locale}>
-              <option value="zh">{t("language.zh")}</option>
-              <option value="en">{t("language.en")}</option>
-            </select>
-          </div>
-
-          <fieldset className={styles.urlFieldset}>
-            <legend className={styles.visuallyHidden}>{t("form.fields.manualUrls")}</legend>
-            <div className={styles.urlHeader}>
-              <strong>{t("form.fields.manualUrls")}</strong>
-              <button
-                className={styles.secondaryButton}
-                type="button"
-                onClick={addUrlField}
-                disabled={urlFields.length >= 5}
-              >
-                <Plus aria-hidden="true" size={15} />
-                {t("form.addUrl")}
-              </button>
-            </div>
-            {urlFields.map((fieldId, index) => (
-              <div className={styles.urlRow} key={fieldId}>
-                <label className={styles.visuallyHidden} htmlFor={`manual-url-${fieldId}`}>
-                  {t("form.urlLabel", { index: index + 1 })}
-                </label>
+          <div className={styles.formColumns}>
+            <section
+              className={styles.formPrimary}
+              data-testid="research-primary-fields"
+            >
+              <div className={styles.field}>
+                <label htmlFor="research-title">{t("form.fields.title")}</label>
                 <input
-                  id={`manual-url-${fieldId}`}
-                  name="manualUrls"
-                  type="url"
-                  inputMode="url"
-                  placeholder="https://"
-                  aria-invalid={Boolean(fieldError("manualUrls"))}
-                  aria-describedby={
-                    fieldError("manualUrls") ? "research-manual-urls-error" : undefined
-                  }
+                  id="research-title"
+                  name="title"
+                  type="text"
+                  autoComplete="off"
+                  maxLength={120}
+                  required
+                  aria-invalid={Boolean(fieldError("title"))}
+                  aria-describedby={fieldError("title") ? "research-title-error" : undefined}
                 />
-                {urlFields.length > 1 ? (
-                  <button
-                    className={styles.iconButton}
-                    type="button"
-                    onClick={() => removeUrlField(fieldId)}
-                    aria-label={t("form.removeUrl", { index: index + 1 })}
-                    title={t("form.removeUrl", { index: index + 1 })}
-                  >
-                    <X aria-hidden="true" size={17} />
-                  </button>
+                {fieldError("title") ? (
+                  <p id="research-title-error" className={styles.fieldError}>
+                    {fieldError("title")}
+                  </p>
                 ) : null}
               </div>
-            ))}
-            {fieldError("manualUrls") ? (
-              <p id="research-manual-urls-error" className={styles.fieldError}>
-                {fieldError("manualUrls")}
-              </p>
-            ) : null}
-          </fieldset>
+
+              <div className={styles.field}>
+                <label htmlFor="research-question">{t("form.fields.question")}</label>
+                <textarea
+                  id="research-question"
+                  name="question"
+                  autoComplete="off"
+                  maxLength={2000}
+                  required
+                  aria-invalid={Boolean(fieldError("question"))}
+                  aria-describedby={fieldError("question") ? "research-question-error" : undefined}
+                />
+                {fieldError("question") ? (
+                  <p id="research-question-error" className={styles.fieldError}>
+                    {fieldError("question")}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className={styles.field}>
+                <label htmlFor="research-language">{t("form.fields.language")}</label>
+                <select id="research-language" name="language" defaultValue={locale}>
+                  <option value="zh">{t("language.zh")}</option>
+                  <option value="en">{t("language.en")}</option>
+                </select>
+              </div>
+            </section>
+
+            <section
+              className={styles.formSources}
+              data-testid="research-source-fields"
+            >
+              <fieldset className={styles.urlFieldset}>
+                <legend className={styles.visuallyHidden}>{t("form.fields.manualUrls")}</legend>
+                <div className={styles.urlHeader}>
+                  <strong>{t("form.fields.manualUrls")}</strong>
+                  <button
+                    className={styles.secondaryButton}
+                    type="button"
+                    onClick={addUrlField}
+                    disabled={urlFields.length >= 5}
+                  >
+                    <Plus aria-hidden="true" size={15} />
+                    {t("form.addUrl")}
+                  </button>
+                </div>
+                {urlFields.map((fieldId, index) => (
+                  <div className={styles.urlRow} key={fieldId}>
+                    <label className={styles.visuallyHidden} htmlFor={`manual-url-${fieldId}`}>
+                      {t("form.urlLabel", { index: index + 1 })}
+                    </label>
+                    <input
+                      id={`manual-url-${fieldId}`}
+                      name="manualUrls"
+                      type="url"
+                      inputMode="url"
+                      autoComplete="off"
+                      placeholder="https://"
+                      aria-invalid={Boolean(fieldError("manualUrls"))}
+                      aria-describedby={
+                        fieldError("manualUrls") ? "research-manual-urls-error" : undefined
+                      }
+                    />
+                    {urlFields.length > 1 ? (
+                      <button
+                        className={styles.iconButton}
+                        type="button"
+                        onClick={() => removeUrlField(fieldId)}
+                        aria-label={t("form.removeUrl", { index: index + 1 })}
+                        title={t("form.removeUrl", { index: index + 1 })}
+                      >
+                        <X aria-hidden="true" size={17} />
+                      </button>
+                    ) : null}
+                  </div>
+                ))}
+                {fieldError("manualUrls") ? (
+                  <p id="research-manual-urls-error" className={styles.fieldError}>
+                    {fieldError("manualUrls")}
+                  </p>
+                ) : null}
+              </fieldset>
+            </section>
+          </div>
 
           {state.code === "MONTHLY_RUN_LIMIT_EXCEEDED" ? (
             <p className={styles.formError} role="alert">
@@ -157,7 +172,11 @@ export function NewResearchForm({ locale }: { locale: AppLocale }) {
             </p>
           ) : null}
 
-          <div className={styles.formActions}>
+          <div
+            className={styles.formActions}
+            data-testid="research-form-actions"
+            aria-live="polite"
+          >
             <Link className={styles.backLink} href="/app">
               {t("form.back")}
             </Link>

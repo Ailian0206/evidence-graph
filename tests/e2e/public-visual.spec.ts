@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { inspectVisibleUi } from "./support/ui-visual-audit";
+
 const viewports = [
   { name: "mobile", width: 390, height: 844 },
   { name: "tablet", width: 1024, height: 768 },
@@ -14,11 +16,15 @@ for (const viewport of viewports) {
     await page.goto("/zh");
 
     await expect(page.getByRole("heading", { name: "Ailian", exact: true })).toBeVisible();
-    await expect(
-      page
-        .getByRole("navigation")
-        .getByRole("link", { name: "Evidence Graph", exact: true }),
-    ).toBeVisible();
+    if (viewport.name === "mobile") {
+      await expect(page.getByRole("button", { name: "打开菜单" })).toBeVisible();
+    } else {
+      await expect(
+        page
+          .getByRole("navigation")
+          .getByRole("link", { name: "Evidence Graph", exact: true }),
+      ).toBeVisible();
+    }
     await expect(page.locator(".evidence-canvas-hero .canvas-inspector")).toBeVisible();
 
     const metrics = await page.evaluate(() => {
@@ -72,6 +78,7 @@ for (const viewport of viewports) {
         selectedWorkTop: selectedWork.getBoundingClientRect().top,
         graphNodePosition: getComputedStyle(graphNode).position,
         canvasBackground: getComputedStyle(canvas).backgroundColor,
+        heroBackground: getComputedStyle(hero).backgroundColor,
         heroControlsOverlap: rectanglesOverlap(heroScrollBounds, heroInspectorBounds),
         heroTextOverlapsNodes: heroCopyBounds.some((copyBounds) =>
           heroNodeBounds.some((nodeBounds) => rectanglesOverlap(copyBounds, nodeBounds)),
@@ -82,17 +89,22 @@ for (const viewport of viewports) {
         }),
       };
     });
+    const audit = await inspectVisibleUi(page);
 
     expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.viewportWidth);
     expect(metrics.headerHeight).toBeGreaterThanOrEqual(56);
     expect(metrics.headerHeight).toBeLessThanOrEqual(80);
-    expect(metrics.heroHeight).toBeGreaterThanOrEqual(metrics.viewportHeight - 100);
-    expect(metrics.selectedWorkTop).toBeLessThanOrEqual(metrics.viewportHeight + 48);
+    expect(metrics.heroHeight).toBeGreaterThanOrEqual(620);
+    expect(metrics.heroHeight).toBeLessThanOrEqual(760);
+    expect(metrics.selectedWorkTop).toBeLessThan(metrics.viewportHeight);
     expect(metrics.graphNodePosition).toBe("absolute");
     expect(metrics.canvasBackground).not.toBe("rgba(0, 0, 0, 0)");
+    expect(metrics.heroBackground).not.toBe("rgb(17, 23, 19)");
     expect(metrics.heroControlsOverlap).toBe(false);
     expect(metrics.heroTextOverlapsNodes).toBe(false);
     expect(metrics.heroNodesInsideViewport).toBe(true);
+    expect(audit.documentWidth).toBeLessThanOrEqual(audit.viewportWidth);
+    expect(audit.fontSizeViolations).toEqual([]);
 
     await page.screenshot({
       path: `output/playwright/portfolio-${viewport.name}.png`,
@@ -117,6 +129,18 @@ test("English portfolio copy stays inside the mobile viewport", async ({ page })
   }));
 
   expect(widths.document).toBeLessThanOrEqual(widths.viewport);
+});
+
+test("secondary hero action remains readable on hover", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/zh");
+
+  const contactLink = page.locator(".portfolio-hero .secondary-action");
+  await contactLink.hover();
+
+  await expect
+    .poll(() => contactLink.evaluate((element) => getComputedStyle(element).color))
+    .toBe("rgb(255, 255, 255)");
 });
 
 test("mobile hero graph nodes remain interactive", async ({ page }) => {

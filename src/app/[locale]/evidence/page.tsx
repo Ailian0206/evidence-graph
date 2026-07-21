@@ -32,7 +32,7 @@ export default async function EvidencePage({
     <div className="evidence-preview public-page">
       <header className="evidence-preview-header content-width">
         <div>
-          <p className="section-index">Product preview / {t("status")}</p>
+          <p className="section-index">{t("previewLabel", { status: t("status") })}</p>
           <h1>{t("title")}</h1>
           <p>{t("description")}</p>
         </div>

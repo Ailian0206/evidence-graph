@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { inspectVisibleUi } from "./support/ui-visual-audit";
+
 const publicRoutes = [
   { path: "/zh", heading: "Ailian", screenshot: "home-zh" },
   { path: "/en", heading: "Ailian", screenshot: "home-en" },
@@ -126,4 +128,77 @@ test("evidence preview keeps hover and focus state aligned", async ({ page }) =>
   await evidenceNode.focus();
   await expect(evidenceNode).toHaveAttribute("aria-pressed", "true");
   await expect(inspector).toContainText("精确匹配 · 第 18 段");
+});
+
+test("Chinese portfolio sections do not expose English structural labels", async ({
+  page,
+}) => {
+  const routes = ["/zh", "/zh/work", "/zh/notes", "/zh/work/evidence-graph"];
+
+  for (const route of routes) {
+    await page.goto(route);
+    await expect(page.locator("body")).not.toContainText(
+      /01 \/ Work|02 \/ Notes|03 \/ About|Case study|01 \/ Problem|02 \/ Approach|03 \/ Proof/,
+    );
+  }
+});
+
+test("work, notes, and case pages keep balanced-density rows", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+
+  for (const route of ["/zh/work", "/zh/notes", "/zh/work/evidence-graph"]) {
+    await page.goto(route);
+    const audit = await inspectVisibleUi(page, [".project-proof"]);
+    expect(audit.documentWidth).toBeLessThanOrEqual(audit.viewportWidth);
+    expect(audit.fontSizeViolations).toEqual([]);
+    expect(audit.leftRuleViolations).toEqual([]);
+  }
+});
+
+test("Evidence Graph case study shows the real graph and public report entry", async ({
+  page,
+}) => {
+  await page.goto("/zh/work/evidence-graph");
+
+  await expect(page.locator(".evidence-canvas-workspace")).toBeVisible();
+  await expect(page.getByRole("link", { name: "查看公开报告" })).toHaveAttribute(
+    "href",
+    "/r/traceable-citations-review-zh",
+  );
+});
+
+test("mobile evidence preview keeps controls clear of the graph", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/zh/evidence");
+
+  await expect(page.locator("body")).not.toContainText("Product preview");
+  const metrics = await page.evaluate(() => {
+    const nodes = Array.from(
+      document.querySelectorAll<HTMLElement>(".evidence-canvas-workspace .graph-node"),
+    );
+    const inspector = document.querySelector<HTMLElement>(
+      ".evidence-canvas-workspace .canvas-inspector",
+    );
+    const inspectorBounds = inspector?.getBoundingClientRect();
+    const overlaps = (left: DOMRect, right: DOMRect) =>
+      !(
+        left.right <= right.left ||
+        left.left >= right.right ||
+        left.bottom <= right.top ||
+        left.top >= right.bottom
+      );
+
+    return {
+      targetsAreStable: nodes.every((node) => {
+        const bounds = node.getBoundingClientRect();
+        return bounds.width >= 40 && bounds.height >= 40;
+      }),
+      inspectorOverlapsNode:
+        inspectorBounds !== undefined &&
+        nodes.some((node) => overlaps(inspectorBounds, node.getBoundingClientRect())),
+    };
+  });
+
+  expect(metrics.targetsAreStable).toBe(true);
+  expect(metrics.inspectorOverlapsNode).toBe(false);
 });
