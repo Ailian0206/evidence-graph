@@ -4,10 +4,10 @@
 
 ## 当前阶段
 
-- 阶段：持久化研究结果已合并；报告发布正在闭环 PR 审核。
-- 分支：`feat/report-publishing` 已推送，并在独立 worktree 中保持干净。
-- PR：报告发布唯一 Draft PR [#15](https://github.com/Ailian0206/evidence-graph/pull/15) 已创建，等待独立 Claude 审核和 GitHub CI。
-- 当前任务：闭环 PR #15；通过后使用 merge commit 合并，再开始全局 UI 体验优化。
+- 阶段：报告发布已合并；准备开始全局 UI 体验优化。
+- 分支：`main` 已包含 PR #15；下一模块将从最新 `main` 创建 `feat/ui-experience-refresh`。
+- PR：报告发布 PR [#15](https://github.com/Ailian0206/evidence-graph/pull/15) 已通过独立 Claude 审核和 GitHub CI 后合并。
+- 当前任务：先完成全站界面审计和统一设计规范，再在独立分支集中实现 UI 体验优化。
 - UI 优化：已登记为报告发布之后的独立里程碑；集中解决过小字号、过大间距、首屏重点不清、左侧装饰边线和明显 AI 化视觉，不在当前功能分支零碎修改。
 - 外部 Provider 调用：已禁用。
 - Embedding Provider：已决定后续接入阿里云百炼 `text-embedding-v4` 并固定输出 1536 维；等待用户提供账号和密钥，当前不接入、不调用真实服务。
@@ -37,7 +37,7 @@
 | 证据工作台 | 已完成 | PR [#11](https://github.com/Ailian0206/evidence-graph/pull/11) 已通过独立审核和 CI，并以 merge commit `74c3b49` 合并 |
 | 托管部署 | 代码已合并，发布待完成 | PR [#13](https://github.com/Ailian0206/evidence-graph/pull/13) 已合并；Vercel 生产验证仍是后置发布门禁 |
 | 持久化研究结果 | 已完成 | PR [#14](https://github.com/Ailian0206/evidence-graph/pull/14) 已通过独立审核和 CI，并以 merge commit `ce4b1a2` 合并 |
-| 报告发布 | PR 审核中 | 唯一 Draft PR [#15](https://github.com/Ailian0206/evidence-graph/pull/15) 已创建；本地完整门禁和三档视觉复查通过 |
+| 报告发布 | 已完成 | PR [#15](https://github.com/Ailian0206/evidence-graph/pull/15) 已通过独立审核和 CI，并以 merge commit `f42ae20` 合并 |
 | 全局 UI 体验优化 | 已规划 | 前置模块合并后，以稳定完整页面为基线统一字号、密度和信息层级；移除左侧装饰边线与 AI 化样式，并完成桌面端、平板和移动端视觉回归 |
 
 ## 验证摘要
@@ -119,9 +119,10 @@
 - 工作台图谱/报告和公开报告均覆盖 390x844、1024x768、1440x1000；对齐前截图确认无横向溢出、文字裁切、控件重叠、异常空白或模式切换位移，Cytoscape canvas 像素检查继续通过。
 - 合并最新 `main` 后，报告发布 `npm run test:managed` 通过 Provider 边界、89 个数据库测试、Schema lint、全仓 lint、typecheck、170 个单元测试、生产构建和 45 个 E2E；三档公开报告与工作台报告截图复查通过。
 - 报告发布分支已推送并创建唯一 Draft PR #15；Vercel 生产 URL、Inngest 同步、生产冒烟和回滚仍作为独立发布门禁，不随本 PR 宣称上线。
+- PR #15 独立 Claude 审核对 head `b970acd` 返回 `pass`，两个 GitHub CI job 成功后以 merge commit `f42ae20` 合并；远端模块分支已删除。
 
 ## 下一步
 
-1. 对 PR #15 执行独立 Claude 审核；当前 head 的审核和 CI 均通过后使用 merge commit 合并。
-2. 报告发布合并后，从最新 `main` 创建 `feat/ui-experience-refresh`，先完成全站界面审计和统一设计规范。
+1. 从最新 `main` 创建 `feat/ui-experience-refresh`，先完成全站界面审计、设计规范和中文实施计划。
+2. 集中优化作品集、登录页、项目页、研究工作台和公开报告，并执行三档视觉与完整模块门禁。
 3. Vercel 账号恢复后取得 Preview 与 Production URL，配置 Supabase Redirect、同步 Inngest，并完成生产冒烟和回滚演练。
