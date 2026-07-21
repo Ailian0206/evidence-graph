@@ -6,8 +6,8 @@
 
 - 阶段：托管部署代码里程碑已合并；持久化研究结果正在对齐收口。
 - 分支：`feat/durable-research-results` 在独立 worktree 中完成本地实现，尚未 push。
-- PR：托管部署 PR [#13](https://github.com/Ailian0206/evidence-graph/pull/13) 已合并；持久化研究结果尚未创建 PR。
-- 当前任务：最新 `main` 基线上的完整门禁已通过，准备创建持久化研究结果唯一 Draft PR。
+- PR：持久化研究结果唯一 Draft PR [#14](https://github.com/Ailian0206/evidence-graph/pull/14) 已创建，等待独立 Claude 审核和 GitHub CI。
+- 当前任务：闭环 PR #14；报告发布分支继续保持本地，不创建堆叠 PR。
 - 外部 Provider 调用：已禁用。
 - Embedding Provider：已决定后续接入阿里云百炼 `text-embedding-v4` 并固定输出 1536 维；等待用户提供账号和密钥，当前不接入、不调用真实服务。
 - 生产部署：数据库和外部服务配置进行中，Vercel 尚未部署。
