@@ -39,6 +39,16 @@ test.describe("evidence workspace routes", () => {
       /\/zh\/auth\/login\?next=%2Fzh%2Fapp%2Fresearch%2Fmissing$/,
     );
   });
+
+  test("uses localized Chinese panel labels", async ({ page }) => {
+    await page.goto("/zh/app/research/demo");
+
+    for (const label of ["Claims", "Graph", "Source", "Run Log"]) {
+      await expect(page.getByText(label, { exact: true })).toHaveCount(0);
+    }
+    await expect(page.getByText("主张列表", { exact: true })).toBeVisible();
+    await expect(page.getByText("证据图谱", { exact: true })).toBeVisible();
+  });
 });
 
 test.describe("evidence workspace graph", () => {

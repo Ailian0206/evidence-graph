@@ -160,10 +160,10 @@
       "empty": "当前研究还没有报告版本。"
     },
     "panels": {
-      "claims": "Claims",
-      "graph": "Graph",
-      "source": "Source",
-      "log": "Run Log"
+      "claims": "主张列表",
+      "graph": "证据图谱",
+      "source": "来源详情",
+      "log": "运行日志"
     },
     "tabs": {
       "claims": "主张",
