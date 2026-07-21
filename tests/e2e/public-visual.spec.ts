@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { inspectVisibleUi } from "./support/ui-visual-audit";
+
 const viewports = [
   { name: "mobile", width: 390, height: 844 },
   { name: "tablet", width: 1024, height: 768 },
@@ -14,11 +16,15 @@ for (const viewport of viewports) {
     await page.goto("/zh");
 
     await expect(page.getByRole("heading", { name: "Ailian", exact: true })).toBeVisible();
-    await expect(
-      page
-        .getByRole("navigation")
-        .getByRole("link", { name: "Evidence Graph", exact: true }),
-    ).toBeVisible();
+    if (viewport.name === "mobile") {
+      await expect(page.getByRole("button", { name: "打开菜单" })).toBeVisible();
+    } else {
+      await expect(
+        page
+          .getByRole("navigation")
+          .getByRole("link", { name: "Evidence Graph", exact: true }),
+      ).toBeVisible();
+    }
     await expect(page.locator(".evidence-canvas-hero .canvas-inspector")).toBeVisible();
 
     const metrics = await page.evaluate(() => {
@@ -82,17 +88,21 @@ for (const viewport of viewports) {
         }),
       };
     });
+    const audit = await inspectVisibleUi(page);
 
     expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.viewportWidth);
     expect(metrics.headerHeight).toBeGreaterThanOrEqual(56);
     expect(metrics.headerHeight).toBeLessThanOrEqual(80);
-    expect(metrics.heroHeight).toBeGreaterThanOrEqual(metrics.viewportHeight - 100);
-    expect(metrics.selectedWorkTop).toBeLessThanOrEqual(metrics.viewportHeight + 48);
+    expect(metrics.heroHeight).toBeGreaterThanOrEqual(620);
+    expect(metrics.heroHeight).toBeLessThanOrEqual(760);
+    expect(metrics.selectedWorkTop).toBeLessThan(metrics.viewportHeight);
     expect(metrics.graphNodePosition).toBe("absolute");
     expect(metrics.canvasBackground).not.toBe("rgba(0, 0, 0, 0)");
     expect(metrics.heroControlsOverlap).toBe(false);
     expect(metrics.heroTextOverlapsNodes).toBe(false);
     expect(metrics.heroNodesInsideViewport).toBe(true);
+    expect(audit.documentWidth).toBeLessThanOrEqual(audit.viewportWidth);
+    expect(audit.fontSizeViolations).toEqual([]);
 
     await page.screenshot({
       path: `output/playwright/portfolio-${viewport.name}.png`,

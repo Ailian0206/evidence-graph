@@ -1,31 +1,31 @@
 @import "tailwindcss";
 
 :root {
-  --paper: #f3f2ee;
-  --paper-strong: #fcfbf7;
-  --paper-muted: #e4e6df;
-  --ink: #171916;
-  --ink-soft: #343832;
-  --muted: #686d65;
-  --line: #c7cac2;
-  --line-strong: #9da39a;
-  --vermilion: #bd3f32;
-  --vermilion-dark: #8f2f26;
-  --teal: #17796d;
-  --teal-dark: #163f39;
-  --amber: #c18a2c;
-  --canvas: #151916;
+  --paper: #f6f7f4;
+  --paper-strong: #ffffff;
+  --paper-muted: #eef1ee;
+  --ink: #18201c;
+  --ink-soft: #38413c;
+  --muted: #66706a;
+  --line: #d8ded9;
+  --line-strong: #b9c2bc;
+  --vermilion: #b74c40;
+  --vermilion-dark: #953c33;
+  --teal: #286458;
+  --teal-dark: #1f4f46;
+  --amber: #a9792a;
+  --canvas: #111713;
   --canvas-panel: #202620;
   --canvas-line: #687169;
   --canvas-text: #f4f1e8;
   --header-height: 68px;
-  --content-width: 1240px;
+  --content-width: 1200px;
   --page-gutter: 32px;
   --radius: 4px;
-  --font-ui: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-  --font-display: "Iowan Old Style", "Noto Serif SC", "Songti SC", Georgia,
-    serif;
+  --font-ui: "PingFang SC", "Microsoft YaHei", ui-sans-serif, system-ui,
+    -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: var(--font-ui);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 * {
@@ -68,13 +68,39 @@ button {
 }
 
 ::selection {
-  background: var(--vermilion);
+  background: var(--teal);
   color: #fff;
 }
 
 :focus-visible {
-  outline: 2px solid var(--vermilion);
-  outline-offset: 4px;
+  outline: 2px solid var(--teal);
+  outline-offset: 3px;
+}
+
+time,
+code,
+dt,
+dd {
+  font-variant-numeric: tabular-nums;
+}
+
+.skip-link {
+  position: fixed;
+  z-index: 100;
+  top: 8px;
+  left: 8px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  transform: translateY(-160%);
+  transition: transform 160ms ease;
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
 }
 
 .site-shell {
@@ -95,8 +121,8 @@ button {
   align-items: center;
   height: var(--header-height);
   padding: 0 var(--page-gutter);
-  border-bottom: 1px solid rgba(199, 202, 194, 0.75);
-  background: rgba(243, 242, 238, 0.94);
+  border-bottom: 1px solid rgba(216, 222, 217, 0.9);
+  background: rgba(246, 247, 244, 0.96);
   backdrop-filter: blur(14px);
 }
 
@@ -160,9 +186,14 @@ button {
 }
 
 .primary-nav a:hover::after,
-.primary-nav a:focus-visible::after {
+.primary-nav a:focus-visible::after,
+.primary-nav a[aria-current="page"]::after {
   opacity: 1;
   transform: scaleX(1);
+}
+
+.primary-nav a[aria-current="page"] {
+  color: var(--teal-dark);
 }
 
 .header-actions {
@@ -183,6 +214,17 @@ button {
     color 160ms ease;
 }
 
+.menu-toggle {
+  display: none;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: transparent;
+  cursor: pointer;
+}
+
 .icon-action:hover {
   border-color: var(--ink);
   background: var(--ink);
@@ -191,8 +233,8 @@ button {
 
 .portfolio-hero {
   position: relative;
-  height: calc(100svh - var(--header-height));
-  min-height: 668px;
+  height: clamp(620px, calc(100svh - var(--header-height) - 32px), 760px);
+  min-height: 0;
   overflow: hidden;
   isolation: isolate;
   background: var(--canvas);
@@ -227,7 +269,7 @@ button {
 .graph-node span,
 .canvas-query {
   margin: 0;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   line-height: 1.4;
   letter-spacing: 0;
@@ -488,7 +530,7 @@ button {
   border-radius: var(--radius);
   background: #1d241e;
   color: #cbd2ca;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .canvas-inspector svg {
@@ -621,7 +663,7 @@ button {
   color: var(--muted);
   flex-wrap: wrap;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 11px;
+  font-size: 12px;
   gap: 0;
   list-style: none;
 }
@@ -650,7 +692,7 @@ button {
 .note-row time {
   color: var(--muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .note-row time {
@@ -966,12 +1008,12 @@ button {
   }
 
   .site-header {
-    grid-template-columns: 38px minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     padding: 0 var(--page-gutter);
   }
 
   .brand-link > span:last-child {
-    display: none;
+    display: inline;
   }
 
   .brand-mark {
@@ -980,18 +1022,55 @@ button {
   }
 
   .primary-nav {
-    justify-self: start;
-    gap: 14px;
-    margin-left: 12px;
-    font-size: 11px;
+    position: absolute;
+    top: var(--header-height);
+    right: 0;
+    left: 0;
+    display: none;
+    height: auto;
+    padding: 10px var(--page-gutter) 14px;
+    border-bottom: 1px solid var(--line);
+    background: var(--paper-strong);
+    box-shadow: 0 12px 24px rgba(24, 32, 28, 0.08);
+    flex-direction: column;
+    gap: 0;
+    font-size: 14px;
+  }
+
+  .primary-nav[data-open="true"] {
+    display: flex;
+  }
+
+  .primary-nav a {
+    width: 100%;
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: var(--radius);
+    justify-content: flex-start;
+    place-items: center start;
+  }
+
+  .primary-nav a::after {
+    display: none;
+  }
+
+  .primary-nav a:hover,
+  .primary-nav a:focus-visible,
+  .primary-nav a[aria-current="page"] {
+    background: var(--paper-muted);
+    box-shadow: inset 0 0 0 1px var(--line);
   }
 
   .header-actions {
     gap: 4px;
   }
 
-  .header-actions .icon-action:last-child {
+  .github-action {
     display: none;
+  }
+
+  .menu-toggle {
+    display: grid;
   }
 
   .icon-action {
@@ -1067,7 +1146,7 @@ button {
     max-width: 220px;
     min-height: 34px;
     padding: 0 10px;
-    font-size: 10px;
+    font-size: 12px;
     opacity: 0.78;
   }
 
@@ -1327,15 +1406,6 @@ button {
 }
 
 @media (max-width: 360px) {
-  .primary-nav {
-    gap: 10px;
-    margin-left: 8px;
-  }
-
-  .header-actions .icon-action:last-child {
-    display: none;
-  }
-
   .hero-content h1 {
     font-size: 56px;
   }

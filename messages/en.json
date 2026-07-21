@@ -4,7 +4,11 @@
     "work": "Work",
     "notes": "Notes",
     "evidence": "Evidence Graph",
-    "language": "中文"
+    "language": "中文",
+    "primary": "Primary navigation",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "skip": "Skip to main content"
   },
   "Portfolio": {
     "eyebrow": "AI product engineering",
@@ -235,6 +239,7 @@
     }
   },
   "Footer": {
-    "statement": "Evidence and runnable outcomes first."
+    "statement": "Evidence and runnable outcomes first.",
+    "language": "中文"
   }
 }

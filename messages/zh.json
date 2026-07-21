@@ -4,7 +4,11 @@
     "work": "作品",
     "notes": "笔记",
     "evidence": "Evidence Graph",
-    "language": "English"
+    "language": "English",
+    "primary": "主导航",
+    "openMenu": "打开菜单",
+    "closeMenu": "关闭菜单",
+    "skip": "跳到主要内容"
   },
   "Portfolio": {
     "eyebrow": "AI 产品工程",
@@ -235,6 +239,7 @@
     }
   },
   "Footer": {
-    "statement": "以证据和可运行结果为准。"
+    "statement": "以证据和可运行结果为准。",
+    "language": "English"
   }
 }
