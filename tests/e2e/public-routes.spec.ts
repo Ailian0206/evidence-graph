@@ -166,3 +166,39 @@ test("Evidence Graph case study shows the real graph and public report entry", a
     "/r/traceable-citations-review-zh",
   );
 });
+
+test("mobile evidence preview keeps controls clear of the graph", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/zh/evidence");
+
+  await expect(page.locator("body")).not.toContainText("Product preview");
+  const metrics = await page.evaluate(() => {
+    const nodes = Array.from(
+      document.querySelectorAll<HTMLElement>(".evidence-canvas-workspace .graph-node"),
+    );
+    const inspector = document.querySelector<HTMLElement>(
+      ".evidence-canvas-workspace .canvas-inspector",
+    );
+    const inspectorBounds = inspector?.getBoundingClientRect();
+    const overlaps = (left: DOMRect, right: DOMRect) =>
+      !(
+        left.right <= right.left ||
+        left.left >= right.right ||
+        left.bottom <= right.top ||
+        left.top >= right.bottom
+      );
+
+    return {
+      targetsAreStable: nodes.every((node) => {
+        const bounds = node.getBoundingClientRect();
+        return bounds.width >= 40 && bounds.height >= 40;
+      }),
+      inspectorOverlapsNode:
+        inspectorBounds !== undefined &&
+        nodes.some((node) => overlaps(inspectorBounds, node.getBoundingClientRect())),
+    };
+  });
+
+  expect(metrics.targetsAreStable).toBe(true);
+  expect(metrics.inspectorOverlapsNode).toBe(false);
+});
