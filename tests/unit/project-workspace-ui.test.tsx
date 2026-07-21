@@ -74,6 +74,18 @@ describe("managed project workspace UI", () => {
     expect(screen.getByRole("button", { name: "删除可核查的 AI 研究" })).toBeVisible();
   });
 
+  it("preserves the longest supported project copy", () => {
+    const longProject = {
+      ...project,
+      title: "研".repeat(120),
+      question: "证据".repeat(1000),
+    };
+    renderWithMessages(<ProjectDashboard locale="zh" projects={[longProject]} />);
+
+    expect(screen.getByRole("link", { name: longProject.title })).toBeVisible();
+    expect(screen.getByText(longProject.question)).toBeVisible();
+  });
+
   it("keeps project rows and destructive actions semantically separate", () => {
     renderWithMessages(<ProjectDashboard locale="zh" projects={[project]} />);
 
