@@ -21,7 +21,10 @@ type ResearchDispatchRetryDependencies = {
 };
 
 export type ResearchSubmissionResult =
-  | { ok: false; code: "MONTHLY_RUN_LIMIT_EXCEEDED" }
+  | {
+      ok: false;
+      code: "MONTHLY_RUN_LIMIT_EXCEEDED" | "ACTIVE_RESEARCH_RUN_EXISTS";
+    }
   | {
       ok: true;
       projectId: string;
@@ -55,8 +58,18 @@ export const submitManagedResearch = async ({
   try {
     created = await store.createResearch({ ownerId: user.id, input });
   } catch (error) {
-    if (error instanceof Error && error.message === "MONTHLY_RUN_LIMIT_EXCEEDED") {
-      return { ok: false, code: "MONTHLY_RUN_LIMIT_EXCEEDED" };
+    const message =
+      error instanceof Error
+        ? error.message
+        : typeof error === "object" && error !== null && "message" in error
+          ? error.message
+          : undefined;
+
+    if (
+      message === "MONTHLY_RUN_LIMIT_EXCEEDED" ||
+      message === "ACTIVE_RESEARCH_RUN_EXISTS"
+    ) {
+      return { ok: false, code: message };
     }
 
     throw error;

@@ -79,7 +79,8 @@
         "language": "请选择支持的研究语言。",
         "manualUrls": "来源链接必须是有效 URL，且不能超过 5 个。",
         "invalid": "请检查表单中的错误。",
-        "monthlyLimit": "本月 3 次研究额度已用完。"
+        "monthlyLimit": "本月 3 次研究额度已用完。",
+        "activeRun": "已有研究正在处理，请等待完成后再创建新的研究。"
       }
     }
   },

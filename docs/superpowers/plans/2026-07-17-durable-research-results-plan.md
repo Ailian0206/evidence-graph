@@ -585,3 +585,6 @@ git log --oneline feat/managed-deployment..HEAD
 - [x] **步骤 2：重新运行 `npm run test:managed`**
 - [x] **步骤 3：检查差异、推送分支并创建唯一 Draft PR**
 - [ ] **步骤 4：执行独立 Claude 审核、CI 和 merge commit 闭环**
+  - [x] 首轮审核发现 active run 冲突暴露 `23505`，已按 RED-GREEN 转换为稳定错误码并补双语提示。
+  - [x] 审核修复后的 `npm run test:managed` 通过 54 个数据库测试、145 个单元测试和 36 个 E2E。
+  - [ ] 推送修复后对新 head 重新审核；Claude 和 CI 均通过后 merge commit 合并。
