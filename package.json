@@ -8,9 +8,14 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
+    "check:provider-boundary": "node scripts/check-provider-boundary.mjs",
+    "verify:managed-env": "node --env-file-if-exists=.env.local scripts/verify-managed-env.mjs",
+    "smoke:production": "node scripts/smoke-production.mjs",
+    "test:db": "supabase db reset --local && supabase test db --local && supabase db lint --local --level warning",
     "test:unit": "vitest run --passWithNoTests",
-    "test:e2e": "playwright test",
-    "test:ci": "npm run lint && npm run typecheck && npm run test:unit && npm run build && npm run test:e2e"
+    "test:e2e": "npm run build && playwright test",
+    "test:ci": "npm run lint && npm run typecheck && npm run test:unit && npm run test:e2e",
+    "test:managed": "npm run check:provider-boundary && npm run test:db && npm run test:ci"
   },
   "engines": {
     "node": "22.x"
@@ -19,7 +24,12 @@
     "postcss": "8.5.10"
   },
   "dependencies": {
+    "@sentry/nextjs": "^10.66.0",
+    "@supabase/ssr": "^0.12.3",
+    "@supabase/supabase-js": "^2.110.6",
+    "@vercel/analytics": "^2.0.1",
     "cytoscape": "^3.34.0",
+    "inngest": "^4.13.0",
     "lucide-react": "^1.24.0",
     "next": "16.2.10",
     "next-intl": "^4.13.2",
@@ -40,6 +50,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
     "jsdom": "^29.1.1",
+    "supabase": "^2.109.1",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.10"

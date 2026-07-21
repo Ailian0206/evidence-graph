@@ -24,6 +24,65 @@
     "sample": "示例工作台使用确定性研究数据，不调用真实 Provider。",
     "openWorkspace": "打开示例工作台"
   },
+  "Auth": {
+    "eyebrow": "账户访问",
+    "title": "登录 Evidence Graph",
+    "description": "使用 GitHub 继续到研究工作台。",
+    "github": "使用 GitHub 登录",
+    "unconfigured": "托管登录尚未配置",
+    "error": "登录没有完成，请重新尝试。"
+  },
+  "Projects": {
+    "newResearch": "新建研究",
+    "projectListLabel": "研究项目",
+    "dashboard": {
+      "eyebrow": "托管工作区",
+      "title": "研究项目",
+      "description": "查看项目状态、最近更新，并创建新的可追溯研究。"
+    },
+    "empty": {
+      "title": "还没有研究项目",
+      "description": "创建第一个研究项目后，它会显示在这里。"
+    },
+    "status": {
+      "active": "进行中",
+      "archived": "已归档",
+      "deleted": "已删除"
+    },
+    "language": {
+      "zh": "中文",
+      "en": "英文"
+    },
+    "updated": "更新于 {date}",
+    "archive": "归档{title}",
+    "delete": "删除{title}",
+    "deleteConfirm": "确认删除“{title}”？此操作无法撤销。",
+    "form": {
+      "eyebrow": "新研究",
+      "title": "定义研究问题",
+      "description": "保存研究范围、核心问题和待核查来源。",
+      "fields": {
+        "title": "项目标题",
+        "question": "研究问题",
+        "language": "研究语言",
+        "manualUrls": "来源链接（可选，最多 5 个）"
+      },
+      "addUrl": "添加来源链接",
+      "urlLabel": "来源链接 {index}",
+      "removeUrl": "移除来源链接 {index}",
+      "back": "返回项目列表",
+      "submit": "创建研究",
+      "submitting": "正在创建...",
+      "errors": {
+        "title": "请输入 1 到 120 个字符的项目标题。",
+        "question": "请输入 1 到 2000 个字符的研究问题。",
+        "language": "请选择支持的研究语言。",
+        "manualUrls": "来源链接必须是有效 URL，且不能超过 5 个。",
+        "invalid": "请检查表单中的错误。",
+        "monthlyLimit": "本月 3 次研究额度已用完。"
+      }
+    }
+  },
   "Workspace": {
     "eyebrow": "研究运行 / 证据审核",
     "backToPreview": "返回产品入口",

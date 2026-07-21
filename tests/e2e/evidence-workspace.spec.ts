@@ -30,18 +30,13 @@ test.describe("evidence workspace routes", () => {
     await expect(page.locator("body")).not.toContainText("打开示例工作台");
   });
 
-  test("renders a non-indexable state for an unknown research project", async ({
+  test("does not disclose an unknown research project to anonymous users", async ({
     page,
   }) => {
     await page.goto("/zh/app/research/missing");
 
-    await expect(page.locator('[data-workspace-state="not-found"]')).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "没有找到这个研究项目" }),
-    ).toBeVisible();
-    await expect(page.locator('meta[name="robots"]').first()).toHaveAttribute(
-      "content",
-      /noindex/,
+    await expect(page).toHaveURL(
+      /\/zh\/auth\/login\?next=%2Fzh%2Fapp%2Fresearch%2Fmissing$/,
     );
   });
 });

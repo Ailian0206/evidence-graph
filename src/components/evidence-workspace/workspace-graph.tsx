@@ -138,6 +138,7 @@ export function WorkspaceGraph({
   const onSelectRef = useRef(onSelect);
   const [isReady, setIsReady] = useState(false);
   const [keyboardNodeId, setKeyboardNodeId] = useState(selectedNodeId);
+  const keyboardNodeIdRef = useRef(selectedNodeId);
   const nodes = useMemo(
     () => elements.filter((element) => element.group === "nodes"),
     [elements],
@@ -194,6 +195,7 @@ export function WorkspaceGraph({
     graphRef.current = graph;
     graph.on("tap", "node", (event) => {
       const data = event.target.data() as EvidenceGraphElementData;
+      keyboardNodeIdRef.current = data.id;
       setKeyboardNodeId(data.id);
       onSelectRef.current(data);
     });
@@ -217,6 +219,7 @@ export function WorkspaceGraph({
 
     graph.elements().removeClass("is-selected");
     graph.getElementById(selectedNodeId).addClass("is-selected");
+    keyboardNodeIdRef.current = selectedNodeId;
     setKeyboardNodeId(selectedNodeId);
   }, [selectedNodeId]);
 
@@ -238,19 +241,21 @@ export function WorkspaceGraph({
 
     const currentIndex = Math.max(
       0,
-      nodes.findIndex((node) => node.data.id === keyboardNodeId),
+      nodes.findIndex((node) => node.data.id === keyboardNodeIdRef.current),
     );
 
     if (["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp"].includes(event.key)) {
       event.preventDefault();
       const direction = event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : -1;
       const nextIndex = (currentIndex + direction + nodes.length) % nodes.length;
-      setKeyboardNodeId(nodes[nextIndex].data.id);
+      const nextNodeId = nodes[nextIndex].data.id;
+      keyboardNodeIdRef.current = nextNodeId;
+      setKeyboardNodeId(nextNodeId);
     }
 
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      const currentNode = nodes.find((node) => node.data.id === keyboardNodeId);
+      const currentNode = nodes.find((node) => node.data.id === keyboardNodeIdRef.current);
 
       if (currentNode) {
         onSelect(currentNode.data);

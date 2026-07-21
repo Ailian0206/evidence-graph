@@ -1,15 +1,15 @@
 # Evidence Graph 项目状态
 
-更新时间：2026-07-16
+更新时间：2026-07-21
 
 ## 当前阶段
 
-- 阶段：托管部署里程碑准备中。
-- 分支：`main`，下一步创建 `feat/managed-deployment`。
-- PR：[#11](https://github.com/Ailian0206/evidence-graph/pull/11) 已通过独立 Claude 审核和 GitHub CI，并以 merge commit `74c3b49` 合并。
-- 当前任务：从最新 `main` 创建托管部署模块分支和中文实施计划，再开始本地可验证的开发任务。
+- 阶段：托管部署代码里程碑收口；生产发布门禁后置。
+- 分支：`feat/managed-deployment`，在隔离 worktree 中开发。
+- PR：托管部署唯一 Draft PR [#13](https://github.com/Ailian0206/evidence-graph/pull/13) 已创建，等待独立 Claude 审核和 GitHub CI。
+- 当前任务：闭环 PR #13；Vercel 生产验证不再阻塞代码合并。
 - 外部 Provider 调用：已禁用。
-- 生产部署：未配置。
+- 生产部署：数据库和外部服务配置进行中，Vercel 尚未部署。
 - Node.js：本地和 CI 使用 `v22.22.1`。
 - Cursor Bugbot：本月额度已耗尽，不等待、不重复触发，也不作为当前合并门禁。
 - 独立 Claude 审核：由全局 `/codex-independent-pr-review <PR编号>` 执行，不在仓库维护第二套同名 reviewer。
@@ -33,7 +33,7 @@
 | 全自动 PR 审核 | 已完成 | PR [#6](https://github.com/Ailian0206/evidence-graph/pull/6)、[#8](https://github.com/Ailian0206/evidence-graph/pull/8) 和 [#10](https://github.com/Ailian0206/evidence-graph/pull/10) 已合并；当前进程串行完成 PR 闭环 |
 | Source hash 项目隔离 | 已完成 | PR [#7](https://github.com/Ailian0206/evidence-graph/pull/7) 已通过 merge commit `8bc6f39` 合并 |
 | 证据工作台 | 已完成 | PR [#11](https://github.com/Ailian0206/evidence-graph/pull/11) 已通过独立审核和 CI，并以 merge commit `74c3b49` 合并 |
-| 托管部署 | 准备中 | 获得账号授权后完成 Supabase、Inngest、Vercel 配置和生产冒烟测试 |
+| 托管部署 | 代码收口中 | 完整本地门禁、独立 Claude 审核和 CI 通过后合并；Vercel 生产验证作为后置发布门禁 |
 
 ## 验证摘要
 
@@ -59,9 +59,46 @@
 - 工作台视觉门禁覆盖 390x844、1024x768 和 1440x1000，验证无横向溢出、面板重叠和空白画布；Cytoscape 多层 canvas 像素检查通过。
 - 工作台图谱模型通过 200 个超长标签 Claim 测试，节点和边结构不随标签长度改变。
 - PR #11 独立 Claude 审核结果为 `pass`，审核 SHA 与 `a664f91aa42e49984dfd8f711ce8f05ab062a0a4` 一致；GitHub CI 成功后以 merge commit `74c3b49` 合并。
+- 托管环境契约测试 4 个通过；缺少托管变量时公开页面、构建和常规测试保持可用。
+- 本地 Supabase 迁移、数据库约束和 RLS 共 33 个 pgTAP 测试通过，Schema lint 无警告。
+- Supabase Auth 会话单测 4 个、Auth 与工作台聚焦 E2E 11 个通过；当前全量 85 个单元测试、类型检查、lint 和生产构建通过。
+- 登录页已覆盖 390x844、1024x768 和 1440x1000 三种尺寸，无横向溢出、文字裁切或异常重叠。
+- 图谱连续键盘导航竞态已增加确定性回归测试，目标 E2E 连续运行 10 次通过。
+- 项目 Store、Supabase query adapter、Server Actions、Dashboard 和新建研究表单已完成；所有读写都重新携带当前 `ownerId`，创建前检查每月 3 次上限。
+- 本地 Supabase 真实登录态下，项目列表、RLS 创建和归档操作通过；PostgREST `timestamptz` 偏移格式已在映射边界标准化。
+- 项目工作区门禁通过 99 个单元测试、13 个 Auth/工作台/项目 E2E、类型检查、lint 和生产构建。
+- Dashboard 和新建研究页已覆盖 390x844、1024x768 和 1440x1000 三种尺寸，无横向溢出、裁切或控件重叠。
+- Inngest 事件使用 Zod 运行时校验，`runId` 同时作为事件与函数幂等键；单 owner 并发为 1，最多重试 3 次。
+- Inngest webhook 使用 Admin client 读取 run，再显式核对 `ownerId/projectId/runId`；不匹配时抛出不可重试错误。
+- `/api/inngest` 已通过官方 Next App Router 适配器导出 `GET/POST/PUT`；本地健康响应只返回能力布尔值，不泄露环境变量。
+- Inngest 任务门禁通过 108 个单元测试、14 个 Auth/工作台/项目/Inngest E2E、类型检查、lint、生产构建和真实 Provider 扫描。
+- 当前函数执行器只使用 fixture providers 和内存 workflow store，不调用真实 OpenAI/Tavily；尚未连接外部 Inngest，也未发送真实事件。
+- Next.js 16 服务端和客户端 instrumentation 已接入可选 Sentry；缺少 DSN 时不初始化，完整上传凭据缺失时不启用 source map 上传。
+- Sentry `beforeSend` 递归移除 email、GitHub 用户名、研究问题、来源正文、quote 和 Provider payload；Vercel Analytics 不接收自定义研究数据。
+- 全站已增加 nosniff、严格 Referrer Policy、受限 Permissions Policy、`DENY` frame 和稳定 `frame-ancestors` 防护。
+- 监控与安全门禁的完整 `npm run test:ci` 通过 lint、typecheck、111 个单元测试、生产构建和 36 个 E2E。
+- Provider 边界扫描已接入 quality job，能够拒绝真实 OpenAI/Tavily 端点、客户端敏感变量和非 fixture 网络 Provider；脚本回归测试通过。
+- database job 使用本地 `supabase db start`，完成 reset、33 个 pgTAP、schema lint，并通过 `if: always()` 清理本地容器；与 CI 相同的 start、test、stop 路径已在本机验证。
+- CI 门禁任务的完整 `npm run test:ci` 通过 lint、typecheck、112 个单元测试、生产构建和 36 个 E2E。
+- 中文部署手册已覆盖 Vercel、Supabase、GitHub OAuth、Inngest、Sentry、环境变量作用域、发布回滚、备份恢复和密钥轮换。
+- `verify:managed-env` 只输出变量名和配置状态；缺少托管变量时以 `MANAGED_ENV_INCOMPLETE` 退出，完整测试变量下通过，不打印变量值。
+- 生产冒烟必须同时提供精确确认令牌和 HTTPS 非本地地址；HTTP、localhost、IPv4/IPv6 回环地址都在任何请求前拒绝。
+- 默认生产冒烟只检查公开首页与安全 Header、公开示例、Auth 重定向和 Inngest 无签名拒绝；6 个门禁测试通过，未调用真实网络或付费 Provider。
+- 部署文档与冒烟门禁的完整 `npm run test:ci` 通过 lint、typecheck、118 个单元测试、生产构建和 36 个 E2E。
+- Supabase 组织 `Ailian` 已创建东京区 Preview `vooexhwkqzymltwewcqc` 和 Production `dibngceljmdkcgrzxubx`；两套远端迁移、33 个 pgTAP 和 Schema lint 均通过。
+- GitHub OAuth Preview App `3734029` 和 Production App `3734035` 已创建；两套 Supabase GitHub Provider 已启用并验证，Preview Secret 已完成一次轮换。
+- Inngest 组织 `Ailian` 已创建 Production 和 Preview `preview-e7881f94` 环境；两套 Event Key、Signing Key 已写入本地忽略文件，尚未同步部署应用。
+- Sentry EU 组织 `ailian0206` 和 Next.js 项目 `evidence-graph` 已创建；运行时 DSN 已配置，Source Map Token 保持可选未配置，尚未发送受控异常。
+- `verify:managed-env` 已通过 Supabase、Inngest 和 Sentry 必需变量检查；真实密钥只存在于权限为 `0600` 的 `.env.local`，未进入 Git。
+- Preview 备份恢复演练已完成：远端 `public` 数据通过官方 CLI 导出，在本地用仓库迁移重建后恢复，33 个 pgTAP 和 Schema lint 通过，临时备份已删除。
+- `feat/managed-deployment` 已推送远端但未创建 PR；HTTPS 凭据缺少 `workflow` scope，因此 push URL 已改为本机现有 SSH 凭据，fetch URL 保持 HTTPS。
+- 托管部署里程碑预检 `npm run test:managed` 已通过 Provider 边界扫描、33 个数据库测试、Schema lint、lint、类型检查、118 个单元测试、生产构建和 36 个 E2E；运行时显式禁用真实托管连接和付费 Provider。
+- 同步 PR #12 后的 `npm run test:managed` 通过 Provider 边界扫描、33 个数据库测试、Schema lint、lint、类型检查、119 个单元测试、生产构建和 36 个 E2E；Playwright 改用 `next start`，消除了开发服务器首轮编译导致的导航竞态，并显式保持 Inngest 本地模式。
+- Vercel 恢复工单于 2026-07-17 提交；截至 2026-07-21 仍无审核结果，已在原邮件线程跟进。当前没有站点 URL、Inngest 应用同步、生产冒烟或 Vercel 回滚结果。
+- 用户于 2026-07-21 确认将 Vercel 生产验证拆为合并后的独立发布门禁；托管代码不得被表述为已生产上线。
 
 ## 下一步
 
-1. 从最新 `main` 创建 `feat/managed-deployment` 模块分支和隔离 worktree。
-2. 在 `docs/superpowers/plans/` 编写中文实施计划，先拆分本地可验证任务和外部授权门禁。
-3. 按 TDD 开始 Supabase、Inngest、Sentry 和 Vercel 的本地集成边界；创建账号资源、写入密钥和运行生产冒烟测试前取得明确授权。
+1. 在最新 `main` 基线上运行托管部署完整门禁，只创建一个 Draft PR 并完成自动审核闭环。
+2. 托管部署合并后依次对齐并闭环持久化研究结果与报告发布模块，不创建堆叠 PR。
+3. Vercel 账号恢复后取得 Preview 与 Production URL，配置 Supabase Redirect、同步 Inngest，并完成生产冒烟和回滚演练。
