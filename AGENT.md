@@ -23,19 +23,19 @@ MVP 不增加 ProjectPilot AI、通用聊天、计费、团队、浏览器扩展
 ## 开发流程
 
 1. 开始前检查 `git status -sb` 和当前实施计划。
-2. 在模块分支开发；基线仓库建立后优先使用 `.worktrees/` 隔离工作区。
+2. 先判断改动级别：小型维护可直接在已同步且干净的 `main` 上完成；里程碑改动使用模块分支，并优先用 `.worktrees/` 隔离工作区。
 3. 每个行为先写一个失败测试，并实际运行以确认预期失败。
 4. 只实现让测试通过的最小改动。
 5. 先跑聚焦验证，再在测试保持通过时重构。
-6. 每次提交前运行 `git diff --check`、检查完整差异，并且只暂存当前模块文件。
+6. 每次提交前运行 `git diff --check`、检查完整差异，并且只暂存本次改动文件。
 7. 使用中文 Conventional Commits。
-8. PR 保持模块粒度；中间任务、单纯审核清理或每个小提交都不单独开 PR。
-9. 模块达到里程碑后先跑完整门禁，再推送分支并只创建一个 Draft PR。
+8. 小型 bug、局部样式或交互、文案、测试和少量文档维护，在完成相应聚焦验证后直接提交并 push `main`，不创建 PR。
+9. 涉及数据库 Schema/迁移、鉴权或 RLS、Provider/部署边界、跨模块契约、新的完整用户流程、依赖升级或大范围重构时，视为里程碑改动；达到完整门禁后只创建一个 Draft PR。
 10. 创建或更新 Draft PR 后，运行独立 Claude Code：`claude --permission-mode auto --model sonnet -p "/codex-independent-pr-review <PR编号>"`。Claude 只审核和评论，不修改代码、不提交、不推送、不合并。
 11. Claude 发现问题时，Codex 验证评论，在原分支按 TDD 修复，跑聚焦测试和完整门禁，直接提交并 push，然后重新运行第 10 步；不创建新 PR。
 12. Claude 对当前 head SHA 返回 `pass` 且 GitHub CI 通过后，Codex 无需人工批准，直接执行 `gh pr merge <PR编号> --merge --delete-branch`。
 13. Cursor Bugbot 可用时只做附加审核。Autofix 活跃时由它先处理自己的 finding，Codex 不抢修同一个问题；Bugbot 不可用时不等待。
-14. PR 创建后由当前进程依次完成 Claude 审核、问题修复、重新审核、CI 等待和合并；当前 PR 完整闭环前不开始下一个模块。
+14. 里程碑 PR 创建后由当前进程依次完成 Claude 审核、问题修复、重新审核、CI 等待和合并；当前 PR 完整闭环前不开始下一个里程碑。
 
 ## 成本与外部写入门禁
 
@@ -47,7 +47,7 @@ MVP 不增加 ProjectPilot AI、通用聊天、计费、团队、浏览器扩展
 - 创建付费 Vercel、Supabase、Inngest 或 Sentry 资源。
 - 发布 `docs/product-plan.md` 未列出的私人身份信息或仓库数据。
 
-用户已经授权本项目创建 GitHub 仓库、模块分支、推送、Draft PR 和执行常规 PR 维护，不需要逐项确认。
+用户已经授权本项目直接推送已验证的小型 `main` 提交，以及创建 GitHub 仓库、模块分支、Draft PR 和执行常规 PR 维护，不需要逐项确认。
 
 ## 验证门禁
 

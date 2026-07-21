@@ -2,7 +2,7 @@
 
 ## 交付策略
 
-开发按模块分支和 Draft PR 拆分，使 CI 和自动审核器只检查已经形成完整里程碑的改动。每个模块必须可在本地运行、可独立测试，并且只有达到本地完成门禁后才创建一个 PR。
+开发采用双轨交付：小型 bug、局部样式/交互、文案、测试和少量文档维护，在完成相应验证后直接提交 `main`；只有形成独立里程碑的改动才使用模块分支和 Draft PR，使 CI 和自动审核器聚焦完整交付面。每个里程碑必须可在本地运行、可独立测试，并且只有达到本地完成门禁后才创建一个 PR。
 
 | 顺序 | 分支 | 范围 | 本地完成门禁 |
 | ---: | --- | --- | --- |
@@ -19,15 +19,16 @@
 
 ## 跨模块规则
 
-- 每个模块开始前在 `docs/superpowers/plans/` 编写中文实施计划。
+- 每个里程碑模块开始前在 `docs/superpowers/plans/` 编写中文实施计划；直接提交 `main` 的小型维护不强制新增计划。
 - 每个行为变更都执行 RED-GREEN-REFACTOR。
 - Provider 测试默认使用 fixtures；只有带确认令牌的专用冒烟命令可以调用真实服务。
-- 每个模块使用小粒度中文 Conventional Commits，并且只创建一个 Draft PR；中间提交不单独开 PR。
-- 分支、PR、CI 或里程碑状态变化时更新 `PROJECT_STATUS.md`。
+- 所有改动使用小粒度中文 Conventional Commits；小型维护完成聚焦验证后直接提交并 push `main`，不创建 PR。
+- 数据库 Schema/迁移、鉴权或 RLS、Provider/部署边界、跨模块契约、新的完整用户流程、依赖升级和大范围重构按里程碑处理，使用模块分支并且只创建一个 Draft PR。
+- 分支、PR、CI 或里程碑状态变化时更新 `PROJECT_STATUS.md`；不改变项目状态的日常维护无需追加状态流水。
 - 模块只有在 lint、typecheck、unit、build 和相关 Playwright 测试通过后才算完成。
 - Vercel 账号审核不阻塞托管代码里程碑合并；生产 URL、Inngest 同步、生产冒烟和回滚演练仍是上线前的必需发布门禁。
 - `docs/bugbot-autofix-workflow.md` 定义自动审核流程。Bugbot 不可用时不阻塞本地开发，由独立 Claude 审核承担必需门禁。
-- PR 创建后由当前进程依次完成 Claude 审核、问题修复、重新审核、CI 等待和合并；当前 PR 完整闭环前不开始下一个模块。
+- 里程碑 PR 创建后由当前进程依次完成 Claude 审核、问题修复、重新审核、CI 等待和合并；当前 PR 完整闭环前不开始下一个里程碑。
 - Claude 审核和 CI 通过后由 Codex 自动 merge commit，不包含人工审核步骤。
 
 ## 当前模块
