@@ -13,8 +13,8 @@
     "smoke:production": "node scripts/smoke-production.mjs",
     "test:db": "supabase db reset --local && supabase test db --local && supabase db lint --local --level warning",
     "test:unit": "vitest run --passWithNoTests",
-    "test:e2e": "playwright test",
-    "test:ci": "npm run lint && npm run typecheck && npm run test:unit && npm run build && npm run test:e2e",
+    "test:e2e": "npm run build && playwright test",
+    "test:ci": "npm run lint && npm run typecheck && npm run test:unit && npm run test:e2e",
     "test:managed": "npm run check:provider-boundary && npm run test:db && npm run test:ci"
   },
   "engines": {
