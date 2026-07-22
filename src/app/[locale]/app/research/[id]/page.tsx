@@ -17,10 +17,6 @@ type WorkspacePageProps = {
   params: Promise<{ locale: AppLocale; id: string }>;
 };
 
-export function generateStaticParams() {
-  return [{ id: "demo" }];
-}
-
 export async function generateMetadata({
   params,
 }: WorkspacePageProps): Promise<Metadata> {
