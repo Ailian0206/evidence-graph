@@ -33,4 +33,4 @@
 
 ## 当前模块
 
-`feat/managed-deployment`、`feat/durable-research-results`、`feat/report-publishing` 与 `feat/ui-experience-refresh` 已依次通过 PR #13、#14、#15、#16 合并。当前规划内的非发布代码里程碑均已完成；Vercel 生产 URL、Supabase Redirect、Inngest 同步、生产冒烟和回滚演练继续保留为账号恢复后的独立发布门禁。
+`feat/managed-deployment`、`feat/durable-research-results`、`feat/report-publishing` 与 `feat/ui-experience-refresh` 已依次通过 PR #13、#14、#15、#16 合并。Vercel Production、Supabase Redirect、Inngest 同步、数据库迁移、默认生产冒烟、一次性回滚演练和首个真实用户闭环均已完成。当前不再新增部署里程碑；后续以线上体验修正为主，真实 Provider 接入只在用户明确提供条件和成本上限后启动。
