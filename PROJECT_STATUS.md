@@ -4,15 +4,15 @@
 
 ## 当前阶段
 
-- 阶段：全局 UI 体验优化已通过独立审核和 GitHub CI，并使用 merge commit 合并；Vercel 生产发布仍为后置门禁。
-- 分支：`main` 已同步 UI 里程碑 merge commit `72d3f55`；远端 `feat/ui-experience-refresh` 已删除。
+- 阶段：规划内代码里程碑和最小 Production 发布均已完成，项目回到产品体验与实际使用验证阶段。
+- 分支：`main` 已包含 UI 里程碑 merge commit `72d3f55` 和生产匿名访问修复 `e4789c9`。
 - PR：UI 里程碑唯一 PR [#16](https://github.com/Ailian0206/evidence-graph/pull/16) 已通过修复重审和 GitHub CI 后合并。
-- 当前任务：按“本地开发 + Production”两层拓扑完成 Vercel 托管变量、Supabase Redirect、Inngest 同步、生产冒烟和回滚门禁。
+- 当前任务：保持“本地开发 + Production”的个人项目拓扑，不再扩展预发布或企业级运维流程。
 - UI 优化：中文优先的 Neutral Product Studio 与均衡密度已覆盖公共页面、认证/项目页、工作台全部状态和公开报告，并合并到 `main`。
 - 外部 Provider 调用：已禁用。
 - Embedding Provider：已决定后续接入阿里云百炼 `text-embedding-v4` 并固定输出 1536 维；等待用户提供账号和密钥，当前不接入、不调用真实服务。
-- 生产部署：Vercel Hobby 项目已创建，`https://evidence-graph-pi.vercel.app` 的首次部署 Ready；托管变量和服务回调尚未完成。
-- 部署拓扑：不维护预发布环境；本地使用本地 Supabase 和 fixtures，Vercel 只连接 Production 服务。此前创建的 Preview 资源保持闲置，不接入发布链路。
+- 生产部署：`https://evidence-graph-pi.vercel.app` 已 Ready；Vercel 托管变量、Supabase Redirect、Inngest 同步、三条数据库迁移和默认生产冒烟均已完成。
+- 部署拓扑：不维护预发布环境；本地使用本地 Supabase 和 fixtures，Vercel 只连接 Production 服务。`main` 自动部署，回滚演练和密钥轮换不作为个人项目的例行门禁。
 - Node.js：本地和 CI 使用 `v22.22.1`。
 - Cursor Bugbot：本月额度已耗尽，不等待、不重复触发，也不作为当前合并门禁。
 - 独立 Claude 审核：由全局 `/codex-independent-pr-review <PR编号>` 执行，不在仓库维护第二套同名 reviewer。
@@ -36,7 +36,7 @@
 | 全自动 PR 审核 | 已完成 | PR [#6](https://github.com/Ailian0206/evidence-graph/pull/6)、[#8](https://github.com/Ailian0206/evidence-graph/pull/8) 和 [#10](https://github.com/Ailian0206/evidence-graph/pull/10) 已合并；当前进程串行完成 PR 闭环 |
 | Source hash 项目隔离 | 已完成 | PR [#7](https://github.com/Ailian0206/evidence-graph/pull/7) 已通过 merge commit `8bc6f39` 合并 |
 | 证据工作台 | 已完成 | PR [#11](https://github.com/Ailian0206/evidence-graph/pull/11) 已通过独立审核和 CI，并以 merge commit `74c3b49` 合并 |
-| 托管部署 | 代码已合并，发布待完成 | PR [#13](https://github.com/Ailian0206/evidence-graph/pull/13) 已合并；Vercel 生产验证仍是后置发布门禁 |
+| 托管部署 | 已完成 | PR [#13](https://github.com/Ailian0206/evidence-graph/pull/13) 已合并；最小 Production 发布与数据库迁移已完成 |
 | 持久化研究结果 | 已完成 | PR [#14](https://github.com/Ailian0206/evidence-graph/pull/14) 已通过独立审核和 CI，并以 merge commit `ce4b1a2` 合并 |
 | 报告发布 | 已完成 | PR [#15](https://github.com/Ailian0206/evidence-graph/pull/15) 已通过独立审核和 CI，并以 merge commit `f42ae20` 合并 |
 | 全局 UI 体验优化 | 已完成 | PR [#16](https://github.com/Ailian0206/evidence-graph/pull/16) 首轮 finding 已按 TDD 修复，重审与两个 CI job 通过后以 merge commit `72d3f55` 合并 |
@@ -78,7 +78,7 @@
 - Inngest webhook 使用 Admin client 读取 run，再显式核对 `ownerId/projectId/runId`；不匹配时抛出不可重试错误。
 - `/api/inngest` 已通过官方 Next App Router 适配器导出 `GET/POST/PUT`；本地健康响应只返回能力布尔值，不泄露环境变量。
 - Inngest 任务门禁通过 108 个单元测试、14 个 Auth/工作台/项目/Inngest E2E、类型检查、lint、生产构建和真实 Provider 扫描。
-- 当前函数执行器只使用 fixture providers 和内存 workflow store，不调用真实 OpenAI/Tavily；尚未连接外部 Inngest，也未发送真实事件。
+- 当前函数执行器只使用 fixture providers 和内存 workflow store，不调用真实 OpenAI/Tavily；Production Inngest 已同步，受控授权事件在工作流执行前停止，未触发 Provider。
 - Next.js 16 服务端和客户端 instrumentation 已接入可选 Sentry；缺少 DSN 时不初始化，完整上传凭据缺失时不启用 source map 上传。
 - Sentry `beforeSend` 递归移除 email、GitHub 用户名、研究问题、来源正文、quote 和 Provider payload；Vercel Analytics 不接收自定义研究数据。
 - 全站已增加 nosniff、严格 Referrer Policy、受限 Permissions Policy、`DENY` frame 和稳定 `frame-ancestors` 防护。
@@ -91,11 +91,11 @@
 - 生产冒烟必须同时提供精确确认令牌和 HTTPS 非本地地址；HTTP、localhost、IPv4/IPv6 回环地址都在任何请求前拒绝。
 - 默认生产冒烟只检查公开首页与安全 Header、公开示例、Auth 重定向和 Inngest 无签名拒绝；6 个门禁测试通过，未调用真实网络或付费 Provider。
 - 部署文档与冒烟门禁的完整 `npm run test:ci` 通过 lint、typecheck、118 个单元测试、生产构建和 36 个 E2E。
-- Supabase 组织 `Ailian` 已创建东京区 Preview `vooexhwkqzymltwewcqc` 和 Production `dibngceljmdkcgrzxubx`；两套远端迁移、33 个 pgTAP 和 Schema lint 均通过。
+- Supabase Production `dibngceljmdkcgrzxubx` 已应用三条仓库迁移；本地完整迁移链通过 89 个 pgTAP 和 Schema lint。此前创建的 Preview 保持闲置。
 - GitHub OAuth Preview App `3734029` 和 Production App `3734035` 已创建；两套 Supabase GitHub Provider 已启用并验证，Preview Secret 已完成一次轮换。
-- Inngest 组织 `Ailian` 已创建 Production 和 Preview `preview-e7881f94` 环境；两套 Event Key、Signing Key 已写入本地忽略文件，尚未同步部署应用。
+- Inngest Production 已同步应用 `evidence-graph` 和函数 `run-managed-research`；此前创建的 Preview 环境保持闲置。
 - Sentry EU 组织 `ailian0206` 和 Next.js 项目 `evidence-graph` 已创建；运行时 DSN 已配置，Source Map Token 保持可选未配置，尚未发送受控异常。
-- `verify:managed-env` 已通过 Supabase、Inngest 和 Sentry 必需变量检查；真实密钥只存在于权限为 `0600` 的 `.env.local`，未进入 Git。
+- Supabase、Inngest 和 Sentry 必需变量已配置为 Vercel Production 托管变量；仓库和本地工作区不保存生产 `.env` 文件。
 - Preview 备份恢复演练已完成：远端 `public` 数据通过官方 CLI 导出，在本地用仓库迁移重建后恢复，33 个 pgTAP 和 Schema lint 通过，临时备份已删除。
 - `feat/managed-deployment` 使用本机 SSH 凭据推送，HTTPS fetch 保持不变；PR #13 合并后远端模块分支已删除。
 - 托管部署里程碑预检 `npm run test:managed` 已通过 Provider 边界扫描、33 个数据库测试、Schema lint、lint、类型检查、118 个单元测试、生产构建和 36 个 E2E；运行时显式禁用真实托管连接和付费 Provider。
@@ -128,10 +128,13 @@
 - UI 里程碑初始完整 `npm run test:managed` 通过 Provider 边界扫描、89 个数据库测试、Schema lint、全仓 lint、typecheck、177 个单元测试、生产构建和 81 个 E2E；运行时显式清空托管与付费 Provider 变量，未调用真实 Supabase、Inngest、Sentry、OpenAI 或 Tavily 远端。
 - PR #16 首轮独立 Claude 审核对 head `1c2e9b9` 返回 `changes_requested`：`.secondary-action:hover` 的重复前景色声明使“联系我 / Contact”文字与深色背景同色。修复先用 Playwright 复现 `rgb(24, 32, 28)` 的 RED，再删除错误声明并验证白色前景 GREEN；修复后完整门禁通过 89 个数据库测试、177 个单元测试、生产构建和 82 个 E2E。
 - PR #16 独立 Claude 重审对 head `73a8f855c3ea0c66dcc88de4e61012b5d5194ebd` 返回 `pass`；GitHub 的质量与数据库两个 job 均成功，随后以 merge commit `72d3f55facbd196d634caeaad6de1ed06e8d259f` 合并，远端模块分支已删除。
-- Vercel Production 地址已创建且 `/zh` 返回 200；托管变量、Supabase Redirect、Inngest 同步、生产冒烟和回滚演练仍是正式上线门禁。
+- Vercel Production 已使用现代 Supabase Publishable/Secret Key；旧版 JWT API Key 已停用，服务端授权查询返回预期业务错误而非 `401` 或无效密钥错误。
+- Supabase Site URL 和本地/Production Redirect URL 已配置，Inngest Production 同步成功；默认生产冒烟在迁移后通过全部四项检查，明确未运行付费 Provider。
+- Production 已应用 `20260716000100`、`20260717000100`、`20260717000200` 三条迁移；远端确认 `manual_urls`、原子研究 RPC 和报告发布 RPC 均存在。
+- 一次性 Vercel 回滚与恢复演练已完成；后续仅在真实发布故障时回滚，不再作为个人项目的例行流程。
 - 用户于 2026-07-22 决定将部署拓扑收敛为本地开发与 Production，不再配置 Vercel Preview；现有 Preview Supabase、OAuth App 和 Inngest 环境保持闲置且不删除。
 
 ## 下一步
 
-1. 只为 Vercel Production 配置托管变量，更新 Production Supabase Redirect、同步 Production Inngest，并完成生产冒烟和回滚演练。
-2. 用户提供阿里云百炼账号和密钥后，在专用门禁与成本上限下接入 `text-embedding-v4`，当前不调用真实服务。
+1. 以线上实际使用体验和现有功能修正为主，不继续扩展部署环境或运维流程。
+2. 用户后续明确决定接入 Provider 时，再在成本上限下评估阿里云百炼 `text-embedding-v4`；当前不接入、不调用真实服务。

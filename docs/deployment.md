@@ -1,12 +1,13 @@
 # Evidence Graph 托管部署手册
 
-本文档用于本地开发与 Vercel Production 两层部署，以及上线后的回滚、备份和密钥轮换。所有资源创建、账号连接、远端迁移和真实请求都必须先通过 `AGENT.md` 的授权门禁。
+本文档用于本地开发与 Vercel Production 两层部署。Evidence Graph 是个人练习与作品集项目，部署目标是让公开演示和已有产品流程稳定可用，不建设预发布、多区域、高可用或复杂发布编排。所有资源创建、账号连接、远端迁移和真实请求都必须先通过 `AGENT.md` 的授权门禁。
 
 ## 1. 部署边界
 
 - 日常测试只使用 fixture providers，不调用 OpenAI 或 Tavily。
 - 不把 `.env.local`、Service Role、Signing Key、Sentry Auth Token、Provider 响应或包含私人来源正文的报告提交到 Git。
 - 本地开发使用本地 Supabase 和确定性 fixtures；Vercel 只配置 Production，不维护 Preview 环境变量或预发布服务。
+- `main` 由 Vercel 自动部署；日常发布只做必要验证和一次默认生产冒烟，不例行执行回滚演练或密钥轮换。
 - 默认生产冒烟不创建项目、不运行研究、不调用付费 Provider。
 - 真实 Provider 冒烟必须额外设置 `ALLOW_PAID_PROVIDER_SMOKE=YES_I_ACCEPT_PROVIDER_COST`，单次总成本上限为 1 美元；当前里程碑未获得授权时不得执行。
 
@@ -30,11 +31,11 @@ npm run test:ci
 
 | 服务 | 环境或标识 | 状态 |
 | --- | --- | --- |
-| Supabase | Production `dibngceljmdkcgrzxubx`，东京 | 迁移、33 个 pgTAP、Schema lint 和 GitHub Provider 已通过 |
-| GitHub OAuth | Production App `3734035` | Production Provider 已启用；等待绑定生产站点回调 |
-| Inngest | Production | Event Key 和 Signing Key 已创建；等待同步生产应用 |
+| Supabase | Production `dibngceljmdkcgrzxubx`，东京 | 三条仓库迁移已应用；现代 API Key、GitHub Provider 和 Redirect 已配置 |
+| GitHub OAuth | Production App `3734035` | Production Provider 与站点回调已配置 |
+| Inngest | Production | 应用 `evidence-graph` 和函数 `run-managed-research` 已同步 |
 | Sentry | EU 组织 `ailian0206`，项目 `evidence-graph` | DSN 已配置；Source Map Token 保持可选未配置 |
-| Vercel | `https://evidence-graph-pi.vercel.app` | Hobby 项目已创建，首次 Production 部署 Ready；等待托管变量和服务回调 |
+| Vercel | `https://evidence-graph-pi.vercel.app` | Hobby Production 已 Ready，托管变量与默认生产冒烟已通过 |
 
 此前创建的 Supabase Preview `vooexhwkqzymltwewcqc`、GitHub OAuth Preview App `3734029` 和 Inngest Preview `preview-e7881f94` 不再接入 Vercel，也不承担发布门禁。它们保持闲置，删除前需单独确认。
 
@@ -53,7 +54,7 @@ npx supabase db push --linked
 ```
 
 4. 先在本地重建数据库并验证跨租户 RLS、级联删除、精确引用和公开报告只读函数，再把同一迁移前向应用到 Production。
-5. 从项目设置取得 URL、Publishable Key 和 Service Role。Service Role 只能配置在 Vercel 服务端环境变量中。
+5. 从项目设置取得 URL、Publishable Key 和现代 Secret Key。Secret Key 只能配置在 Vercel 服务端环境变量中；环境变量名继续使用既有的 `SUPABASE_SERVICE_ROLE_KEY`。
 
 ### 3.2 GitHub OAuth
 
@@ -131,26 +132,19 @@ npm run smoke:production
 
 ## 6. 发布与回滚
 
-1. 记录通过门禁的 commit SHA、Vercel Deployment URL 和迁移版本。
-2. 完成本地门禁后部署 Production；上线后立即运行默认生产冒烟。
-3. 应用迁移后只发布与新旧 Schema 都兼容的代码。破坏性列删除必须拆到后续里程碑。
-4. 应用回滚优先在 Vercel 将上一个已验证 Deployment 提升为 Production，然后重新运行默认冒烟。
-5. 数据库迁移不做盲目逆向回滚。若新代码需要关闭，先回滚应用；修复迁移通过本地重建和数据库测试后再前向应用。
-6. Inngest 异常时先暂停事件发送或禁用对应环境的函数同步，保留已有 run 与审计记录。
+1. 小型维护验证后直接推送 `main`，由 Vercel 自动部署 Production。
+2. 有数据库迁移时先通过本地数据库门禁，再前向应用同一迁移；不对 Production 做盲目逆向迁移。
+3. 部署完成后运行一次默认生产冒烟。没有真实故障时不做例行回滚演练。
+4. 真实发布故障时，把上一个已验证 Deployment 提升为 Production，并重新运行默认冒烟。
 
-## 7. 备份与恢复演练
+## 7. 备份与恢复
 
-- Git 中的迁移文件是 Schema 恢复基线；每次上线前确认远端迁移历史与当前 commit 一致。
-- 数据导出只保存到受控、加密且不受 Git 跟踪的位置，不得放入仓库、PR 附件或测试报告。
-- 使用 Supabase 当前套餐提供的官方备份能力；不要假设免费层具有某个固定保留周期。
-- 恢复演练只在本地或单独授权的临时演练项目执行：恢复备份后运行 pgTAP、跨租户 RLS 检查和默认应用冒烟。
-- 未取得单独授权，不删除或覆盖 Production 数据，也不在 Production 验证恢复命令。
+- Git 中的迁移文件是 Schema 恢复基线；涉及生产数据风险的变更前再按需导出数据。
+- 数据导出只能保存在 Git 忽略的受控位置，不放入仓库、PR 附件或测试报告。
+- 个人项目不安排例行恢复演练；未取得单独授权，不删除、覆盖或恢复 Production 数据。
 
 ## 8. 密钥轮换
 
-1. 创建可与旧密钥并行生效的新 Production 密钥，写入 Vercel 并重新部署。
-2. 生产冒烟确认新密钥生效后再撤销旧密钥；不依赖 Preview 作为轮换步骤。
-3. Inngest 使用 fallback signing key 完成无中断轮换；确认所有 Deployment 更新后再移除旧 key。
-4. Supabase Service Role 泄漏时立即轮换，并重新部署所有持有该变量的环境。
-5. Sentry Auth Token 只在构建期使用；轮换后检查旧 token 已撤销。
-6. 任何疑似泄漏都要检查 Git 历史、CI 日志、Vercel 日志和终端记录；不能只删除当前文件。
+- 密钥轮换不是例行任务，只在凭据泄漏、失效或服务明确要求时执行。
+- 轮换时先写入新 Production 密钥并重新部署，生产冒烟通过后再撤销旧值。
+- 任何疑似泄漏仍需检查 Git 历史、CI 日志和部署日志，不能只删除当前文件。
