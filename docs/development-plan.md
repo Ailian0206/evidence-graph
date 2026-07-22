@@ -16,6 +16,7 @@
 | 8 | `feat/durable-research-results` | 原子创建研究、Inngest 快照持久化、真实工作台和 Claim 审核 | 已完成；PR #14 通过独立审核和 CI 后以 merge commit `ce4b1a2` 合并 |
 | 9 | `feat/report-publishing` | 报告发布、撤销、公开 slug、版本切换和分享页 | 已完成；PR #15 通过独立审核和 CI 后以 merge commit `f42ae20` 合并 |
 | 10 | `feat/ui-experience-refresh` | 全站字体、间距、信息层级和视觉语言统一，移除左侧装饰边线与明显 AI 化样式 | 已完成；PR #16 通过独立重审和两个 CI job 后以 merge commit `72d3f55` 合并 |
+| 11 | `feat/real-provider-integration` | Production 直连 Tavily、DeepSeek 与百炼，开发和 CI 保持 fixtures | 进行中；设计与实施计划已确认，等待 TDD 实现、低成本真实冒烟和完整模块门禁 |
 
 ## 跨模块规则
 
@@ -33,4 +34,4 @@
 
 ## 当前模块
 
-`feat/managed-deployment`、`feat/durable-research-results`、`feat/report-publishing` 与 `feat/ui-experience-refresh` 已依次通过 PR #13、#14、#15、#16 合并。Vercel Production、Supabase Redirect、Inngest 同步、数据库迁移、默认生产冒烟、一次性回滚演练和首个真实用户闭环均已完成。当前不再新增部署里程碑；后续以线上体验修正为主，真实 Provider 接入只在用户明确提供条件和成本上限后启动。
+`feat/managed-deployment`、`feat/durable-research-results`、`feat/report-publishing` 与 `feat/ui-experience-refresh` 已依次通过 PR #13、#14、#15、#16 合并。Vercel Production、Supabase Redirect、Inngest 同步、数据库迁移、默认生产冒烟、一次性回滚演练和首个真实用户闭环均已完成。用户已于 2026-07-22 确认启动 `feat/real-provider-integration`：Production 直接使用 Tavily、DeepSeek 与百炼，默认测试继续使用 fixtures，首次真实冒烟成本上限为 `0.10 USD`。
