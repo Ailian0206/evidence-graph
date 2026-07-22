@@ -2,13 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { PublicReport } from "@/components/reports/public-report";
-import { publicReportSlugs } from "@/features/reports/report-fixture";
 
 import { loadPublicReport } from "./report-loader";
-
-export function generateStaticParams() {
-  return Object.values(publicReportSlugs).map((slug) => ({ slug }));
-}
 
 export async function generateMetadata({
   params,
