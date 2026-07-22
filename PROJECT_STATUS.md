@@ -1,17 +1,18 @@
 # Evidence Graph 项目状态
 
-更新时间：2026-07-21
+更新时间：2026-07-22
 
 ## 当前阶段
 
 - 阶段：全局 UI 体验优化已通过独立审核和 GitHub CI，并使用 merge commit 合并；Vercel 生产发布仍为后置门禁。
 - 分支：`main` 已同步 UI 里程碑 merge commit `72d3f55`；远端 `feat/ui-experience-refresh` 已删除。
 - PR：UI 里程碑唯一 PR [#16](https://github.com/Ailian0206/evidence-graph/pull/16) 已通过修复重审和 GitHub CI 后合并。
-- 当前任务：提供合并后本地效果预览；Vercel 账号恢复后继续生产发布门禁。
+- 当前任务：按“本地开发 + Production”两层拓扑完成 Vercel 托管变量、Supabase Redirect、Inngest 同步、生产冒烟和回滚门禁。
 - UI 优化：中文优先的 Neutral Product Studio 与均衡密度已覆盖公共页面、认证/项目页、工作台全部状态和公开报告，并合并到 `main`。
 - 外部 Provider 调用：已禁用。
 - Embedding Provider：已决定后续接入阿里云百炼 `text-embedding-v4` 并固定输出 1536 维；等待用户提供账号和密钥，当前不接入、不调用真实服务。
-- 生产部署：数据库和外部服务配置进行中，Vercel 尚未部署。
+- 生产部署：Vercel Hobby 项目已创建，`https://evidence-graph-pi.vercel.app` 的首次部署 Ready；托管变量和服务回调尚未完成。
+- 部署拓扑：不维护预发布环境；本地使用本地 Supabase 和 fixtures，Vercel 只连接 Production 服务。此前创建的 Preview 资源保持闲置，不接入发布链路。
 - Node.js：本地和 CI 使用 `v22.22.1`。
 - Cursor Bugbot：本月额度已耗尽，不等待、不重复触发，也不作为当前合并门禁。
 - 独立 Claude 审核：由全局 `/codex-independent-pr-review <PR编号>` 执行，不在仓库维护第二套同名 reviewer。
@@ -105,7 +106,7 @@
 - 持久化研究结果聚焦门禁通过 Provider 扫描、51 个数据库测试、49 个闭环单测和 14 个 Auth/工作台/项目/Inngest E2E。
 - 持久化研究结果初始 `npm run test:managed` 通过 Schema lint、全仓 lint、typecheck、142 个单元测试、生产构建和 36 个 E2E；运行时清空托管变量，未调用真实 OpenAI、Tavily、Supabase、Inngest 或 Sentry 远端。
 - 同步 PR #12 后的 `npm run test:managed` 通过 Provider 边界扫描、33 个数据库测试、Schema lint、lint、类型检查、119 个单元测试、生产构建和 36 个 E2E；Playwright 改用 `next start`，消除了开发服务器首轮编译导致的导航竞态，并显式保持 Inngest 本地模式。
-- Vercel 恢复工单于 2026-07-17 提交；截至 2026-07-21 仍无审核结果，已在原邮件线程跟进。当前没有站点 URL、Inngest 应用同步、生产冒烟或 Vercel 回滚结果。
+- Vercel 账号已恢复并通过 Google、GitHub 和 2FA 验证；Hobby 项目已从 GitHub `main` 导入，首次部署使用 Node 22、`npm ci` 和 `npm run build`，部署提交为 `b6e5858`。
 - 用户于 2026-07-21 确认将 Vercel 生产验证拆为合并后的独立发布门禁；托管代码不得被表述为已生产上线。
 - PR #13 独立 Claude 审核对 head `dadabf3` 返回 `pass`，两个 GitHub CI job 成功后以 merge commit `ad40664` 合并。
 - 对齐 PR #13 与状态提交 `fd89aaf` 后，持久化研究结果 `npm run test:managed` 通过 Provider 扫描、51 个数据库测试、Schema lint、lint、typecheck、143 个单元测试、生产构建和 36 个 E2E。
@@ -127,9 +128,10 @@
 - UI 里程碑初始完整 `npm run test:managed` 通过 Provider 边界扫描、89 个数据库测试、Schema lint、全仓 lint、typecheck、177 个单元测试、生产构建和 81 个 E2E；运行时显式清空托管与付费 Provider 变量，未调用真实 Supabase、Inngest、Sentry、OpenAI 或 Tavily 远端。
 - PR #16 首轮独立 Claude 审核对 head `1c2e9b9` 返回 `changes_requested`：`.secondary-action:hover` 的重复前景色声明使“联系我 / Contact”文字与深色背景同色。修复先用 Playwright 复现 `rgb(24, 32, 28)` 的 RED，再删除错误声明并验证白色前景 GREEN；修复后完整门禁通过 89 个数据库测试、177 个单元测试、生产构建和 82 个 E2E。
 - PR #16 独立 Claude 重审对 head `73a8f855c3ea0c66dcc88de4e61012b5d5194ebd` 返回 `pass`；GitHub 的质量与数据库两个 job 均成功，随后以 merge commit `72d3f55facbd196d634caeaad6de1ed06e8d259f` 合并，远端模块分支已删除。
-- Vercel 账号恢复仍未完成；当前 UI 里程碑只证明代码和本地门禁完成，不代表生产上线，生产 URL、Supabase Redirect、Inngest 同步、生产冒烟和回滚演练继续作为合并后的独立发布门禁。
+- Vercel Production 地址已创建且 `/zh` 返回 200；托管变量、Supabase Redirect、Inngest 同步、生产冒烟和回滚演练仍是正式上线门禁。
+- 用户于 2026-07-22 决定将部署拓扑收敛为本地开发与 Production，不再配置 Vercel Preview；现有 Preview Supabase、OAuth App 和 Inngest 环境保持闲置且不删除。
 
 ## 下一步
 
-1. Vercel 账号恢复后取得 Preview 与 Production URL，配置 Supabase Redirect、同步 Inngest，并完成生产冒烟和回滚演练。
+1. 只为 Vercel Production 配置托管变量，更新 Production Supabase Redirect、同步 Production Inngest，并完成生产冒烟和回滚演练。
 2. 用户提供阿里云百炼账号和密钥后，在专用门禁与成本上限下接入 `text-embedding-v4`，当前不调用真实服务。

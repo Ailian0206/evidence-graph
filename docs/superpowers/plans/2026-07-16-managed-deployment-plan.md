@@ -477,7 +477,7 @@ git commit -m "ci: 增加托管数据库门禁"
 
 - [x] **步骤 3：实现脚本和中文文档**
 
-`docs/deployment.md` 明确 Vercel Git Import、Supabase 迁移、GitHub OAuth callback、Inngest、Sentry、Preview/Production 变量作用域、备份恢复、密钥轮换和回滚步骤。真实研究冒烟单独要求 `ALLOW_PAID_PROVIDER_SMOKE=YES_I_ACCEPT_PROVIDER_COST`，并在输出中显示最高 1 美元成本上限。
+`docs/deployment.md` 明确 Vercel Git Import、Supabase 迁移、GitHub OAuth callback、Inngest、Sentry、本地/Production 变量作用域、备份恢复、密钥轮换和回滚步骤。真实研究冒烟单独要求 `ALLOW_PAID_PROVIDER_SMOKE=YES_I_ACCEPT_PROVIDER_COST`，并在输出中显示最高 1 美元成本上限。
 
 - [x] **步骤 4：验证无网络默认行为**
 
@@ -505,13 +505,15 @@ git commit -m "docs(deploy): 增加上线与回滚流程"
 
 **里程碑拆分（2026-07-21）：** 用户确认 Vercel 账号审核不再阻塞代码里程碑合并。任务 11 可在完整本地门禁、独立 Claude 审核和 GitHub CI 通过后闭环；本任务仍是生产上线前的必需门禁，账号恢复后单独完成并记录结果。
 
+**部署拓扑调整（2026-07-22）：** 用户确认个人练习项目只维护本地开发与 Production，不再配置 Vercel Preview 或预发布服务。此前创建的 Supabase、GitHub OAuth 和 Inngest Preview 资源保留为闲置资源，不接入发布链路，也不在未单独授权时删除。
+
 - [ ] **步骤 1：创建免费层资源并记录非敏感标识**
 
 只通过各平台官方集成创建资源；不升级付费套餐。密钥只写入平台环境变量和本地忽略的 `.env.local`，不进入命令日志、截图、测试报告或 Git。
 
 - [ ] **步骤 2：应用迁移和 OAuth 配置**
 
-先应用 Preview，再验证 RLS，最后应用 Production。OAuth callback 只允许已确认的 Preview 与 Production URL。
+先在本地重建数据库并验证 RLS，再把同一迁移前向应用到 Production。OAuth callback 只允许本地开发地址与已确认的 Production URL。
 
 - [ ] **步骤 3：运行不含付费 Provider 的生产冒烟**
 
@@ -527,7 +529,7 @@ npm run smoke:production
 
 - [ ] **步骤 4：执行回滚和备份恢复演练**
 
-固定成功 Vercel Deployment，回滚到该版本并重新执行只读 smoke；在 Supabase 预演环境验证备份恢复步骤，不删除 Production 数据。
+固定成功 Vercel Deployment，回滚到该版本并重新执行只读 smoke；在本地或单独授权的临时项目验证备份恢复步骤，不删除 Production 数据。
 
 - [ ] **步骤 5：提交非敏感部署结果**
 
