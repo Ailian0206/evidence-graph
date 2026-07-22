@@ -1,5 +1,6 @@
 import "server-only";
 
+import { isAuthSessionMissingError } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 
 import { requireUser } from "@/features/auth/session";
@@ -14,6 +15,10 @@ export const getCurrentSupabaseUser = async () => {
 
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.getUser();
+
+  if (isAuthSessionMissingError(error)) {
+    return null;
+  }
 
   if (error) {
     throw error;
