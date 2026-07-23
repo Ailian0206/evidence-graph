@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
 import { createDemoResearchFixture } from "@/features/research/fixtures";
@@ -1414,6 +1414,44 @@ describe("research workflow", () => {
     });
     expect(providers.calls.some((call) => call.operation === "embed")).toBe(false);
     expect(store.getSnapshot().sources).toEqual([]);
+  });
+
+  it("rejects more than 1500 chunks before embedding", async () => {
+    const fixture = createDemoResearchFixture();
+    fixture.researchRuns[0].sourceLimit = 1;
+    fixture.sources = [];
+    fixture.chunks = [];
+    fixture.claims = [];
+    fixture.evidenceLinks = [];
+    fixture.claimRelations = [];
+    const providers = createFixtureResearchProviders();
+    const embed = vi.fn(async () => {
+      throw new Error("EMBEDDING_CALLED");
+    });
+    providers.embedding.embed = embed;
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [
+        {
+          url: "https://example.com/many-short-paragraphs",
+          title: "Many short paragraphs",
+          body: Array.from({ length: 1501 }, () => "A").join("\n\n"),
+          sourceType: "documentation",
+        },
+      ],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+
+    expect(result.run).toMatchObject({
+      status: "failed",
+      errorMessage: "CONTENT_LIMIT_EXCEEDED",
+    });
+    expect(embed).not.toHaveBeenCalled();
   });
 
   it("skips later sources that exceed the Unicode content budget", async () => {

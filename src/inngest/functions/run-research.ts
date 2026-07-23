@@ -16,8 +16,10 @@ import {
 import type {
   EmbeddingProvider,
   LanguageModel,
+  ProviderResult,
   SearchProvider,
 } from "@/providers/contracts";
+import { providerUsageSchema, type ProviderUsage } from "@/providers/contracts";
 import { createResearchProviders } from "@/providers/runtime";
 import {
   authorizeResearchRun,
@@ -60,6 +62,110 @@ type ResearchWorkflowExecutorDependencies = {
 
 const DEFAULT_RETRY_COUNT = 3 as const;
 const DEFAULT_MAX_ATTEMPTS = DEFAULT_RETRY_COUNT + 1;
+const FLOAT32_BYTES = 4;
+const EMBEDDING_DIMENSIONS = 1536;
+const MAX_EMBEDDING_BATCH_SIZE = 10;
+
+type CompactEmbeddingResult = {
+  encoding: "float32-base64";
+  rows: number;
+  columns: number;
+  data: string;
+  usage: ProviderUsage;
+};
+
+const isEmbeddingCall = (idempotencyKey: string) =>
+  /:indexing:\d+$/.test(idempotencyKey);
+
+const compactProviderResult = <T>(
+  idempotencyKey: string,
+  result: ProviderResult<T>,
+): ProviderResult<T> | CompactEmbeddingResult => {
+  if (!isEmbeddingCall(idempotencyKey) || !Array.isArray(result.data)) {
+    return result;
+  }
+
+  const matrix = result.data as unknown[];
+  const rows = matrix.length;
+  const columns = Array.isArray(matrix[0]) ? matrix[0].length : 0;
+
+  if (
+    rows === 0 ||
+    columns === 0 ||
+    !matrix.every(
+      (row) =>
+        Array.isArray(row) &&
+        row.length === columns &&
+        row.every((value) => typeof value === "number" && Number.isFinite(value)),
+    )
+  ) {
+    return result;
+  }
+
+  const buffer = Buffer.allocUnsafe(rows * columns * FLOAT32_BYTES);
+  let offset = 0;
+
+  for (const row of matrix as number[][]) {
+    for (const value of row) {
+      buffer.writeFloatLE(value, offset);
+      offset += FLOAT32_BYTES;
+    }
+  }
+
+  return {
+    encoding: "float32-base64",
+    rows,
+    columns,
+    data: buffer.toString("base64"),
+    usage: result.usage,
+  };
+};
+
+const restoreProviderResult = <T>(result: unknown): ProviderResult<T> => {
+  if (
+    typeof result !== "object" ||
+    result === null ||
+    !("encoding" in result) ||
+    result.encoding !== "float32-base64"
+  ) {
+    return result as ProviderResult<T>;
+  }
+
+  const compact = result as CompactEmbeddingResult;
+  const usage = providerUsageSchema.safeParse(compact.usage);
+
+  if (
+    !Number.isSafeInteger(compact.rows) ||
+    compact.rows <= 0 ||
+    compact.rows > MAX_EMBEDDING_BATCH_SIZE ||
+    compact.columns !== EMBEDDING_DIMENSIONS ||
+    typeof compact.data !== "string" ||
+    !usage.success
+  ) {
+    throw new Error("DURABLE_PROVIDER_RESULT_INVALID");
+  }
+
+  const buffer = Buffer.from(compact.data, "base64");
+  const expectedBytes = compact.rows * compact.columns * FLOAT32_BYTES;
+
+  if (
+    !Number.isSafeInteger(expectedBytes) ||
+    buffer.byteLength !== expectedBytes
+  ) {
+    throw new Error("DURABLE_PROVIDER_RESULT_INVALID");
+  }
+
+  const data = Array.from({ length: compact.rows }, (_, rowIndex) =>
+    Array.from({ length: compact.columns }, (_, columnIndex) =>
+      buffer.readFloatLE((rowIndex * compact.columns + columnIndex) * FLOAT32_BYTES),
+    ),
+  );
+
+  return {
+    data: data as T,
+    usage: usage.data,
+  };
+};
 
 const getStableErrorCode = (error: unknown) => {
   const message = error instanceof Error ? error.message : "";
@@ -89,11 +195,14 @@ export const createRunResearchHandler = ({
     const executeProviderCall: ProviderCallExecutor = async (
       idempotencyKey,
       operation,
-    ) =>
-      (await step.run(
+    ) => {
+      const durableResult = await step.run(
         `provider:${idempotencyKey}`,
-        operation,
-      )) as Awaited<ReturnType<typeof operation>>;
+        async () => compactProviderResult(idempotencyKey, await operation()),
+      );
+
+      return restoreProviderResult(durableResult);
+    };
 
     try {
       const execution = await executeWorkflow(parsedEvent, executeProviderCall);

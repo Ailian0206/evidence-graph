@@ -69,6 +69,7 @@ const chunkOutputSchema = z.object({ chunkIds: z.array(z.string().min(1)) });
 const evidenceOutputSchema = z.object({ evidenceLinkIds: z.array(z.string().min(1)) });
 const relationOutputSchema = z.object({ claimRelationIds: z.array(z.string().min(1)) });
 const reportOutputSchema = z.object({ reportId: z.string().min(1) });
+const MAX_INDEXED_CHUNKS = 1500;
 const WORKFLOW_STEPS: WorkflowStep[] = [
   "planning",
   "searching",
@@ -453,6 +454,11 @@ const runResearchWorkflowAttempt = async ({
       }),
     );
     const chunks = Array.from(chunkById.values());
+
+    if (chunks.length > MAX_INDEXED_CHUNKS) {
+      throw new Error("CONTENT_LIMIT_EXCEEDED");
+    }
+
     for (let batchStart = 0; batchStart < chunks.length; batchStart += 10) {
       const batchIndex = Math.floor(batchStart / 10);
       const batchIdempotencyKey = `${idempotencyKey}:${batchIndex}`;

@@ -64,6 +64,7 @@ const createMemoizingStep = () => {
 
   return {
     calls,
+    memoizedResults,
     step: {
       run: vi.fn(async <T>(id: string, operation: () => Promise<T>): Promise<T> => {
         calls.push(id);
@@ -370,6 +371,106 @@ describe("Inngest research workflow entry", () => {
     ]);
     expect(executeWorkflow).toHaveBeenCalledWith(eventData, expect.any(Function));
     expect(writer.persist).toHaveBeenCalledWith({ event: eventData, snapshot });
+  });
+
+  it("compacts durable embedding results while preserving replayed vectors", async () => {
+    const vectors = Array.from({ length: 10 }, (_, rowIndex) =>
+      Array.from({ length: 1536 }, (_, columnIndex) =>
+        Math.sin(rowIndex * 1536 + columnIndex),
+      ),
+    );
+    const usage = {
+      estimatedCostUsd: 0.001,
+      searchCount: 0,
+      tokenCount: 1536,
+    };
+    const embeddingOperation = vi.fn(async () => ({ data: vectors, usage }));
+    const snapshot = {} as ResearchWorkflowSnapshot;
+    const executeWorkflow = vi.fn(
+      async (
+        _event: typeof eventData,
+        executeProviderCall: ProviderCallExecutor,
+      ) => {
+        const first = await executeProviderCall(
+          "run_1:indexing:0",
+          embeddingOperation,
+        );
+        const replayed = await executeProviderCall(
+          "run_1:indexing:0",
+          embeddingOperation,
+        );
+
+        expect(first.usage).toEqual(usage);
+        expect(replayed.usage).toEqual(usage);
+        expect(first.data).toHaveLength(10);
+        expect(first.data[0]).toHaveLength(1536);
+        expect(replayed.data[9][1535]).toBeCloseTo(vectors[9][1535], 6);
+
+        return { output: { status: "ready" }, snapshot };
+      },
+    );
+    const handler = createRunResearchHandler({
+      authorize: async () => undefined,
+      executeWorkflow,
+      createWriter: async () => ({
+        begin: async () => undefined,
+        persist: async () => undefined,
+        fail: async () => undefined,
+      }),
+    });
+    const { memoizedResults, step } = createMemoizingStep();
+
+    await expect(handler({ event: { data: eventData }, step })).resolves.toEqual({
+      status: "ready",
+    });
+
+    expect(embeddingOperation).toHaveBeenCalledTimes(1);
+    const durableResult = memoizedResults.get("provider:run_1:indexing:0");
+    expect(durableResult).toMatchObject({
+      encoding: "float32-base64",
+      rows: 10,
+      columns: 1536,
+      usage,
+    });
+    expect(JSON.stringify(durableResult).length).toBeLessThan(100_000);
+  });
+
+  it("rejects malformed durable embedding results with a stable error", async () => {
+    const handler = createRunResearchHandler({
+      authorize: async () => undefined,
+      executeWorkflow: async (_event, executeProviderCall) => {
+        await executeProviderCall("run_1:indexing:0", async () => ({
+          data: [Array.from({ length: 1536 }, () => 0)],
+          usage: { estimatedCostUsd: 0, searchCount: 0, tokenCount: 0 },
+        }));
+        return {
+          output: { status: "ready" },
+          snapshot: {} as ResearchWorkflowSnapshot,
+        };
+      },
+      createWriter: async () => ({
+        begin: async () => undefined,
+        persist: async () => undefined,
+        fail: async () => undefined,
+      }),
+    });
+    const step = {
+      run: vi.fn(async (id: string, operation: () => Promise<unknown>) =>
+        id === "provider:run_1:indexing:0"
+          ? {
+              encoding: "float32-base64",
+              rows: 11,
+              columns: 1536,
+              data: 42,
+              usage: null,
+            }
+          : operation(),
+      ),
+    };
+
+    await expect(handler({ event: { data: eventData }, step })).rejects.toThrow(
+      "DURABLE_PROVIDER_RESULT_INVALID",
+    );
   });
 
   it("marks the run failed and rethrows when durable execution fails", async () => {
