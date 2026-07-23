@@ -222,7 +222,7 @@ describe("evidence workspace reports", () => {
       ),
     );
     expect(screen.getByText("已发布", { selector: "[role='status']" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "撤销公开报告" })).toBeVisible();
+    expect(await screen.findByRole("button", { name: "撤销公开报告" })).toBeVisible();
   });
 
   it("keeps the selected draft unchanged when managed publication fails", async () => {
