@@ -1,7 +1,12 @@
 import { z } from "zod";
 
 import { createClaimKey } from "@/features/claims/claim-utils";
-import type { EvidenceLink, ResearchRun, Source } from "@/features/research/domain";
+import {
+  currentEmbeddingModel,
+  type EvidenceLink,
+  type ResearchRun,
+  type Source,
+} from "@/features/research/domain";
 import type { InMemoryResearchWorkflowStore } from "@/features/research/workflow-store";
 import {
   claimCandidatesSchema,
@@ -23,6 +28,7 @@ import {
   searchResultSchema,
   type EmbeddingProvider,
   type LanguageModel,
+  type ProviderResult,
   type ProviderUsage,
   type SearchProvider,
   type SearchResult,
@@ -34,11 +40,18 @@ type ResearchWorkflowProviders = {
   embedding: EmbeddingProvider;
 };
 
+export type ProviderCallExecutor = <T>(
+  idempotencyKey: string,
+  operation: () => Promise<ProviderResult<T>>,
+) => Promise<ProviderResult<T>>;
+
 type RunResearchWorkflowInput = {
   runId: string;
   ownerId: string;
   manualSources: SearchResult[];
+  manualUrls?: string[];
   providers: ResearchWorkflowProviders;
+  executeProviderCall?: ProviderCallExecutor;
   store: InMemoryResearchWorkflowStore;
   now: () => string;
 };
@@ -67,9 +80,14 @@ const WORKFLOW_STEPS: WorkflowStep[] = [
   "drafting_report",
 ];
 const KNOWN_WORKFLOW_ERRORS = new Set([
+  "BAILIAN_REQUEST_FAILED",
+  "CLAIM_CANDIDATE_NOT_FOUND",
   "CONTENT_LIMIT_EXCEEDED",
+  "DEEPSEEK_REQUEST_FAILED",
   "MANUAL_URL_LIMIT_EXCEEDED",
   "PROJECT_NOT_FOUND",
+  "PROVIDER_REQUEST_TIMEOUT",
+  "PROVIDER_RESPONSE_INVALID",
   "QUOTE_NOT_FOUND",
   "REPORT_CITATION_INVALID",
   "REPORT_NOT_FOUND",
@@ -77,6 +95,7 @@ const KNOWN_WORKFLOW_ERRORS = new Set([
   "RUN_NOT_FOUND",
   "SOURCE_NOT_FOUND",
   "STEP_RETRY_LIMIT_EXCEEDED",
+  "TAVILY_REQUEST_FAILED",
 ]);
 
 const createSourceId = (projectId: string, contentHash: string) =>
@@ -85,6 +104,11 @@ const createClaimId = (projectId: string, candidateId: string) =>
   `claim_${projectId}_${candidateId}`;
 
 const roundCost = (cost: number) => Math.round(cost * 1_000_000) / 1_000_000;
+
+const executeProviderCallDirectly: ProviderCallExecutor = async (
+  _idempotencyKey,
+  operation,
+) => operation();
 
 const getRunEvidenceLinks = ({
   store,
@@ -108,7 +132,9 @@ const runResearchWorkflowAttempt = async ({
   runId,
   ownerId,
   manualSources,
+  manualUrls = [],
   providers,
+  executeProviderCall = executeProviderCallDirectly,
   store,
   now,
 }: RunResearchWorkflowInput): Promise<ResearchWorkflowResult> => {
@@ -121,6 +147,11 @@ const runResearchWorkflowAttempt = async ({
   if (!project || project.ownerId !== ownerId || project.ownerId !== run.ownerId) {
     throw new Error("RUN_NOT_FOUND");
   }
+
+  const researchContext = {
+    question: project.question,
+    language: project.language,
+  };
 
   if (run.status === "ready") {
     const report = store.getReport(runId);
@@ -144,7 +175,7 @@ const runResearchWorkflowAttempt = async ({
     };
   }
 
-  if (manualSources.length > run.manualUrlLimit) {
+  if (manualSources.length + manualUrls.length > run.manualUrlLimit) {
     run = store.updateRun({
       ...run,
       status: "running",
@@ -254,12 +285,14 @@ const runResearchWorkflowAttempt = async ({
 
   const plan = await executeStep("planning", searchPlanSchema, async (idempotencyKey) => {
     assertProviderBudget();
-    const result = await providers.languageModel.generateStructured({
-      operation: "plan",
-      schema: searchPlanSchema,
-      payload: { question: project.question },
-      idempotencyKey,
-    });
+    const result = await executeProviderCall(idempotencyKey, () =>
+      providers.languageModel.generateStructured({
+        operation: "plan",
+        schema: searchPlanSchema,
+        payload: researchContext,
+        idempotencyKey,
+      }),
+    );
     applyUsage(idempotencyKey, result.usage);
     return searchPlanSchema.parse(result.data);
   });
@@ -280,11 +313,13 @@ const runResearchWorkflowAttempt = async ({
         }
 
         assertProviderBudget();
-        const result = await providers.search.search({
-          query,
-          maxResults: run.sourceLimit,
-          idempotencyKey: queryIdempotencyKey,
-        });
+        const result = await executeProviderCall(queryIdempotencyKey, () =>
+          providers.search.search({
+            query,
+            maxResults: run.sourceLimit,
+            idempotencyKey: queryIdempotencyKey,
+          }),
+        );
         applyUsage(queryIdempotencyKey, result.usage);
         const parsedResults = searchResultSchema.array().parse(result.data);
         store.saveSearchResults(queryIdempotencyKey, parsedResults);
@@ -299,6 +334,22 @@ const runResearchWorkflowAttempt = async ({
     "collecting",
     sourceOutputSchema,
     async () => {
+      const manualExtractionKey = `${runId}:collecting:manual`;
+      let extractedManualSources = store.getSearchResults(manualExtractionKey);
+
+      if (!extractedManualSources && manualUrls.length > 0) {
+        assertProviderBudget();
+        const result = await executeProviderCall(manualExtractionKey, () =>
+          providers.search.extract({
+            urls: manualUrls,
+            idempotencyKey: manualExtractionKey,
+          }),
+        );
+        applyUsage(manualExtractionKey, result.usage);
+        extractedManualSources = searchResultSchema.array().parse(result.data);
+        store.saveSearchResults(manualExtractionKey, extractedManualSources);
+      }
+
       const canonicalUrls = new Set<string>();
       const contentHashes = new Set<string>();
       const currentSources = store
@@ -307,7 +358,11 @@ const runResearchWorkflowAttempt = async ({
       const selectedSources: Source[] = [];
       const pendingSources: Source[] = [];
 
-      for (const candidate of [...manualSources, ...searchOutput.results]) {
+      for (const candidate of [
+        ...manualSources,
+        ...(extractedManualSources ?? []),
+        ...searchOutput.results,
+      ]) {
         const parsed = searchResultSchema.parse(candidate);
         const canonicalUrl = canonicalizeUrl(parsed.url);
         const contentHash = createContentHash(parsed.body);
@@ -386,26 +441,37 @@ const runResearchWorkflowAttempt = async ({
       }),
     );
     const chunks = Array.from(chunkById.values());
-    const missingEmbeddings = chunks.filter((chunk) => !store.getEmbedding(chunk.id));
+    for (let batchStart = 0; batchStart < chunks.length; batchStart += 10) {
+      const batchIndex = Math.floor(batchStart / 10);
+      const batchIdempotencyKey = `${idempotencyKey}:${batchIndex}`;
+      const batch = chunks.slice(batchStart, batchStart + 10);
+      const missingEmbeddings = batch.filter((chunk) => !store.getEmbedding(chunk.id));
 
-    if (missingEmbeddings.length > 0) {
+      if (missingEmbeddings.length === 0) {
+        continue;
+      }
+
       assertProviderBudget();
-      const result = await providers.embedding.embed({
-        texts: missingEmbeddings.map((chunk) => chunk.text),
-        idempotencyKey,
+      const result = await executeProviderCall(batchIdempotencyKey, async () => {
+        const providerResult = await providers.embedding.embed({
+          texts: missingEmbeddings.map((chunk) => chunk.text),
+          idempotencyKey: batchIdempotencyKey,
+        });
+        const vectors = z
+          .array(z.array(z.number()).length(1536))
+          .length(missingEmbeddings.length)
+          .parse(providerResult.data);
+
+        return { ...providerResult, data: vectors };
       });
-      applyUsage(idempotencyKey, result.usage);
-      const vectors = z
-        .array(z.array(z.number()).length(1536))
-        .length(missingEmbeddings.length)
-        .parse(result.data);
+      applyUsage(batchIdempotencyKey, result.usage);
 
       for (const [index, chunk] of missingEmbeddings.entries()) {
         store.saveEmbedding({
           chunkId: chunk.id,
-          model: "text-embedding-3-small",
+          model: currentEmbeddingModel,
           dimensions: 1536,
-          vector: vectors[index],
+          vector: result.data[index],
         });
       }
     }
@@ -420,12 +486,14 @@ const runResearchWorkflowAttempt = async ({
       const snapshot = store.getSnapshot();
       const chunks = snapshot.chunks.filter((chunk) => indexed.chunkIds.includes(chunk.id));
       assertProviderBudget();
-      const result = await providers.languageModel.generateStructured({
-        operation: "extract_claims",
-        schema: claimCandidatesSchema,
-        payload: { chunks },
-        idempotencyKey,
-      });
+      const result = await executeProviderCall(idempotencyKey, () =>
+        providers.languageModel.generateStructured({
+          operation: "extract_claims",
+          schema: claimCandidatesSchema,
+          payload: { ...researchContext, chunks },
+          idempotencyKey,
+        }),
+      );
       applyUsage(idempotencyKey, result.usage);
       const output = claimCandidatesSchema.parse(result.data);
       const claimIdsByCandidate: Record<string, string> = {};
@@ -453,22 +521,71 @@ const runResearchWorkflowAttempt = async ({
     "linking_evidence",
     evidenceOutputSchema,
     async (idempotencyKey) => {
+      const snapshot = store.getSnapshot();
+      const sourceById = new Map(
+        snapshot.sources
+          .filter((source) => source.projectId === run.projectId)
+          .map((source) => [source.id, source]),
+      );
+      const chunkById = new Map(snapshot.chunks.map((chunk) => [chunk.id, chunk]));
+      const sourceChunks = indexed.chunkIds.map((chunkId) => {
+        const chunk = chunkById.get(chunkId);
+        const source = chunk ? sourceById.get(chunk.sourceId) : undefined;
+
+        if (!chunk || chunk.projectId !== run.projectId || !source) {
+          throw new Error("SOURCE_NOT_FOUND");
+        }
+
+        return {
+          chunkId: chunk.id,
+          text: chunk.text,
+          sourceId: source.id,
+          sourceUrl: source.canonicalUrl,
+          sourceTitle: source.title,
+        };
+      });
+      const claimCandidateIds = new Set(
+        extractedClaims.claims.map((claim) => claim.candidateId),
+      );
       assertProviderBudget();
-      const result = await providers.languageModel.generateStructured({
-        operation: "link_evidence",
-        schema: evidenceCandidatesSchema,
-        payload: { claims: extractedClaims.claims, chunkIds: indexed.chunkIds },
-        idempotencyKey,
+      const result = await executeProviderCall(idempotencyKey, async () => {
+        const providerResult = await providers.languageModel.generateStructured({
+          operation: "link_evidence",
+          schema: evidenceCandidatesSchema,
+          payload: {
+            ...researchContext,
+            claims: extractedClaims.claims,
+            sourceChunks,
+          },
+          idempotencyKey,
+        });
+        const output = evidenceCandidatesSchema.parse(providerResult.data);
+
+        for (const candidate of output.evidence) {
+          if (!claimCandidateIds.has(candidate.claimCandidateId)) {
+            throw new Error("CLAIM_CANDIDATE_NOT_FOUND");
+          }
+
+          const sourceUrl = canonicalizeUrl(candidate.sourceUrl);
+          const hasExactSourceQuote = sourceChunks.some(
+            (chunk) =>
+              chunk.sourceUrl === sourceUrl && chunk.text.includes(candidate.quote),
+          );
+
+          if (!hasExactSourceQuote) {
+            throw new Error("QUOTE_NOT_FOUND");
+          }
+        }
+
+        return { ...providerResult, data: output };
       });
       applyUsage(idempotencyKey, result.usage);
-      const output = evidenceCandidatesSchema.parse(result.data);
-      const snapshot = store.getSnapshot();
       const sourceByUrl = new Map(
         snapshot.sources
           .filter((source) => source.projectId === run.projectId)
           .map((source) => [source.canonicalUrl, source]),
       );
-      const evidenceLinkIds = output.evidence.map((candidate) => {
+      const evidenceLinkIds = result.data.evidence.map((candidate) => {
         const source = sourceByUrl.get(canonicalizeUrl(candidate.sourceUrl));
         const chunk = snapshot.chunks.find(
           (current) =>
@@ -502,16 +619,32 @@ const runResearchWorkflowAttempt = async ({
     "detecting_conflicts",
     relationOutputSchema,
     async (idempotencyKey) => {
+      const claimCandidateIds = new Set(
+        extractedClaims.claims.map((claim) => claim.candidateId),
+      );
       assertProviderBudget();
-      const result = await providers.languageModel.generateStructured({
-        operation: "detect_conflicts",
-        schema: conflictCandidatesSchema,
-        payload: { claims: extractedClaims.claims },
-        idempotencyKey,
+      const result = await executeProviderCall(idempotencyKey, async () => {
+        const providerResult = await providers.languageModel.generateStructured({
+          operation: "detect_conflicts",
+          schema: conflictCandidatesSchema,
+          payload: { ...researchContext, claims: extractedClaims.claims },
+          idempotencyKey,
+        });
+        const output = conflictCandidatesSchema.parse(providerResult.data);
+
+        for (const candidate of output.relations) {
+          if (
+            !claimCandidateIds.has(candidate.fromClaimCandidateId) ||
+            !claimCandidateIds.has(candidate.toClaimCandidateId)
+          ) {
+            throw new Error("CLAIM_CANDIDATE_NOT_FOUND");
+          }
+        }
+
+        return { ...providerResult, data: output };
       });
       applyUsage(idempotencyKey, result.usage);
-      const output = conflictCandidatesSchema.parse(result.data);
-      const claimRelationIds = output.relations.map((candidate) =>
+      const claimRelationIds = result.data.relations.map((candidate) =>
         store.upsertClaimRelation({
           id: `relation_${run.projectId}_${extractedClaims.claimIdsByCandidate[candidate.fromClaimCandidateId]}_${extractedClaims.claimIdsByCandidate[candidate.toClaimCandidateId]}_${candidate.relation}`,
           projectId: run.projectId,
@@ -533,6 +666,8 @@ const runResearchWorkflowAttempt = async ({
       const snapshot = store.getSnapshot();
       const evidenceByClaim = new Map<string, EvidenceLink[]>();
       const linkedEvidenceIdSet = new Set(linkedEvidence.evidenceLinkIds);
+      const chunkById = new Map(snapshot.chunks.map((chunk) => [chunk.id, chunk]));
+      const sourceById = new Map(snapshot.sources.map((source) => [source.id, source]));
 
       for (const link of snapshot.evidenceLinks) {
         if (link.projectId !== run.projectId || !linkedEvidenceIdSet.has(link.id)) {
@@ -544,33 +679,86 @@ const runResearchWorkflowAttempt = async ({
         evidenceByClaim.set(link.claimId, current);
       }
 
-      const supportedClaims = extractedClaims.claims.filter((claim) =>
-        evidenceByClaim.has(extractedClaims.claimIdsByCandidate[claim.candidateId]),
-      );
-      const supportedClaimIds = new Set(supportedClaims.map((claim) => claim.candidateId));
-      assertProviderBudget();
-      const result = await providers.languageModel.generateStructured({
-        operation: "draft_report",
-        schema: reportDraftSchema,
-        payload: { claims: supportedClaims, evidenceLinkIds: linkedEvidence.evidenceLinkIds },
-        idempotencyKey,
-      });
-      applyUsage(idempotencyKey, result.usage);
-      const output = reportDraftSchema.parse(result.data);
-      const sections = output.sections.flatMap((section) => {
-        const paragraphs = section.paragraphs.flatMap((paragraph) => {
-          const hasSupportedClaim = paragraph.claimIds.some((claimId) =>
-            supportedClaimIds.has(claimId),
-          );
-          const hasUnsupportedClaim = paragraph.claimIds.some(
-            (claimId) => !supportedClaimIds.has(claimId),
-          );
+      const evidencedClaims = extractedClaims.claims.flatMap((claim) => {
+        const evidenceLinks =
+          evidenceByClaim.get(extractedClaims.claimIdsByCandidate[claim.candidateId]) ?? [];
 
-          if (hasSupportedClaim && hasUnsupportedClaim) {
+        if (evidenceLinks.length === 0) {
+          return [];
+        }
+
+        const evidence = evidenceLinks.map((link) => {
+          const chunk = chunkById.get(link.chunkId);
+          const source = chunk ? sourceById.get(chunk.sourceId) : undefined;
+
+          if (!chunk || !source || source.projectId !== run.projectId) {
             throw new Error("REPORT_CITATION_INVALID");
           }
 
-          if (!hasSupportedClaim) {
+          return {
+            relation: link.relation,
+            strength: link.strength,
+            quote: link.quote,
+            rationale: link.rationale,
+            sourceUrl: source.canonicalUrl,
+            sourceTitle: source.title,
+            chunkId: chunk.id,
+          };
+        });
+
+        return [
+          {
+            ...claim,
+            hasSupportingEvidence: evidence.some((item) => item.relation === "supports"),
+            evidence,
+          },
+        ];
+      });
+      const evidencedClaimIds = new Set(
+        evidencedClaims.map((claim) => claim.candidateId),
+      );
+      assertProviderBudget();
+      const result = await executeProviderCall(idempotencyKey, async () => {
+        const providerResult = await providers.languageModel.generateStructured({
+          operation: "draft_report",
+          schema: reportDraftSchema,
+          payload: {
+            ...researchContext,
+            claims: evidencedClaims,
+          },
+          idempotencyKey,
+        });
+        const output = reportDraftSchema.parse(providerResult.data);
+
+        if (output.sections.length === 0) {
+          throw new Error("REPORT_CITATION_INVALID");
+        }
+
+        for (const section of output.sections) {
+          for (const paragraph of section.paragraphs) {
+            if (paragraph.claimIds.some((claimId) => !evidencedClaimIds.has(claimId))) {
+              throw new Error("REPORT_CITATION_INVALID");
+            }
+          }
+        }
+
+        return { ...providerResult, data: output };
+      });
+      applyUsage(idempotencyKey, result.usage);
+      const sections = result.data.sections.flatMap((section) => {
+        const paragraphs = section.paragraphs.flatMap((paragraph) => {
+          const hasEvidencedClaim = paragraph.claimIds.some((claimId) =>
+            evidencedClaimIds.has(claimId),
+          );
+          const hasUnsupportedClaim = paragraph.claimIds.some(
+            (claimId) => !evidencedClaimIds.has(claimId),
+          );
+
+          if (hasEvidencedClaim && hasUnsupportedClaim) {
+            throw new Error("REPORT_CITATION_INVALID");
+          }
+
+          if (!hasEvidencedClaim) {
             return [];
           }
 
@@ -612,8 +800,6 @@ const runResearchWorkflowAttempt = async ({
         ];
       });
       const citationLinkIds = new Set(sections.flatMap((section) => section.citationIds));
-      const chunkById = new Map(snapshot.chunks.map((chunk) => [chunk.id, chunk]));
-      const sourceById = new Map(snapshot.sources.map((source) => [source.id, source]));
       const citations = snapshot.evidenceLinks
         .filter((link) => citationLinkIds.has(link.id))
         .map((link) => {

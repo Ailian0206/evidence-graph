@@ -108,7 +108,7 @@ const run = async () => {
     console.log(`[通过] ${name}`);
   }
 
-  console.log("付费 Provider：未执行（成本上限 1 美元）");
+  console.log("付费 Provider：未执行（专用冒烟上限 0.10 USD）");
   console.log("生产冒烟检查通过");
 };
 

@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import { createDemoResearchFixture } from "@/features/research/fixtures";
-import { runResearchWorkflow } from "@/features/research/run-research-workflow";
+import {
+  runResearchWorkflow,
+  type ProviderCallExecutor,
+} from "@/features/research/run-research-workflow";
 import { createInMemoryResearchWorkflowStore } from "@/features/research/workflow-store";
 import {
   claimCandidatesSchema,
@@ -12,6 +15,20 @@ import {
 } from "@/features/research/workflow-types";
 import { searchResultSchema } from "@/providers/contracts";
 import { createFixtureResearchProviders } from "@/providers/fixtures/research-providers";
+
+const createMemoizingProviderCallExecutor = (): ProviderCallExecutor => {
+  const memo = new Map<string, unknown>();
+
+  return async (idempotencyKey, operation) => {
+    if (memo.has(idempotencyKey)) {
+      return structuredClone(memo.get(idempotencyKey)) as never;
+    }
+
+    const result = await operation();
+    memo.set(idempotencyKey, structuredClone(result));
+    return result;
+  };
+};
 
 describe("research provider fixtures", () => {
   it("returns deterministic structured data and records idempotency keys", async () => {
@@ -471,6 +488,325 @@ describe("research workflow store", () => {
 });
 
 describe("research workflow", () => {
+  it("extracts manual URLs once and includes their sources in the workflow", async () => {
+    const providers = createFixtureResearchProviders();
+    const fixture = createDemoResearchFixture();
+    fixture.sources = [];
+    fixture.chunks = [];
+    fixture.claims = [];
+    fixture.evidenceLinks = [];
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      manualUrls: ["https://manual.example.com/article"],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+
+    expect(result.run.status).toBe("ready");
+    expect(providers.calls.filter((call) => call.operation === "extract")).toEqual([
+      expect.objectContaining({
+        operation: "extract",
+        idempotencyKey: "run_demo:collecting:manual",
+      }),
+    ]);
+    expect(store.getSnapshot().sources).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          canonicalUrl: "https://manual.example.com/article",
+          body: expect.stringContaining("Manual source content"),
+        }),
+      ]),
+    );
+  });
+
+  it("passes the real research question and language to every model operation", async () => {
+    const providers = createFixtureResearchProviders();
+    const fixture = createDemoResearchFixture();
+    fixture.projects[0].question = "可追溯研究如何处理相互冲突的来源？";
+    fixture.projects[0].language = "zh";
+    fixture.sources = [];
+    fixture.chunks = [];
+    fixture.claims = [];
+    fixture.evidenceLinks = [];
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+
+    expect(result.run.status).toBe("ready");
+    const modelCalls = providers.calls.filter(
+      (call) => call.operation !== "search" && call.operation !== "embed",
+    );
+    expect(modelCalls.map((call) => call.operation)).toEqual([
+      "plan",
+      "extract_claims",
+      "link_evidence",
+      "detect_conflicts",
+      "draft_report",
+    ]);
+    expect(
+      modelCalls.every((call) =>
+        expect.objectContaining({
+          question: "可追溯研究如何处理相互冲突的来源？",
+          language: "zh",
+        }).asymmetricMatch(call.payload),
+      ),
+    ).toBe(true);
+    expect(providers.calls.find((call) => call.operation === "link_evidence")?.payload).toEqual(
+      expect.objectContaining({
+        sourceChunks: expect.arrayContaining([
+          expect.objectContaining({
+            chunkId: expect.any(String),
+            text: "Evidence Graph keeps claims connected to exact quotes for review.",
+            sourceId: expect.any(String),
+            sourceUrl: "https://example.com/research",
+            sourceTitle: "Product research interview",
+          }),
+        ]),
+      }),
+    );
+  });
+
+  it("retries evidence linking when a schema-valid quote fails semantic validation", async () => {
+    const providers = createFixtureResearchProviders();
+    const originalGenerateStructured = providers.languageModel.generateStructured;
+    const executeProviderCall = createMemoizingProviderCallExecutor();
+    const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
+    let linkAttempts = 0;
+
+    providers.languageModel.generateStructured = async (input) => {
+      const result = await originalGenerateStructured(input);
+
+      if (input.operation === "link_evidence") {
+        linkAttempts += 1;
+
+        if (linkAttempts === 1) {
+          const invalidResult = structuredClone(result);
+          (invalidResult.data as { evidence: Array<{ quote: string }> }).evidence[0].quote =
+            "This quote is absent from every source chunk";
+          return invalidResult;
+        }
+      }
+
+      return result;
+    };
+
+    const input = {
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      executeProviderCall,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    };
+    const failed = await runResearchWorkflow(input);
+    const resumed = await runResearchWorkflow(input);
+
+    expect(failed.run).toMatchObject({ status: "failed", errorMessage: "QUOTE_NOT_FOUND" });
+    expect(resumed.run.status).toBe("ready");
+    expect(linkAttempts).toBe(2);
+  });
+
+  it("retries conflict detection when a relation references an unknown claim", async () => {
+    const providers = createFixtureResearchProviders();
+    const originalGenerateStructured = providers.languageModel.generateStructured;
+    const executeProviderCall = createMemoizingProviderCallExecutor();
+    const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
+    let conflictAttempts = 0;
+
+    providers.languageModel.generateStructured = async (input) => {
+      const result = await originalGenerateStructured(input);
+
+      if (input.operation === "detect_conflicts") {
+        conflictAttempts += 1;
+
+        if (conflictAttempts === 1) {
+          const invalidResult = structuredClone(result);
+          (
+            invalidResult.data as {
+              relations: Array<{ fromClaimCandidateId: string }>;
+            }
+          ).relations[0].fromClaimCandidateId = "claim_unknown";
+          return invalidResult;
+        }
+      }
+
+      return result;
+    };
+
+    const input = {
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      executeProviderCall,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    };
+    const failed = await runResearchWorkflow(input);
+    const resumed = await runResearchWorkflow(input);
+
+    expect(failed.run.status).toBe("failed");
+    expect(resumed.run.status).toBe("ready");
+    expect(conflictAttempts).toBe(2);
+  });
+
+  it("retries report drafting when a paragraph references an unknown claim", async () => {
+    const providers = createFixtureResearchProviders();
+    const originalGenerateStructured = providers.languageModel.generateStructured;
+    const executeProviderCall = createMemoizingProviderCallExecutor();
+    const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
+    let reportAttempts = 0;
+
+    providers.languageModel.generateStructured = async (input) => {
+      const result = await originalGenerateStructured(input);
+
+      if (input.operation === "draft_report") {
+        reportAttempts += 1;
+
+        if (reportAttempts === 1) {
+          const invalidResult = structuredClone(result);
+          (
+            invalidResult.data as {
+              sections: Array<{ paragraphs: Array<{ claimIds: string[] }> }>;
+            }
+          ).sections[0].paragraphs[0].claimIds = ["claim_unknown"];
+          return invalidResult;
+        }
+      }
+
+      return result;
+    };
+
+    const input = {
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      executeProviderCall,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    };
+    const failed = await runResearchWorkflow(input);
+    const resumed = await runResearchWorkflow(input);
+
+    expect(failed.run.status).toBe("failed");
+    expect(resumed.run.status).toBe("ready");
+    expect(reportAttempts).toBe(2);
+  });
+
+  it("retries report drafting when a schema-valid draft has no sections", async () => {
+    const providers = createFixtureResearchProviders();
+    const originalGenerateStructured = providers.languageModel.generateStructured;
+    const executeProviderCall = createMemoizingProviderCallExecutor();
+    const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
+    let reportAttempts = 0;
+
+    providers.languageModel.generateStructured = async (input) => {
+      const result = await originalGenerateStructured(input);
+
+      if (input.operation === "draft_report") {
+        reportAttempts += 1;
+
+        if (reportAttempts === 1) {
+          const invalidResult = structuredClone(result);
+          (invalidResult.data as { sections: unknown[] }).sections = [];
+          return invalidResult;
+        }
+      }
+
+      return result;
+    };
+
+    const input = {
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      executeProviderCall,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    };
+    const failed = await runResearchWorkflow(input);
+    const resumed = await runResearchWorkflow(input);
+
+    expect(failed.run).toMatchObject({
+      status: "failed",
+      errorMessage: "REPORT_CITATION_INVALID",
+    });
+    expect(resumed.run.status).toBe("ready");
+    expect(reportAttempts).toBe(2);
+  });
+
+  it("embeds ordered chunks in stable durable batches of at most ten", async () => {
+    const paragraphs = Array.from({ length: 11 }, (_, index) => `Paragraph ${index + 1}`);
+    const providers = createFixtureResearchProviders();
+    const originalEmbed = providers.embedding.embed;
+    const batches: string[][] = [];
+    providers.embedding.embed = async (input) => {
+      batches.push(input.texts);
+      return originalEmbed(input);
+    };
+    const fixture = createDemoResearchFixture();
+    fixture.researchRuns[0].sourceLimit = 1;
+    fixture.sources = [];
+    fixture.chunks = [];
+    fixture.claims = [];
+    fixture.evidenceLinks = [];
+    fixture.claimRelations = [];
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [
+        {
+          url: "https://manual.example.com/eleven-chunks",
+          title: "Eleven chunks",
+          body: paragraphs.join("\n\n"),
+          sourceType: "article",
+        },
+      ],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+
+    expect(
+      providers.calls
+        .filter((call) => call.operation === "embed")
+        .map((call) => call.idempotencyKey),
+    ).toEqual(["run_demo:indexing:0", "run_demo:indexing:1"]);
+    expect(batches.map((batch) => batch.length)).toEqual([10, 1]);
+    expect(batches.flat()).toEqual(paragraphs);
+    expect(
+      store
+        .getSnapshot()
+        .providerUsages.filter(({ idempotencyKey }) => idempotencyKey.startsWith("run_demo:indexing")),
+    ).toEqual([
+      expect.objectContaining({
+        idempotencyKey: "run_demo:indexing:0",
+        usage: expect.objectContaining({ tokenCount: paragraphs.slice(0, 10).join("").length }),
+      }),
+      expect.objectContaining({
+        idempotencyKey: "run_demo:indexing:1",
+        usage: expect.objectContaining({ tokenCount: paragraphs[10].length }),
+      }),
+    ]);
+  });
+
   it("runs the deterministic workflow to a fully cited report", async () => {
     const providers = createFixtureResearchProviders();
     const fixture = createDemoResearchFixture();
@@ -499,6 +835,13 @@ describe("research workflow", () => {
     expect(result.report?.citations.every((citation) => citation.quote.length > 0)).toBe(true);
     expect(result.evidenceLinks.map((link) => link.relation)).toEqual(
       expect.arrayContaining(["supports", "rebuts"]),
+    );
+    const snapshot = store.getSnapshot();
+    expect(new Set(snapshot.chunks.map((chunk) => chunk.embeddingModel))).toEqual(
+      new Set(["text-embedding-v4"]),
+    );
+    expect(new Set(snapshot.embeddings.map((embedding) => embedding.model))).toEqual(
+      new Set(["text-embedding-v4"]),
     );
     expect(
       result.evidenceLinks.every((link) => link.claimId.startsWith("claim_project_demo_")),
@@ -547,6 +890,69 @@ describe("research workflow", () => {
         );
       }
     }
+  });
+
+  it("provides report drafting with supporting and rebuttal evidence semantics", async () => {
+    const providers = createFixtureResearchProviders();
+    const fixture = createDemoResearchFixture();
+    fixture.sources = [];
+    fixture.chunks = [];
+    fixture.claims = [];
+    fixture.evidenceLinks = [];
+    fixture.claimRelations = [];
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+    const draftClaims = (
+      providers.calls.find((call) => call.operation === "draft_report")?.payload as {
+        claims: Array<{
+          candidateId: string;
+          hasSupportingEvidence: boolean;
+          evidence: Array<{
+            relation: string;
+            strength: string;
+            quote: string;
+            rationale: string;
+            sourceUrl: string;
+            sourceTitle: string;
+            chunkId: string;
+          }>;
+        }>;
+      }
+    ).claims;
+
+    expect(result.run.status).toBe("ready");
+    expect(draftClaims).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          candidateId: "claim_exact_quotes",
+          hasSupportingEvidence: true,
+          evidence: [
+            expect.objectContaining({
+              relation: "supports",
+              strength: "strong",
+              quote: expect.any(String),
+              rationale: expect.any(String),
+              sourceUrl: "https://example.com/research",
+              sourceTitle: "Product research interview",
+              chunkId: expect.any(String),
+            }),
+          ],
+        }),
+        expect.objectContaining({
+          candidateId: "claim_links_unnecessary",
+          hasSupportingEvidence: false,
+          evidence: [expect.objectContaining({ relation: "rebuts" })],
+        }),
+      ]),
+    );
   });
 
   it("assigns citations from each paragraph's own claims", async () => {
@@ -1096,6 +1502,34 @@ describe("research workflow", () => {
     expect(result.run.errorMessage).toBe("WORKFLOW_FAILED");
     expect(serializedLogs).not.toContain("Private source text");
     expect(serializedLogs).toContain("WORKFLOW_FAILED");
+  });
+
+  it.each([
+    "TAVILY_REQUEST_FAILED",
+    "DEEPSEEK_REQUEST_FAILED",
+    "BAILIAN_REQUEST_FAILED",
+    "PROVIDER_REQUEST_TIMEOUT",
+    "PROVIDER_RESPONSE_INVALID",
+  ])("preserves the stable Provider error code %s", async (errorCode) => {
+    const providers = createFixtureResearchProviders();
+    const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
+    providers.languageModel.generateStructured = async () => {
+      throw new Error(errorCode);
+    };
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+
+    expect(result.run.errorMessage).toBe(errorCode);
+    expect(store.listRunLogs("run_demo")).toContainEqual(
+      expect.objectContaining({ errorCode }),
+    );
   });
 
   it("rejects a run owner mismatch without provider calls", async () => {

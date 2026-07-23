@@ -131,6 +131,6 @@ describe("production smoke gate", () => {
       { method: "POST", path: "/api/inngest" },
     ]);
     expect(result.stdout).toContain("生产冒烟检查通过");
-    expect(result.stdout).toContain("付费 Provider：未执行（成本上限 1 美元）");
+    expect(result.stdout).toContain("付费 Provider：未执行（专用冒烟上限 0.10 USD）");
   });
 });

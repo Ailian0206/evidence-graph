@@ -4,12 +4,12 @@
 
 ## 1. 部署边界
 
-- 日常测试只使用 fixture providers，不调用 OpenAI 或 Tavily。
+- 日常测试只使用 fixture providers，不调用 Tavily、DeepSeek 或阿里云百炼。
 - 不把 `.env.local`、Service Role、Signing Key、Sentry Auth Token、Provider 响应或包含私人来源正文的报告提交到 Git。
 - 本地开发使用本地 Supabase 和确定性 fixtures；Vercel 只配置 Production，不维护 Preview 环境变量或预发布服务。
 - `main` 由 Vercel 自动部署；日常发布只做必要验证和一次默认生产冒烟，不例行执行回滚演练或密钥轮换。
 - 默认生产冒烟不创建项目、不运行研究、不调用付费 Provider。
-- 真实 Provider 冒烟必须额外设置 `ALLOW_PAID_PROVIDER_SMOKE=YES_I_ACCEPT_PROVIDER_COST`，单次总成本上限为 1 美元；当前里程碑未获得授权时不得执行。
+- 真实 Provider 冒烟必须同时设置 `RESEARCH_PROVIDER_MODE=live`、`ALLOW_PAID_PROVIDER_SMOKE=I_CONFIRM_PAID_PROVIDER_CALLS` 和不高于 `0.10 USD` 的显式成本上限；未取得当次授权时不得执行。
 
 ## 2. 本地门禁
 
@@ -70,7 +70,7 @@ npx supabase db push --linked
 2. 将 Production 同步地址配置为 `https://<production-host>/api/inngest`。
 3. 取得 Production Event Key 与 Signing Key，并只写入 Vercel Production 变量。
 4. 同步后确认函数 `run-managed-research` 的 owner 并发为 1、重试次数为 3、幂等键为 `runId`。
-5. 当前执行器仍使用确定性 fixtures；在真实 Provider 适配器完成独立成本门禁前，不发送真实研究事件。
+5. Production 执行器强制使用 Tavily、DeepSeek 和阿里云百炼，不会静默回退 fixtures；本地和 CI 默认仍使用确定性 fixtures。
 
 ### 3.4 Sentry
 
@@ -100,7 +100,13 @@ npx supabase db push --linked
 | `SENTRY_PROJECT`                       | 不配置                  | 可选             | 否         | Sentry 项目名          |
 | `PRODUCTION_BASE_URL`                  | 不配置                  | 冒烟终端临时设置 | 否         | 生产站点 HTTPS Origin  |
 | `ALLOW_PRODUCTION_SMOKE`               | 不配置                  | 冒烟终端临时设置 | 否         | 防止误触发生产请求     |
-| `OPENAI_API_KEY` / `TAVILY_API_KEY`    | 默认不配置              | 默认不配置       | 否         | 付费 Provider 专用门禁 |
+| `TAVILY_API_KEY`                       | 默认不配置              | Production 值    | 否         | Tavily Search/Extract  |
+| `DEEPSEEK_API_KEY`                     | 默认不配置              | Production 值    | 否         | DeepSeek 结构化生成    |
+| `BAILIAN_API_KEY`                      | 默认不配置              | Production 值    | 否         | 百炼 Embedding         |
+| `BAILIAN_WORKSPACE_ID`                 | 默认不配置              | Production 值    | 否         | 百炼北京地域工作空间   |
+| `RESEARCH_PROVIDER_MODE`               | 默认不配置              | `live`           | 否         | 本地 live 仍需付费门禁 |
+| `ALLOW_PAID_PROVIDER_SMOKE`            | 默认不配置              | 不持久配置       | 否         | 专用冒烟精确确认令牌   |
+| `PAID_PROVIDER_SMOKE_COST_LIMIT_USD`   | 默认不配置              | 不持久配置       | 否         | 专用冒烟上限，至多 0.10 |
 
 Vercel 变量配置完成后，通过官方 CLI 拉取当前环境到已被 Git 忽略的 `.env.local`，再在不打印变量值的前提下检查：
 
@@ -128,7 +134,20 @@ PRODUCTION_BASE_URL=https://<production-host> \
 npm run smoke:production
 ```
 
-脚本请求超时为 15 秒，不跟随重定向，不输出响应正文。默认流程明确输出“付费 Provider：未执行（成本上限 1 美元）”。
+脚本请求超时为 15 秒，不跟随重定向，不输出响应正文。默认流程不调用付费 Provider。
+
+### 5.1 真实 Provider 冒烟
+
+日常 `npm run test:managed` 固定使用 fixtures，保持零 Provider 网络请求。真实 Provider 冒烟使用独立 Node 测试配置，不会被默认 `test:unit` 或 CI 收集；只有取得当次付费调用授权后，才在本地终端显式执行：
+
+```bash
+RESEARCH_PROVIDER_MODE=live \
+ALLOW_PAID_PROVIDER_SMOKE=I_CONFIRM_PAID_PROVIDER_CALLS \
+PAID_PROVIDER_SMOKE_COST_LIMIT_USD=0.10 \
+npm run test:providers:live
+```
+
+该命令从被 Git 忽略的 `.env.local` 读取 `TAVILY_API_KEY`、`DEEPSEEK_API_KEY`、`BAILIAN_API_KEY` 和 `BAILIAN_WORKSPACE_ID`，依次执行一次最小 Tavily Search、一次 DeepSeek `plan` 结构化调用和一次 1536 维百炼 Embedding。低于 `0.01 USD` 的成本上限会在创建 Provider 和发送请求前被拒绝；每次调用完成后立即记录实际估算费用，累计超限时不再调用下一家 Provider。三个适配器各使用 30 秒请求超时，测试只验证返回契约和非敏感费用总额，不输出 Key、请求 payload、搜索正文或模型正文；估算总成本超过显式 `0.10 USD` 上限时测试失败。
 
 ## 6. 发布与回滚
 

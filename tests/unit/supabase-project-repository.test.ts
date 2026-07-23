@@ -7,6 +7,7 @@ import {
   type ProjectRow,
   type ResearchRunRow,
 } from "@/features/projects/supabase-project-repository";
+import { manualSourceUrlSchema } from "@/features/sources/manual-source-url";
 
 const projectRow: ProjectRow = {
   id: "project_1",
@@ -268,5 +269,49 @@ describe("Supabase project repository", () => {
         manualUrls: ["not-a-url"],
       }),
     ).toThrow();
+  });
+
+  it.each([
+    "mailto:research@example.com",
+    "ftp://research.example.com/source",
+    "javascript:alert(1)",
+    "http://localhost/source",
+    "https://app.localhost/source",
+    "http://127.0.0.42/source",
+    "http://0.0.0.0/source",
+    "http://[::1]/source",
+    "https://research.local/source",
+  ])("rejects unsafe manual source URL %s", (manualUrl) => {
+    expect(() =>
+      createResearchInputSchema.parse({
+        title: "来源核查",
+        question: "这些来源是否支持目标主张？",
+        language: "zh",
+        manualUrls: [manualUrl],
+      }),
+    ).toThrow();
+  });
+
+  it.each([
+    "http://research.example.com/source",
+    "https://research.example.com/source",
+  ])("accepts external HTTP(S) manual source URL %s", (manualUrl) => {
+    expect(
+      createResearchInputSchema.parse({
+        title: "来源核查",
+        question: "这些来源是否支持目标主张？",
+        language: "zh",
+        manualUrls: [manualUrl],
+      }).manualUrls,
+    ).toEqual([manualUrl]);
+  });
+
+  it("returns a failed parse instead of throwing for a malformed manual URL", () => {
+    let result: ReturnType<typeof manualSourceUrlSchema.safeParse> | undefined;
+
+    expect(() => {
+      result = manualSourceUrlSchema.safeParse("not-a-url");
+    }).not.toThrow();
+    expect(result).toMatchObject({ success: false });
   });
 });

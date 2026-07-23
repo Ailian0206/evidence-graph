@@ -6,6 +6,7 @@ import {
   projectVisibilitySchema,
   type ResearchRun,
 } from "@/features/research/domain";
+import { manualSourceUrlSchema } from "@/features/sources/manual-source-url";
 
 export const projectLanguageSchema = z.enum(["zh", "en"]);
 
@@ -20,7 +21,7 @@ export const createProjectInputSchema = z.object({
 });
 
 export const createResearchInputSchema = createProjectInputSchema.extend({
-  manualUrls: z.array(z.string().url()).max(5).default([]),
+  manualUrls: z.array(manualSourceUrlSchema).max(5).default([]),
 });
 
 export const updateProjectInputSchema = z

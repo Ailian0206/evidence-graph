@@ -28,6 +28,7 @@ export const createDemoResearchFixture = (): DemoResearchFixture => {
     ownerId: "user_ailian",
     title: "Evidence Graph vs AI search",
     question: "How is Evidence Graph different from normal AI search summaries?",
+    language: "en",
     status: "active",
     visibility: "private",
     slug: "evidence-graph-vs-ai-search",

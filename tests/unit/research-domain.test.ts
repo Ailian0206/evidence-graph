@@ -26,6 +26,7 @@ describe("research domain schemas", () => {
         ownerId: "user_ailian",
         title: "Evidence Graph vs AI search",
         question: "How is Evidence Graph different from normal AI search summaries?",
+        language: "en",
         status: "active",
         visibility: "private",
         slug: "evidence-graph-vs-ai-search",
@@ -107,6 +108,38 @@ describe("research domain schemas", () => {
       }).relation,
     ).toBe("supports");
   });
+
+  it("accepts historical and current embedding model metadata", () => {
+    const chunk = {
+      id: "chunk_model_metadata",
+      sourceId: "source_demo",
+      projectId: "project_demo",
+      chunkIndex: 0,
+      text: "Embedding model metadata stays accurate across provider upgrades.",
+      startChar: 0,
+      endChar: 64,
+      embeddingDimensions: 1536,
+    };
+
+    expect(
+      sourceChunkSchema.parse({
+        ...chunk,
+        embeddingModel: "text-embedding-3-small",
+      }).embeddingModel,
+    ).toBe("text-embedding-3-small");
+    expect(
+      sourceChunkSchema.parse({
+        ...chunk,
+        embeddingModel: "text-embedding-v4",
+      }).embeddingModel,
+    ).toBe("text-embedding-v4");
+    expect(() =>
+      sourceChunkSchema.parse({
+        ...chunk,
+        embeddingModel: "unknown-embedding-model",
+      }),
+    ).toThrow();
+  });
 });
 
 describe("source utilities", () => {
@@ -127,7 +160,7 @@ describe("source utilities", () => {
     expect(chunks).toHaveLength(2);
     expect(chunks[0]).toMatchObject({ chunkIndex: 0, startChar: 0, endChar: 900 });
     expect(chunks[1].text).toBe("B".repeat(700));
-    expect(chunks[1].embeddingModel).toBe("text-embedding-3-small");
+    expect(chunks[1].embeddingModel).toBe("text-embedding-v4");
   });
 
   it.each([

@@ -1,5 +1,9 @@
 import { createDemoResearchFixture } from "@/features/research/fixtures";
-import { runResearchWorkflow } from "@/features/research/run-research-workflow";
+import {
+  runResearchWorkflow,
+  type ProviderCallExecutor,
+} from "@/features/research/run-research-workflow";
+import type { WorkflowInput } from "@/features/research/supabase-workflow-reader";
 import {
   createDurableWorkflowWriter,
   createSupabaseWorkflowPersistenceQueries,
@@ -9,7 +13,12 @@ import {
   createInMemoryResearchWorkflowStore,
   type ResearchWorkflowSnapshot,
 } from "@/features/research/workflow-store";
-import { createFixtureResearchProviders } from "@/providers/fixtures/research-providers";
+import type {
+  EmbeddingProvider,
+  LanguageModel,
+  SearchProvider,
+} from "@/providers/contracts";
+import { createResearchProviders } from "@/providers/runtime";
 import {
   authorizeResearchRun,
   createSupabaseRunAuthorizationReader,
@@ -27,12 +36,30 @@ type DurableStep = {
 
 type RunResearchHandlerDependencies = {
   authorize: (event: ResearchRequestedEventData) => Promise<unknown>;
-  executeWorkflow: (event: ResearchRequestedEventData) => Promise<{
+  executeWorkflow: (
+    event: ResearchRequestedEventData,
+    executeProviderCall: ProviderCallExecutor,
+  ) => Promise<{
     output: unknown;
     snapshot: ResearchWorkflowSnapshot;
   }>;
   createWriter: () => Promise<DurableWorkflowWriter>;
 };
+
+type ResearchWorkflowProviders = {
+  search: SearchProvider;
+  languageModel: LanguageModel;
+  embedding: EmbeddingProvider;
+};
+
+type ResearchWorkflowExecutorDependencies = {
+  readInput: (event: ResearchRequestedEventData) => Promise<WorkflowInput>;
+  createProviders: () => ResearchWorkflowProviders;
+  now: () => string;
+};
+
+const DEFAULT_RETRY_COUNT = 3 as const;
+const DEFAULT_MAX_ATTEMPTS = DEFAULT_RETRY_COUNT + 1;
 
 const getStableErrorCode = (error: unknown) => {
   const message = error instanceof Error ? error.message : "";
@@ -47,28 +74,92 @@ export const createRunResearchHandler = ({
   async ({
     event,
     step,
+    attempt = 0,
+    maxAttempts = DEFAULT_MAX_ATTEMPTS,
   }: {
     event: { data: ResearchRequestedEventData };
     step: DurableStep;
+    attempt?: number;
+    maxAttempts?: number;
   }) => {
     const parsedEvent = researchRequestedEventSchema.parse(event.data);
     await authorize(parsedEvent);
     const writer = await createWriter();
-    return step.run("run-deterministic-research", async () => {
-      await writer.begin(parsedEvent);
+    await step.run("begin-research-workflow", () => writer.begin(parsedEvent));
+    const executeProviderCall: ProviderCallExecutor = async (
+      idempotencyKey,
+      operation,
+    ) =>
+      (await step.run(
+        `provider:${idempotencyKey}`,
+        operation,
+      )) as Awaited<ReturnType<typeof operation>>;
 
-      try {
-        const execution = await executeWorkflow(parsedEvent);
-        await writer.persist({ event: parsedEvent, snapshot: execution.snapshot });
-        return execution.output;
-      } catch (error) {
-        await writer.fail({
-          ...parsedEvent,
-          errorCode: getStableErrorCode(error),
-        });
-        throw error;
+    try {
+      const execution = await executeWorkflow(parsedEvent, executeProviderCall);
+      await step.run("persist-research-workflow", () =>
+        writer.persist({ event: parsedEvent, snapshot: execution.snapshot }),
+      );
+      return execution.output;
+    } catch (error) {
+      const errorCode = getStableErrorCode(error);
+
+      if (attempt >= maxAttempts - 1) {
+        await step.run(`fail-research-workflow:${errorCode}`, () =>
+          writer.fail({
+            ...parsedEvent,
+            errorCode,
+          }),
+        );
       }
+
+      throw error;
+    }
+  };
+
+export const createResearchWorkflowExecutor = ({
+  readInput,
+  createProviders,
+  now,
+}: ResearchWorkflowExecutorDependencies) =>
+  async (
+    event: ResearchRequestedEventData,
+    executeProviderCall?: ProviderCallExecutor,
+  ) => {
+    const input = await readInput(event);
+    const fixture = createDemoResearchFixture();
+    fixture.projects = [input.project];
+    fixture.researchRuns = [input.run];
+    fixture.sources = [];
+    fixture.chunks = [];
+    fixture.claims = [];
+    fixture.evidenceLinks = [];
+    fixture.claimRelations = [];
+
+    const store = createInMemoryResearchWorkflowStore(fixture);
+    const result = await runResearchWorkflow({
+      runId: input.run.id,
+      ownerId: input.project.ownerId,
+      manualSources: [],
+      manualUrls: input.manualUrls,
+      providers: createProviders(),
+      executeProviderCall,
+      store,
+      now,
     });
+
+    if (result.run.status !== "ready") {
+      throw new Error(result.run.errorMessage ?? "WORKFLOW_FAILED");
+    }
+
+    return {
+      output: {
+        status: result.run.status,
+        completedSteps: result.completedSteps,
+        reportId: result.report?.id ?? null,
+      },
+      snapshot: store.getSnapshot(),
+    };
   };
 
 const authorizeManagedRun = async (event: ResearchRequestedEventData) => {
@@ -78,49 +169,6 @@ const authorizeManagedRun = async (event: ResearchRequestedEventData) => {
     event,
     readRun: createSupabaseRunAuthorizationReader(client),
   });
-};
-
-const executeDeterministicWorkflow = async (event: ResearchRequestedEventData) => {
-  const fixture = createDemoResearchFixture();
-  fixture.projects = fixture.projects.map((project) => ({
-    ...project,
-    id: event.projectId,
-    ownerId: event.ownerId,
-  }));
-  fixture.researchRuns = fixture.researchRuns.map((run) => ({
-    ...run,
-    id: event.runId,
-    projectId: event.projectId,
-    ownerId: event.ownerId,
-  }));
-  fixture.sources = [];
-  fixture.chunks = [];
-  fixture.claims = [];
-  fixture.evidenceLinks = [];
-  fixture.claimRelations = [];
-
-  const store = createInMemoryResearchWorkflowStore(fixture);
-  const result = await runResearchWorkflow({
-    runId: event.runId,
-    ownerId: event.ownerId,
-    manualSources: [],
-    providers: createFixtureResearchProviders(),
-    store,
-    now: () => new Date().toISOString(),
-  });
-
-  if (result.run.status !== "ready") {
-    throw new Error(result.run.errorMessage ?? "WORKFLOW_FAILED");
-  }
-
-  return {
-    output: {
-      status: result.run.status,
-      completedSteps: result.completedSteps,
-      reportId: result.report?.id ?? null,
-    },
-    snapshot: store.getSnapshot(),
-  };
 };
 
 const createManagedWorkflowWriter = async () => {
@@ -142,16 +190,33 @@ export const runResearchFunctionConfig = {
     limit: 1,
     key: "event.data.ownerId",
   },
-  retries: 3 as const,
+  retries: DEFAULT_RETRY_COUNT,
 };
 
 const runResearchHandler = createRunResearchHandler({
   authorize: authorizeManagedRun,
-  executeWorkflow: executeDeterministicWorkflow,
+  executeWorkflow: createResearchWorkflowExecutor({
+    readInput: async (event) => {
+      const { createSupabaseAdminClient } = await import("@/lib/supabase/admin");
+      const { createSupabaseWorkflowInputQueries, createWorkflowInputReader } =
+        await import("@/features/research/supabase-workflow-reader");
+      return createWorkflowInputReader(
+        createSupabaseWorkflowInputQueries(createSupabaseAdminClient()),
+      )(event);
+    },
+    createProviders: () => createResearchProviders(),
+    now: () => new Date().toISOString(),
+  }),
   createWriter: createManagedWorkflowWriter,
 });
 
 export const runManagedResearch = inngest.createFunction(
   runResearchFunctionConfig,
-  async ({ event, step }) => runResearchHandler({ event, step }),
+  async ({ event, step, attempt, maxAttempts }) =>
+    runResearchHandler({
+      event,
+      step,
+      attempt,
+      maxAttempts: maxAttempts ?? DEFAULT_MAX_ATTEMPTS,
+    }),
 );

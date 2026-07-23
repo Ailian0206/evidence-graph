@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   claimRelationTypeSchema,
   claimTypeSchema,
+  embeddingModelSchema,
   evidenceRelationSchema,
   evidenceStrengthSchema,
 } from "@/features/research/domain";
@@ -116,7 +117,7 @@ export const runLogEntrySchema = z.object({
 
 export const embeddedChunkSchema = z.object({
   chunkId: z.string().min(1),
-  model: z.literal("text-embedding-3-small"),
+  model: embeddingModelSchema,
   dimensions: z.literal(1536),
   vector: z.array(z.number()).length(1536),
 });

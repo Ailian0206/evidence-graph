@@ -90,6 +90,28 @@ const upsertRows = async (
 
 const serializeVector = (vector: number[]) => `[${vector.join(",")}]`;
 
+const assertEmbeddingMetadataMatchesChunks = ({
+  chunks,
+  embeddings,
+}: {
+  chunks: SourceChunk[];
+  embeddings: EmbeddedChunk[];
+}) => {
+  const chunkById = new Map(chunks.map((chunk) => [chunk.id, chunk]));
+
+  for (const embedding of embeddings) {
+    const chunk = chunkById.get(embedding.chunkId);
+
+    if (
+      chunk &&
+      (chunk.embeddingModel !== embedding.model ||
+        chunk.embeddingDimensions !== embedding.dimensions)
+    ) {
+      throw new Error("WORKFLOW_EMBEDDING_MODEL_MISMATCH");
+    }
+  }
+};
+
 export const createSupabaseWorkflowPersistenceQueries = (
   client: SupabaseClient,
 ): WorkflowPersistenceQueries => ({
@@ -121,6 +143,7 @@ export const createSupabaseWorkflowPersistenceQueries = (
       "id",
     ),
   upsertChunks: ({ chunks, embeddings }) => {
+    assertEmbeddingMetadataMatchesChunks({ chunks, embeddings });
     const embeddingByChunk = new Map(
       embeddings.map((embedding) => [embedding.chunkId, embedding]),
     );
@@ -289,6 +312,7 @@ const parseOwnedSnapshot = (
   const runLogs = runLogEntrySchema.array().parse(snapshot.runLogs);
   const embeddings = embeddedChunkSchema.array().parse(snapshot.embeddings);
   snapshot.providerUsages.forEach(({ usage }) => providerUsageSchema.parse(usage));
+  assertEmbeddingMetadataMatchesChunks({ chunks, embeddings });
 
   const project = projects.find((candidate) => candidate.id === event.projectId);
   const run = runs.find((candidate) => candidate.id === event.runId);

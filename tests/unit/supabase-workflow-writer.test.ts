@@ -114,6 +114,19 @@ describe("durable workflow writer", () => {
     expect(calls).toEqual(["beginRun"]);
   });
 
+  it("rejects mismatched chunk and vector model metadata before writing rows", async () => {
+    const { calls, queries } = createQueries();
+    const writer = createDurableWorkflowWriter(queries);
+    const snapshot = structuredClone(completedSnapshot);
+    snapshot.embeddings[0].model = "text-embedding-3-small";
+
+    await expect(writer.persist({ event, snapshot })).rejects.toThrow(
+      "WORKFLOW_EMBEDDING_MODEL_MISMATCH",
+    );
+
+    expect(calls).toEqual([]);
+  });
+
   it("maps rows, embeddings, and stable conflict keys in the Supabase adapter", async () => {
     const upserts: Array<{
       table: string;
@@ -157,8 +170,14 @@ describe("durable workflow writer", () => {
 
     const chunkRows = upserts.find(({ table }) => table === "source_chunks")?.rows as Array<{
       embedding: string;
+      embedding_model: string;
+      embedding_dimensions: number;
     }>;
     expect(chunkRows[0].embedding).toMatch(/^\[0(?:,0){1535}\]$/);
+    expect(chunkRows[0]).toMatchObject({
+      embedding_model: "text-embedding-v4",
+      embedding_dimensions: 1536,
+    });
 
     const reportRows = upserts.find(({ table }) => table === "reports")?.rows as Array<{
       status: string;

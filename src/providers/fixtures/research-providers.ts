@@ -6,7 +6,7 @@ import type {
 } from "@/providers/contracts";
 
 export type FixtureProviderCall = {
-  operation: "search" | "embed" | ResearchModelOperation;
+  operation: "search" | "extract" | "embed" | ResearchModelOperation;
   idempotencyKey: string;
   payload?: unknown;
 };
@@ -154,7 +154,7 @@ export const createFixtureResearchProviders = (
       throw new Error("FIXTURE_PROVIDER_FAILED");
     }
   };
-  const createStructuredOutput = (operation: ResearchModelOperation) => {
+  const createStructuredOutput = (operation: ResearchModelOperation, payload: unknown) => {
     const output = structuredClone(STRUCTURED_OUTPUTS[operation]);
 
     if (options.invalidQuote && operation === "link_evidence") {
@@ -183,6 +183,22 @@ export const createFixtureResearchProviders = (
     if (options.evidenceCount !== undefined && operation === "link_evidence") {
       const evidenceOutput = output as { evidence: unknown[] };
       evidenceOutput.evidence = evidenceOutput.evidence.slice(0, options.evidenceCount);
+    }
+
+    if (operation === "draft_report") {
+      const allowedClaimIds = new Set(
+        ((payload as { claims?: Array<{ candidateId: string }> }).claims ?? []).map(
+          (claim) => claim.candidateId,
+        ),
+      );
+      const reportOutput = output as {
+        sections: Array<{ paragraphs: Array<{ claimIds: string[] }> }>;
+      };
+      reportOutput.sections = reportOutput.sections.filter((section) =>
+        section.paragraphs.some((paragraph) =>
+          paragraph.claimIds.every((claimId) => allowedClaimIds.has(claimId)),
+        ),
+      );
     }
 
     if (options.mixedUnsupportedReportClaim && operation === "draft_report") {
@@ -239,6 +255,24 @@ export const createFixtureResearchProviders = (
         },
       };
     },
+    extract: async ({ urls, idempotencyKey }) => {
+      calls.push({ operation: "extract", idempotencyKey, payload: { urls } });
+      failOnce("extract");
+
+      return {
+        data: urls.map((url, index) => ({
+          url,
+          title: `Manual source ${index + 1}`,
+          body: `Manual source content ${index + 1} from ${url}.`,
+          sourceType: "article" as const,
+        })),
+        usage: {
+          estimatedCostUsd: getCost("extract", 0.01),
+          searchCount: 0,
+          tokenCount: urls.reduce((total, url) => total + url.length, 0),
+        },
+      };
+    },
   };
   const languageModel: LanguageModel = {
     generateStructured: async ({ operation, schema, payload, idempotencyKey }) => {
@@ -246,7 +280,7 @@ export const createFixtureResearchProviders = (
       failOnce(operation);
 
       return {
-        data: schema.parse(createStructuredOutput(operation)),
+        data: schema.parse(createStructuredOutput(operation, payload)),
         usage: {
           estimatedCostUsd: getCost(operation, 0.01),
           searchCount: 0,
