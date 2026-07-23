@@ -45,6 +45,10 @@
     "title": "Sign in to Evidence Graph",
     "description": "Continue to the research workspace with GitHub.",
     "github": "Sign in with GitHub",
+    "local": {
+      "action": "Enter local research workspace",
+      "description": "Connects only to local Supabase data."
+    },
     "unconfigured": "Managed sign-in is not configured",
     "error": "Sign-in did not complete. Try again."
   },

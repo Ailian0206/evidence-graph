@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { isLocalDevelopmentAuthEnabled } from "@/features/auth/local-development";
 import { getSafeAppPath } from "@/features/auth/session";
 import type { AppLocale } from "@/i18n/routing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -34,6 +35,25 @@ export const signInWithGitHub = async (
   }
 
   redirect(data.url);
+};
+
+export const signInForLocalDevelopment = async (
+  locale: AppLocale,
+  requestedNextPath: string,
+) => {
+  if (!isLocalDevelopmentAuthEnabled()) {
+    throw new Error("LOCAL_DEV_AUTH_DISABLED");
+  }
+
+  const nextPath = getSafeAppPath(locale, requestedNextPath);
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.auth.signInAnonymously();
+
+  if (error) {
+    throw new Error("LOCAL_DEV_AUTH_FAILED");
+  }
+
+  redirect(nextPath);
 };
 
 export const signOut = async (locale: AppLocale) => {

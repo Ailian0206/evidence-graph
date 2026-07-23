@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
-import { LockKeyhole, LogIn } from "lucide-react";
+import { Laptop, LockKeyhole, LogIn } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
-import { signInWithGitHub } from "@/features/auth/actions";
+import {
+  signInForLocalDevelopment,
+  signInWithGitHub,
+} from "@/features/auth/actions";
+import { isLocalDevelopmentAuthEnabled } from "@/features/auth/local-development";
 import { getSafeAppPath } from "@/features/auth/session";
 import type { AppLocale } from "@/i18n/routing";
 import { isSupabasePublicConfigured } from "@/lib/supabase/config";
@@ -27,8 +31,14 @@ export default async function LoginPage({ params, searchParams }: LoginPageProps
 
   const t = await getTranslations("Auth");
   const configured = isSupabasePublicConfigured();
+  const localDevelopmentEnabled = isLocalDevelopmentAuthEnabled();
   const nextPath = getSafeAppPath(locale, next);
-  const action = signInWithGitHub.bind(null, locale, nextPath);
+  const githubAction = signInWithGitHub.bind(null, locale, nextPath);
+  const localDevelopmentAction = signInForLocalDevelopment.bind(
+    null,
+    locale,
+    nextPath,
+  );
 
   return (
     <div className={styles.page}>
@@ -37,7 +47,7 @@ export default async function LoginPage({ params, searchParams }: LoginPageProps
         <LockKeyhole aria-hidden="true" className={styles.icon} size={28} />
         <h1 id="auth-title">{t("title")}</h1>
         <p className={styles.description}>{t("description")}</p>
-        <form action={action} className={styles.form}>
+        <form action={githubAction} className={styles.form}>
           <button className={styles.button} type="submit" disabled={!configured}>
             <LogIn aria-hidden="true" size={18} />
             {t("github")}
@@ -47,6 +57,20 @@ export default async function LoginPage({ params, searchParams }: LoginPageProps
           <p className={styles.status} role="status">
             {t("unconfigured")}
           </p>
+        ) : null}
+        {localDevelopmentEnabled ? (
+          <div className={styles.localAccess}>
+            <p className={styles.localDescription}>{t("local.description")}</p>
+            <form action={localDevelopmentAction}>
+              <button
+                className={`${styles.button} ${styles.localButton}`}
+                type="submit"
+              >
+                <Laptop aria-hidden="true" size={18} />
+                {t("local.action")}
+              </button>
+            </form>
+          </div>
         ) : null}
         {error ? (
           <p className={styles.error} role="alert">

@@ -68,6 +68,33 @@
   cursor: not-allowed;
 }
 
+.localAccess {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #c7cac2;
+}
+
+.localDescription {
+  margin: 0 0 12px;
+  color: #626a64;
+  font-size: 13px;
+}
+
+.localButton {
+  max-width: 100%;
+  height: auto;
+  min-height: 44px;
+  border-color: #737b75;
+  background: transparent;
+  color: var(--ink);
+  white-space: normal;
+}
+
+.localButton:hover {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
 .status,
 .error {
   margin: 16px 0 0;
