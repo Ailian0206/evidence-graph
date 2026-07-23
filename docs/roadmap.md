@@ -8,14 +8,14 @@ Evidence Graph 已经具备 Auth、项目、研究工作流、证据工作台、
 
 当前缺口不是再搭一套生产基础设施，而是把已有能力整理成用户可以在本地连续验收的完整产品：
 
-- 本地 Supabase、Inngest、Next.js 和真实 Provider 尚未形成稳定的一键运行链路。
+- 本地 Next.js、托管开发 Supabase、轻量 Inngest 和真实 Provider 尚未形成经过逐步验收的运行链路。
 - 核心研究闭环还没有经过用户本地逐步验收和 P0/P1 问题收敛。
 - 原产品计划中的 `/app/settings`、账号与数据删除尚未完成。
 - 10 个固定问题的 Evidence Eval 尚未建立。
 - 3 个真实公开案例和作品集回填尚未完成。
 - 尚未形成经过用户确认的本地 Release Candidate。
 
-Production 已有一份可用基线，但从现在起冻结。日常开发只使用本地环境；只有 C6 本地 Release Candidate 验收通过，并再次取得用户明确授权后，才能执行 R1。
+Production 已有一份历史基线，但从现在起冻结。日常开发使用本地应用和当前托管开发数据库，不启动本地 Supabase Docker；只有 C6 本地 Release Candidate 验收通过，并再次取得用户明确授权后，才能执行 R1。
 
 ## 2. 完成度口径
 
@@ -87,31 +87,29 @@ Production 部署状态单独记录，只说明某个提交是否上线，不参
 
 ### 目标
 
-让用户只面对一个本地入口，就能使用本地数据库和后台任务完成一条真实研究，而不借助 Production 调试。
+让用户通过固定本地入口连接托管开发数据库，依次验收登录与项目列表、fixture 研究闭环和低范围真实研究，全程不启动本地 Supabase Docker，也不借助 Production 部署调试。
 
 ### 进入条件
 
 - C0 已完成。
-- 本地 Supabase 可启动，仓库迁移链可在本地通过。
+- 当前托管 Supabase 明确作为 C1-C6 的开发数据库，仓库 migration 链继续作为 Schema 事实来源。
 - 开始任何付费调用前再次确认本次成本上限。
 
 ### 用户可见结果
 
-1. 启动本地 Supabase、Inngest 和 Next.js。
-2. 通过只在开发环境可用的本地认证入口进入 `/zh/app`；Production 仍只保留正式 OAuth。
-3. 从 UI 创建一个低范围中文研究。
-4. 看到 queued、running、ready 或明确失败状态。
-5. 打开真实来源、主张、证据关系、运行日志和带引文草稿报告。
-
-本地专用登录属于开发验收工具，不是新增产品功能，不得在 Production 可用。
+1. C1-A 只启动 Next.js，通过现有 GitHub OAuth 登录并看到托管开发数据库中的项目列表。
+2. C1-B 启动单 worker Inngest，从 UI 完成一条不产生费用的 fixture 研究。
+3. C1-C 在明确成本和资源上限下完成一条低范围中文真实研究。
+4. 每一步都看到 queued、running、ready 或明确失败状态，并在用户确认后才进入下一步。
+5. 最终打开真实来源、主张、证据关系、运行日志和带引文草稿报告。
 
 ### 自动化门禁
 
-- 为本地认证隔离、环境校验、Provider 成本门禁和启动脚本补充测试。
+- 为托管开发环境隔离、OAuth loopback、Provider 成本与资源门禁和轻量启动脚本补充测试。
 - 主工作区的运行配置不依赖已完成模块的旧 worktree；本地密钥文件保持 Git 忽略并限制为当前用户可读写。
 - 现有 Provider fixtures、数据库、Auth、Inngest 和研究闭环测试保持通过。
 - 完整 `npm run test:managed` 通过，默认路径不调用真实 Provider。
-- 专用真实验收只允许一条低范围研究，并记录脱敏的次数、状态和估算费用。
+- 专用真实验收只允许一条最多 4 个来源、40,000 字符、20 个 embedding 批次和 `0.15 USD` 的研究，并记录脱敏的次数、状态和估算费用。
 
 ### 本地验收清单
 
@@ -125,6 +123,7 @@ Production 部署状态单独记录，只说明某个提交是否上线，不参
 
 - 不修复所有产品体验问题；发现的问题形成 C2 的有限清单。
 - 不实现 Settings、账号删除、Evidence Eval 或真实案例内容。
+- 不启动本地 Supabase Docker，不启用托管 anonymous 登录。
 - 不修改 Production，不更新 `release`。
 - 不把真实密钥写入仓库或终端输出。
 

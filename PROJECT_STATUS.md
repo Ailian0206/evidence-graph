@@ -5,8 +5,8 @@
 ## 当前阶段
 
 - 当前里程碑：C1“本地真实研究运行环境”，正在分支 `feat/c1-local-live-research` 实现。
-- 当前进度：设计和 TDD 实施计划已落库，进入本地启动、开发登录和 live 成本门禁实现。
-- 下一次用户可见结果：在本地从登录开始，完成一条低范围中文真实研究，并检查来源、主张、证据关系和带引文报告。
+- 当前进度：第一版 Docker 方案已停止；第二版托管开发数据库设计已写入，等待用户书面审阅后重写实施计划。
+- 下一次用户可见结果：C1-A 只启动 Next.js，用户通过 GitHub OAuth 登录并看到托管开发数据库中的项目列表，机器无明显内存压力。
 - 当前禁止：不得提前实现 C2-C6，不得更新 `release`，不得执行 Production 迁移、变量修改、Inngest 同步或部署。
 - 路线图：`docs/roadmap.md`。
 
@@ -15,7 +15,7 @@
 | 维度 | 当前状态 | 说明 |
 | --- | --- | --- |
 | 代码完成度 | 核心技术能力已存在 | Auth、项目、研究工作流、证据工作台、报告和真实 Provider 已进入 `main` |
-| 本地验收度 | 未完成 | 本地 Supabase、Inngest、应用、认证和真实 Provider 尚未形成用户已验收的连续链路 |
+| 本地验收度 | 未完成 | C1-A 登录与项目列表、C1-B fixture 闭环、C1-C 真实研究均待逐步验收 |
 | 产品完成度 | 未完成 | Settings/删除、Evidence Eval、3 个真实案例和 Release Candidate 尚未完成 |
 | Production 状态 | 有可用历史基线，当前冻结 | `release` 是唯一 Production Branch；C6 前不再发布 |
 
@@ -25,11 +25,11 @@
 
 - 分支：`main` 是日常开发与集成分支；`release` 只用于明确批准的 Production 发布。
 - Vercel：Preview 自动部署已关闭。
-- 本地 Supabase：服务可运行，仓库包含 4 条迁移和 4 个 pgTAP 文件。
-- 本地应用：当前未形成完整启动与验收入口；`3000` 端口曾被其他项目占用，不能据此判断 Evidence Graph 正在运行。
-- 本地 Inngest：尚未纳入稳定的本地启动链路。
-- 本地认证：正式产品只有 GitHub OAuth；C1 将提供严格限制在开发环境的本地验收入口。
-- 本地 Provider：Live adapters 已实现，但主工作区尚未配置 Supabase 与 Live Provider 运行变量；现有本地密钥只能迁移到 Git 忽略且权限收紧的运行文件，不得写入 Git、状态文档或终端输出。
+- 托管开发数据库：当前 Supabase 项目用于 C1-C6 开发；本地不再启动 Supabase Docker。Schema 继续由仓库 4 条迁移和 4 个 pgTAP 文件管理。
+- 本地应用：固定目标端口为 `3218`，当前未启动；下一步只启动 Next.js 完成 C1-A。
+- 本地 Inngest：仅在 C1-B/C1-C 启动，必须限制为 1 个 worker；当前未启动。
+- 本地认证：使用现有 GitHub OAuth 和 loopback redirect，不启用托管 anonymous sign-in。
+- 本地 Provider：Live adapters 已实现；C1-C 使用 Git 忽略且权限收紧的运行文件，并同时限制来源、正文、embedding 批次和费用。
 - Node.js：本地和 CI 使用 `v22.22.1`。
 
 ## 产品里程碑
@@ -81,4 +81,4 @@
 
 ## 下一步
 
-继续 C1：按 `docs/superpowers/plans/2026-07-23-c1-local-live-research-plan.md` 完成本地启动、开发登录、live 成本门禁和 fixture 测试隔离。自动化门禁通过后由 Agent 启动完整本地服务并提供 URL；用户验收通过前不创建 PR、不合并、不进入 C2。
+请用户审阅 `docs/superpowers/specs/2026-07-23-c1-local-live-research-design.md` 第二版。确认后重写 C1 实施计划；旧计划已停止，不得继续执行。新计划必须先交付 C1-A，用户验收通过前不进入 C1-B。

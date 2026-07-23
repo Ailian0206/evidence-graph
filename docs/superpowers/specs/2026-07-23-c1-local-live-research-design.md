@@ -1,134 +1,159 @@
-# C1 本地真实研究运行环境设计
+# C1 托管开发数据库与本地研究闭环设计
 
 日期：2026-07-23
-状态：已确认，进入实现
+状态：第二版，等待用户书面审阅
 
-## 1. 目标
+## 1. 背景与纠正
 
-C1 只解决一个问题：让用户通过一个稳定的本地 URL 登录 Evidence Graph，从 UI 创建一条低范围中文研究，并由本地 Supabase、本地 Inngest 和真实 Tavily、DeepSeek、百炼 Provider 完成研究，最终检查来源、Claim、Evidence、运行日志和带引文报告。
+第一版 C1 把本地 Supabase、Inngest、Next.js、认证、真实 Provider 和最终验收放进一个启动入口。`supabase start` 因此启动了当前验收不需要的完整容器组；Inngest 仍使用 100 个队列 worker 的默认值。真实研究又沿用最多 12 个来源、20 万正文字符的产品上限，最终产生 57 个 embedding 批次和约 65 个持久化步骤。
 
-本阶段不修复所有产品体验问题。真实操作中发现的 P0/P1 进入 C2 的有限清单；C1 只修复阻止本地真实链路启动或完成的问题。
+这套方案在 16 GB 内存的开发机器上不可接受，也让基础设施进度替代了用户可见的产品进度。第一版中的本地 Supabase Docker 编排和远程 anonymous 登录方案停止执行。
 
-## 2. 方案选择
+## 2. 目标
 
-### 2.1 本地产品操作默认真实，自动化回归固定 fixture
+C1 改为使用一个托管 Supabase 项目作为当前开发数据库。本地只运行需要被用户操作或调试的进程，并按三个独立检查点逐步验收：
 
-采用双入口：
+1. 本地登录并看到项目列表。
+2. 完成一条确定性的 fixture 研究闭环。
+3. 完成一条受资源和成本限制的中文真实研究。
 
-- `npm run dev:local` 启动本地完整栈，要求显式真实研究确认和 `0.15 USD` 单次成本上限。用户从 UI 创建的研究调用真实 Provider。
-- `npm run test:unit`、`npm run test:e2e`、`npm run test:ci` 和 `npm run test:managed` 强制 fixture，不因 `.env.local` 存在真实 Key 而联网。
+每个检查点都必须提供固定本地 URL、用户可见结果和停止条件。用户确认前不得进入下一个检查点。
 
-这样满足用户日常查看真实结果的需求，同时避免 291 个单元测试和 82 个 E2E 因网络波动、Provider 输出变化或重复费用失去回归价值。已有 `npm run test:providers:live` 继续作为三家 Provider 的最小契约冒烟，不替代 UI 完整研究。
+## 3. 环境模型
 
-不采用“所有自动化测试真实外呼”：测试量与单次研究范围不匹配，无法提供稳定断言，也会把失败原因混入配额、网络和模型随机性。
+### 3.1 当前托管 Supabase 是开发数据库
 
-### 2.2 本地认证使用 Supabase anonymous session
+- 本地 Next.js 连接当前托管 Supabase，不再启动本地 Supabase Docker。
+- 该项目在 C1-C6 期间按开发数据库管理，允许保存测试账号、fixture 数据和真实研究验收数据。
+- 现有 Vercel/`release` 只保留历史基线，不代表当前数据库仍是干净的 Production 数据库。
+- C6 以前继续冻结 `release`、Vercel Production 配置、Production Inngest 同步和正式部署。
+- 当前历史部署仍可能访问同一数据库，因此 C1-C6 的迁移必须保持前向兼容，不执行破坏现有读取路径的删列、改类型或清表操作。
 
-登录页新增一个双语的本地开发入口，Server Action 调用本地 Supabase `signInAnonymously()`。入口只有以下条件同时满足时才显示并可执行：
+正式发布时再单独决策：优先根据完整 migration 链创建新的 Production Supabase；也可以在明确备份和清理清单后复用当前项目。该决策不属于 C1。
 
-1. `NODE_ENV` 不是 `production`。
-2. `LOCAL_DEV_AUTH_ENABLED=true`。
-3. `NEXT_PUBLIC_SUPABASE_URL` 的 hostname 是 loopback。
+### 3.2 本地运行分为三个入口
 
-`supabase/config.toml` 只为本地 CLI 开启 anonymous sign-in。Vercel Production 不读取该配置，正式登录继续只使用 GitHub OAuth。Server Action 在执行时重新检查全部条件，不能只依赖页面隐藏。
+| 入口 | 进程 | 用途 |
+| --- | --- | --- |
+| UI 开发 | Next.js | 公共页面、静态 demo、样式和普通交互 |
+| 数据开发 | Next.js + 托管 Supabase | 登录、项目、设置和数据读写 |
+| 研究验收 | Next.js + 单 worker Inngest + 托管 Supabase | fixture 或显式授权的真实研究 |
 
-不采用本地 GitHub OAuth：它需要维护第二个 OAuth App 和回调，不增加 C1 的产品验收价值。不采用硬编码邮箱密码：会引入无必要凭据和账号初始化步骤。
+任何入口都不自动启动 Docker。研究验收结束后，Agent 必须停止本地 Inngest 和不再需要的 Next.js 进程。
 
-### 2.3 一个本地启动命令编排三个服务
+### 3.3 认证使用现有 GitHub OAuth
 
-新增受测试约束的 Node.js 启动脚本：
+托管 Supabase 不启用 anonymous sign-in。本地应用使用现有 GitHub OAuth，并在 Supabase Auth redirect allow list 中增加固定 loopback 回调。这样不会增加共享匿名账号，也不会让开发入口泄漏到现有部署。
 
-1. 拒绝 Node 22 以外的运行时。
-2. 启动或复用本地 Supabase。
-3. 从 `supabase status -o json` 读取本地 URL、Publishable Key 和 Secret Key，合并写入 Git 忽略的 `.env.local`。
-4. 保留已有 Provider Key，不在 stdout/stderr 打印变量值；拒绝符号链接并把文件权限固定为 `0600`。
-5. 验证真实 Provider、确认令牌和 `0.15 USD` 上限齐全。
-6. 在固定端口 `3218` 启动 Next.js，在 `8288` 启动固定版本 Inngest Dev Server，并同步 `http://127.0.0.1:3218/api/inngest`。
-7. 任一子进程退出时终止另一个子进程；Supabase 保持运行，方便用户继续检查 Studio 和数据。
+本地 URL 固定为 `http://127.0.0.1:3218`。认证回调只允许仓库定义的相对目标路径，不接受任意外部跳转。
 
-固定本地入口为 `http://127.0.0.1:3218/zh/auth/login`。不自动寻找随机端口，避免 Supabase、Inngest 和用户验收 URL 漂移。
+## 4. 安全边界
 
-### 2.4 本地 Live Provider 独立确认与成本上限
+- `.env.local` 只保存本地运行所需变量，权限保持 `0600`，继续被 Git 忽略。
+- 本地启动必须要求显式允许的 Supabase Project Ref；环境 URL 与允许值不一致时拒绝连接。
+- 不在日志、测试、文档或回复中打印 Supabase、Provider、OAuth 或 Inngest 密钥。
+- `db reset`、全量清理、批量删除 Auth 用户和破坏性 SQL 不进入普通开发命令，必须使用独立确认令牌。
+- 所有 Schema 变化继续以不可变 migration 文件为事实来源；禁止只在 Supabase Dashboard 手工修改 Schema。
+- Migration 先应用到当前开发数据库并通过数据库测试。C6 和新的发布授权以前不创建或迁移正式数据库。
+- 自动化测试继续强制 fixture；`.env.local` 的存在不能让 Vitest、Playwright 或 CI 发起真实 Provider 请求。
 
-现有 `ALLOW_PAID_PROVIDER_SMOKE` 只描述最小 Provider 冒烟，不再复用于完整 UI 研究。C1 新增：
+## 5. 轻量 Inngest 与研究预算
 
-```text
-RESEARCH_PROVIDER_MODE=live
-ALLOW_LOCAL_LIVE_RESEARCH=I_CONFIRM_LOCAL_PAID_RESEARCH
-LOCAL_LIVE_RESEARCH_COST_LIMIT_USD=0.15
-```
-
-非 Production 的 `createResearchProviders` 只有在三项有效并且全部 Provider Key 存在时才返回 live providers。Production 继续强制 live 和原有 `1 USD` 产品硬上限，不读取本地确认变量。
-
-工作流接受一个服务端 `maxCostUsd`，默认保持 `1`。本地 live runtime 传入 `0.15`；每次 Provider 调用前检查累计成本，调用后记录真实 usage，达到或超过上限后停止后续调用并写入稳定错误码。该限制不承诺预测单个 Provider 调用的最终账单，只保证已记录累计成本达到上限后不再开始下一次调用。
-
-## 3. 组件与文件边界
-
-- `scripts/local-development.mjs`：本地 Supabase 环境准备、脱敏校验、端口检查和子进程编排。
-- `tests/unit/local-development.test.ts`：环境合并、敏感值不输出、Node/端口/Provider 门禁的纯函数与脚本合约。
-- `src/features/auth/local-development.ts`：本地认证可用性判断。
-- `src/features/auth/actions.ts`：本地 anonymous sign-in Server Action。
-- `src/app/[locale]/auth/login/page.tsx` 与双语 messages：只在门禁通过时显示本地入口。
-- `src/providers/live/local-research-gate.ts`：本地完整研究的确认与成本上限解析。
-- `src/providers/runtime.ts`：返回 Provider mode 和当前运行成本上限。
-- `src/features/research/run-research-workflow.ts`：使用注入的成本上限，默认行为不变。
-- `src/inngest/functions/run-research.ts`：把 runtime 成本上限传给工作流。
-- `vitest.config.ts` 与 `playwright.config.ts`：常规测试显式固定 fixture。
-- `.env.example`、`README.md`、`docs/deployment.md`：区分本地真实产品操作、Provider smoke 和 fixture 自动化。
-
-## 4. 数据流
+本地研究验收只在需要执行后台工作流时启动 Inngest Dev Server，并使用低资源参数：
 
 ```text
-npm run dev:local
-  -> Supabase start/status
-  -> 安全合并 .env.local
-  -> 校验本地 auth + live Provider + 0.15 USD
-  -> Next.js :3218 + Inngest :8288
-
-用户打开本地登录页
-  -> local gate 通过
-  -> Supabase anonymous session
-  -> 创建 Project + queued ResearchRun
-  -> Inngest Dev Server 接收事件
-  -> authorize -> read local Supabase input
-  -> live providers + maxCostUsd=0.15
-  -> durable steps -> local Supabase persistence
-  -> 工作台轮询 ready/failed
+--queue-workers 1
+--tick 1000
+--persist
+--log-level warn
 ```
 
-## 5. 失败与恢复
+fixture 和 live 共用相同持久化工作流，差别只在 Provider runtime。真实研究还必须同时满足：
 
-- Supabase 未安装或无法启动：启动脚本退出，不启动 Next/Inngest。
-- `.env.local` 是符号链接或无法收紧权限：退出，不写密钥。
-- 缺 Provider Key、确认令牌错误或成本上限非法：在任何 Provider 请求前退出，只显示缺失变量名或稳定错误码。
-- `3218` 或 `8288` 被占用：退出并指出端口名，不静默改端口。
-- Inngest 启动失败：Next 子进程随之终止，避免 UI 创建无法执行的 queued run。
-- Provider 失败或达到成本上限：沿用现有 failed run、稳定错误码和人工重投语义，不自动重跑付费研究。
-- 本地 anonymous session 失效：返回登录页重新建立本地 session，不创建共享固定账号。
+- 明确的本地付费确认令牌。
+- 单次估算费用上限 `0.15 USD`。
+- 最多 4 个来源。
+- 最多 40,000 个来源正文字符。
+- 最多 20 个 embedding 批次；达到限制时返回稳定错误，不继续外呼。
 
-## 6. 测试
+这些是 C1 本地验收预算，不改变未来正式产品的上限。每次 Provider 调用前检查剩余预算，调用后记录脱敏 usage；日常测试不得调用真实 Provider。
 
-1. RED/GREEN 单测覆盖本地 auth 三重门禁、Production 禁用和 loopback URL。
-2. RED/GREEN 单测覆盖本地环境合并、权限目标、敏感值脱敏、缺变量和端口占用。
-3. RED/GREEN 单测覆盖 local live 确认、`0.15 USD` 上限、Production 默认 `1 USD` 和低上限工作流停止后续调用。
-4. 配置合约证明常规 Vitest、Playwright 和 CI 不会继承 `.env.local` 的 live mode。
-5. `npm run test:managed` 完整通过且无 Provider 网络请求。
-6. Agent 启动 `npm run dev:local`，在浏览器完成本地登录、创建一条中文研究并检查 ready/failed、来源、Claim、Evidence 和报告。
-7. 用户使用同一 URL 完成本地验收；用户通过前不创建 PR。
+## 6. 三个验收检查点
 
-## 7. 明确不做
+### C1-A：托管开发数据连接
 
-- 不配置或修改 Production，不更新 `release`。
+用户可见结果：
+
+1. Agent 只启动 Next.js。
+2. 用户从固定 URL 使用 GitHub 登录。
+3. 用户打开项目列表并创建或查看一个开发项目。
+4. Agent 报告项目相关进程和内存占用；没有 Evidence Graph Docker 容器。
+
+停止条件：用户确认登录和项目列表可用，机器没有明显内存压力。未通过时只修复 C1-A，不进入研究工作流。
+
+### C1-B：fixture 研究闭环
+
+用户可见结果：
+
+1. Agent 启动 Next.js 和单 worker Inngest，Provider 强制 fixture。
+2. 用户从 UI 创建一条 fixture 研究。
+3. 用户看到 queued、running、ready 或明确失败状态。
+4. ready 后可检查来源、Claim、Evidence、运行日志和带引文报告。
+
+停止条件：用户确认确定性完整闭环可用。该检查点不产生 Provider 费用。
+
+### C1-C：低范围真实研究
+
+用户可见结果：
+
+1. Agent 在用户已有授权范围内启用 live Provider，并再次核对本次成本和资源上限。
+2. 用户从 UI 创建一条低范围中文研究。
+3. 研究完成后可检查真实来源、Claim、Evidence、日志、报告和脱敏费用汇总。
+4. Agent 停止本地进程并记录本次发现的有限 P0/P1 清单。
+
+停止条件：用户明确验收真实研究结果。C1 随后进入自动化门禁和 PR 收口，不在同一周期开始 C2。
+
+## 7. 数据与失败恢复
+
+- 托管 Supabase 不可达：页面显示稳定错误；不切换到 Production 备用连接。
+- OAuth 失败：返回登录页；不创建匿名账号或硬编码测试密码。
+- Inngest 未运行：研究创建前明确阻止或把投递失败写成可重试状态，不能无限停留 queued。
+- Provider 或预算失败：run 写入稳定 failed 状态，不自动重放付费步骤。
+- 本地进程被停止时遗留 running run：下次启动先列出并由 Agent确认处理，不静默继续付费运行。
+- fixture 和真实研究数据使用可识别的开发 owner/run 标记；正式发布前按独立清理计划处理。
+
+## 8. 测试与验证
+
+1. 单测覆盖托管开发环境校验、Supabase Project Ref allow list 和敏感值脱敏。
+2. 单测覆盖本地 Inngest 参数、子进程退出清理和“不启动 Docker”合约。
+3. Auth 测试覆盖 GitHub OAuth loopback redirect，不保留 remote anonymous 登录入口。
+4. fixture 工作流测试覆盖完整持久化和 ready 重放，不调用真实 Provider。
+5. live runtime 测试覆盖 4 个来源、40,000 字符、20 个 embedding 批次和 `0.15 USD` 上限。
+6. 每个 C1 检查点只运行最小相关门禁；C1-C 用户验收后再运行完整 `npm run test:managed`。
+7. 界面改动按项目规则检查 390x844、1024x768 和 1440x1000，确认无溢出、裁切和重叠。
+
+## 9. 当前分支处理
+
+已有实现不整体丢弃，但必须按第二版设计逐项审查：
+
+- 保留：fixture 测试隔离、本地 live 成本门禁、可复用的环境文件安全写入、Inngest replay 压缩修复。
+- 改造：本地启动脚本移除 `supabase start`，改为校验并连接显式允许的托管开发项目。
+- 移除或替换：remote Supabase anonymous 登录入口，改用现有 GitHub OAuth。
+- 暂不处理：被中断的真实研究记录；只有在 C1-A 通过并明确恢复服务后才能核对和清理。
+
+## 10. 明确不做
+
+- 不启动本地 Supabase Docker。
+- 不新增第二个开发数据库或第三套应用部署环境。
+- 不更新 `release`，不修改 Vercel Production，不同步 Production Inngest。
 - 不实现 Settings、账号删除、Evidence Eval 或 3 个真实案例。
-- 不接新的 Provider，不增加 Provider 选择 UI。
-- 不让 anonymous 登录在 Production 可用。
-- 不清空用户本地数据库；需要重新加载 Auth 配置时只重启本地 Supabase 并保留数据卷。
-- 不把 Key、Provider payload、来源全文或付费原始响应写入 Git、测试报告、日志或回复。
+- 不为了省事绕过 RLS、Auth、持久化工作流或 migration 纪律。
+- 不把真实密钥、Provider payload、来源全文或付费原始响应写入 Git。
 
-## 8. 完成标准
+## 11. 完成标准
 
-- `npm run dev:local` 在 Node 22 下从单一命令启动完整本地栈。
-- 本地登录入口可用，Production 条件下不可用。
-- 用户从 UI 创建的研究使用真实 Provider，并受 `0.15 USD` 本地上限约束。
-- 自动化测试仍为 fixture-only，完整门禁通过。
-- Agent 提供固定本地 URL 与验收清单；用户明确验收通过后才进入 PR 收口。
+- C1-A、C1-B、C1-C 依次通过用户本地验收，且每一步都有可见结果。
+- Evidence Graph 本地运行期间没有项目 Docker 容器。
+- 真实研究在来源、正文、embedding 批次和费用四类预算内完成或明确失败。
+- 自动化门禁保持 fixture-only，完整模块门禁通过。
+- 用户验收和独立审核完成后才合并 C1；Production 继续冻结。
