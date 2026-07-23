@@ -32,6 +32,10 @@ export type SearchProvider = {
     maxResults: number;
     idempotencyKey: string;
   }) => Promise<ProviderResult<SearchResult[]>>;
+  extract: (input: {
+    urls: string[];
+    idempotencyKey: string;
+  }) => Promise<ProviderResult<SearchResult[]>>;
 };
 
 export type ResearchModelOperation =

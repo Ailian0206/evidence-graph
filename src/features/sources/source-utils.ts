@@ -1,6 +1,9 @@
 import { createHash } from "node:crypto";
 
-import type { SourceChunk } from "@/features/research/domain";
+import {
+  currentEmbeddingModel,
+  type SourceChunk,
+} from "@/features/research/domain";
 
 const TRACKING_PARAMS = new Set([
   "utm_source",
@@ -89,7 +92,7 @@ export const chunkSourceText = ({
       text: chunkText,
       startChar,
       endChar: startChar + chunkText.length,
-      embeddingModel: "text-embedding-3-small",
+      embeddingModel: currentEmbeddingModel,
       embeddingDimensions: 1536,
     };
   });

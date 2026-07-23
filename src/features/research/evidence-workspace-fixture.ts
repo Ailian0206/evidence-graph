@@ -122,6 +122,7 @@ export const createEvidenceWorkspaceFixture = (
     ownerId: "user_ailian",
     title: copy.title,
     question: copy.question,
+    language: locale,
     status: "active" as const,
     visibility: "public" as const,
     slug: publicReportSlugs[locale],

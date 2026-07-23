@@ -33,12 +33,18 @@ export const claimReviewStatusSchema = z.enum(["pending", "accepted", "rejected"
 export const evidenceRelationSchema = z.enum(["supports", "rebuts", "qualifies", "context"]);
 export const evidenceStrengthSchema = z.enum(["weak", "moderate", "strong"]);
 export const claimRelationTypeSchema = z.enum(["contradicts", "duplicates", "depends_on"]);
+export const currentEmbeddingModel = "text-embedding-v4" as const;
+export const embeddingModelSchema = z.enum([
+  "text-embedding-3-small",
+  currentEmbeddingModel,
+]);
 
 export const projectSchema = z.object({
   id: idSchema,
   ownerId: idSchema,
   title: z.string().min(1),
   question: z.string().min(1),
+  language: z.enum(["zh", "en"]),
   status: projectStatusSchema,
   visibility: projectVisibilitySchema,
   slug: z.string().min(1),
@@ -85,7 +91,7 @@ export const sourceChunkSchema = z.object({
   text: z.string().min(1),
   startChar: z.number().int().min(0),
   endChar: z.number().int().min(1),
-  embeddingModel: z.literal("text-embedding-3-small"),
+  embeddingModel: embeddingModelSchema,
   embeddingDimensions: z.literal(1536),
 });
 

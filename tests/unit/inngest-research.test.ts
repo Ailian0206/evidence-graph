@@ -3,20 +3,107 @@ import { describe, expect, it, vi } from "vitest";
 
 import { authorizeResearchRun } from "@/inngest/authorize-run";
 import type { ResearchWorkflowSnapshot } from "@/features/research/workflow-store";
+import type { ProviderCallExecutor } from "@/features/research/run-research-workflow";
+import {
+  createWorkflowInputReader,
+  type WorkflowInput,
+  type WorkflowInputQueries,
+} from "@/features/research/supabase-workflow-reader";
 import {
   createResearchRequestedPayload,
   resolveInngestModeOverride,
 } from "@/inngest/client";
 import { researchRequestedEventSchema } from "@/inngest/events";
 import {
+  createResearchWorkflowExecutor,
   createRunResearchHandler,
   runResearchFunctionConfig,
 } from "@/inngest/functions/run-research";
+import { createFixtureResearchProviders } from "@/providers/fixtures/research-providers";
 
 const eventData = {
   ownerId: "owner_1",
   projectId: "project_1",
   runId: "run_1",
+};
+
+const createWorkflowInput = (): WorkflowInput => ({
+  project: {
+    id: "project_1",
+    ownerId: "owner_1",
+    title: "真实研究",
+    question: "可追溯研究如何处理相互冲突的来源？",
+    language: "zh",
+    status: "active",
+    visibility: "private",
+    slug: "real-research",
+    createdAt: "2026-07-22T08:00:00.000Z",
+    updatedAt: "2026-07-22T08:01:00.000Z",
+  },
+  run: {
+    id: "run_1",
+    projectId: "project_1",
+    ownerId: "owner_1",
+    status: "queued",
+    step: "queued",
+    sourceLimit: 8,
+    manualUrlLimit: 5,
+    maxContentChars: 120000,
+    estimatedCostUsd: 0,
+    searchCount: 0,
+    tokenCount: 0,
+    createdAt: "2026-07-22T08:00:00.000Z",
+    updatedAt: "2026-07-22T08:01:00.000Z",
+  },
+  manualUrls: [],
+});
+
+const createMemoizingStep = () => {
+  const memoizedResults = new Map<string, unknown>();
+  const calls: string[] = [];
+
+  return {
+    calls,
+    step: {
+      run: vi.fn(async <T>(id: string, operation: () => Promise<T>): Promise<T> => {
+        calls.push(id);
+
+        if (memoizedResults.has(id)) {
+          return structuredClone(memoizedResults.get(id)) as T;
+        }
+
+        const result = await operation();
+        memoizedResults.set(id, structuredClone(result));
+        return result;
+      }),
+    },
+  };
+};
+
+const createStatefulWriter = () => {
+  let status: "queued" | "running" | "failed" | "ready" = "queued";
+  const writer = {
+    begin: vi.fn(async () => {
+      if (status !== "queued") {
+        throw new Error("RUN_NOT_QUEUED");
+      }
+      status = "running";
+    }),
+    persist: vi.fn(async () => {
+      if (status !== "running" && status !== "ready") {
+        throw new Error("RUN_NOT_RUNNING");
+      }
+      status = "ready";
+    }),
+    fail: vi.fn(async () => {
+      if (status !== "running") {
+        throw new Error("RUN_NOT_RUNNING");
+      }
+      status = "failed";
+    }),
+  };
+
+  return { writer, getStatus: () => status };
 };
 
 describe("Inngest research workflow entry", () => {
@@ -61,6 +148,153 @@ describe("Inngest research workflow entry", () => {
     expect(readRun).toHaveBeenCalledWith(eventData);
   });
 
+  it("reads the owned project, run limits, and manual URLs for execution", async () => {
+    const queries: WorkflowInputQueries = {
+      getProject: vi.fn(async () => ({
+        id: "project_1",
+        owner_id: "owner_1",
+        title: "真实研究",
+        question: "AI 研究工具如何保留可核查证据？",
+        language: "zh" as const,
+        status: "active" as const,
+        visibility: "private" as const,
+        slug: "real-research",
+        created_at: "2026-07-22T08:00:00+00:00",
+        updated_at: "2026-07-22T08:01:00+00:00",
+      })),
+      getRun: vi.fn(async () => ({
+        id: "run_1",
+        project_id: "project_1",
+        owner_id: "owner_1",
+        status: "queued" as const,
+        step: "queued" as const,
+        source_limit: 8,
+        manual_url_limit: 5,
+        manual_urls: ["https://example.com/manual"],
+        max_content_chars: 120000,
+        estimated_cost_usd: 0,
+        search_count: 0,
+        token_count: 0,
+        error_message: null,
+        created_at: "2026-07-22T08:00:00+00:00",
+        updated_at: "2026-07-22T08:01:00+00:00",
+      })),
+    };
+
+    const result = await createWorkflowInputReader(queries)(eventData);
+
+    expect(queries.getProject).toHaveBeenCalledWith(eventData);
+    expect(queries.getRun).toHaveBeenCalledWith(eventData);
+    expect(result).toMatchObject({
+      project: {
+        id: "project_1",
+        question: "AI 研究工具如何保留可核查证据？",
+        language: "zh",
+      },
+      run: {
+        id: "run_1",
+        sourceLimit: 8,
+        maxContentChars: 120000,
+      },
+      manualUrls: ["https://example.com/manual"],
+    });
+  });
+
+  it.each([
+    "mailto:research@example.com",
+    "ftp://research.example.com/source",
+    "javascript:alert(1)",
+    "http://localhost/source",
+    "https://app.localhost/source",
+    "http://127.0.0.42/source",
+    "http://0.0.0.0/source",
+    "http://[::1]/source",
+    "https://research.local/source",
+  ])("rejects unsafe persisted manual source URL %s", async (manualUrl) => {
+    const queries: WorkflowInputQueries = {
+      getProject: vi.fn(async () => ({
+        id: "project_1",
+        owner_id: "owner_1",
+        title: "真实研究",
+        question: "AI 研究工具如何保留可核查证据？",
+        language: "zh" as const,
+        status: "active" as const,
+        visibility: "private" as const,
+        slug: "real-research",
+        created_at: "2026-07-22T08:00:00+00:00",
+        updated_at: "2026-07-22T08:01:00+00:00",
+      })),
+      getRun: vi.fn(async () => ({
+        id: "run_1",
+        project_id: "project_1",
+        owner_id: "owner_1",
+        status: "queued" as const,
+        step: "queued" as const,
+        source_limit: 8,
+        manual_url_limit: 5,
+        manual_urls: [manualUrl],
+        max_content_chars: 120000,
+        estimated_cost_usd: 0,
+        search_count: 0,
+        token_count: 0,
+        error_message: null,
+        created_at: "2026-07-22T08:00:00+00:00",
+        updated_at: "2026-07-22T08:01:00+00:00",
+      })),
+    };
+
+    await expect(createWorkflowInputReader(queries)(eventData)).rejects.toThrow();
+  });
+
+  it("executes the workflow with the persisted research question", async () => {
+    const providers = createFixtureResearchProviders();
+    const executor = createResearchWorkflowExecutor({
+      readInput: async () => ({
+        project: {
+          id: "project_1",
+          ownerId: "owner_1",
+          title: "真实研究",
+          question: "可追溯研究如何处理相互冲突的来源？",
+          language: "zh",
+          status: "active",
+          visibility: "private",
+          slug: "real-research",
+          createdAt: "2026-07-22T08:00:00.000Z",
+          updatedAt: "2026-07-22T08:01:00.000Z",
+        },
+        run: {
+          id: "run_1",
+          projectId: "project_1",
+          ownerId: "owner_1",
+          status: "queued",
+          step: "queued",
+          sourceLimit: 8,
+          manualUrlLimit: 5,
+          maxContentChars: 120000,
+          estimatedCostUsd: 0,
+          searchCount: 0,
+          tokenCount: 0,
+          createdAt: "2026-07-22T08:00:00.000Z",
+          updatedAt: "2026-07-22T08:01:00.000Z",
+        },
+        manualUrls: ["https://example.com/manual"],
+      }),
+      createProviders: () => providers,
+      now: () => "2026-07-22T09:00:00.000Z",
+    });
+
+    const result = await executor(eventData);
+
+    expect(result.output).toMatchObject({ status: "ready" });
+    expect(providers.calls.find((call) => call.operation === "plan")?.payload).toEqual({
+      question: "可追溯研究如何处理相互冲突的来源？",
+      language: "zh",
+    });
+    expect(result.snapshot.projects).toEqual([
+      expect.objectContaining({ id: "project_1", question: "可追溯研究如何处理相互冲突的来源？" }),
+    ]);
+  });
+
   it.each([
     { id: "run_other", ownerId: "owner_1", projectId: "project_1" },
     { id: "run_1", ownerId: "owner_other", projectId: "project_1" },
@@ -76,16 +310,28 @@ describe("Inngest research workflow entry", () => {
     await expect(operation).rejects.toThrow("RUN_PROJECT_MISMATCH");
   });
 
-  it("authorizes, begins, executes, and persists inside a durable step", async () => {
+  it("uses separate durable steps for lifecycle writes and Provider calls", async () => {
     const calls: string[] = [];
     const snapshot = {} as ResearchWorkflowSnapshot;
     const authorize = vi.fn(async () => {
       calls.push("authorize");
     });
-    const executeWorkflow = vi.fn(async () => {
-      calls.push("execute");
-      return { output: { status: "ready" }, snapshot };
-    });
+    const executeWorkflow = vi.fn(
+      async (
+        _event: typeof eventData,
+        executeProviderCall: ProviderCallExecutor,
+      ) => {
+        calls.push("execute");
+        await executeProviderCall("run_1:planning", async () => {
+          calls.push("provider");
+          return {
+            data: { queries: [] },
+            usage: { estimatedCostUsd: 0, searchCount: 0, tokenCount: 0 },
+          };
+        });
+        return { output: { status: "ready" }, snapshot };
+      },
+    );
     const writer = {
       begin: vi.fn(async () => {
         calls.push("begin");
@@ -114,12 +360,15 @@ describe("Inngest research workflow entry", () => {
     });
     expect(calls).toEqual([
       "authorize",
-      "step:run-deterministic-research",
+      "step:begin-research-workflow",
       "begin",
       "execute",
+      "step:provider:run_1:planning",
+      "provider",
+      "step:persist-research-workflow",
       "persist",
     ]);
-    expect(executeWorkflow).toHaveBeenCalledWith(eventData);
+    expect(executeWorkflow).toHaveBeenCalledWith(eventData, expect.any(Function));
     expect(writer.persist).toHaveBeenCalledWith({ event: eventData, snapshot });
   });
 
@@ -153,14 +402,152 @@ describe("Inngest research workflow entry", () => {
       }),
     };
 
-    await expect(handler({ event: { data: eventData }, step })).rejects.toThrow(
-      "WORKFLOW_FAILED",
+    await expect(
+      handler({
+        event: { data: eventData },
+        step,
+        attempt: 3,
+        maxAttempts: 4,
+      }),
+    ).rejects.toThrow("WORKFLOW_FAILED");
+    expect(calls).toEqual([
+      "authorize",
+      "step",
+      "begin",
+      "execute",
+      "step",
+      "fail",
+    ]);
+    expect(step.run).toHaveBeenNthCalledWith(
+      1,
+      "begin-research-workflow",
+      expect.any(Function),
     );
-    expect(calls).toEqual(["authorize", "step", "begin", "execute", "fail"]);
+    expect(step.run).toHaveBeenNthCalledWith(
+      2,
+      "fail-research-workflow:WORKFLOW_FAILED",
+      expect.any(Function),
+    );
     expect(writer.fail).toHaveBeenCalledWith({
       ...eventData,
       errorCode: "WORKFLOW_FAILED",
     });
+  });
+
+  it("replays successful Provider calls and retries only the failed call", async () => {
+    const providers = createFixtureResearchProviders({ failSearchAtCall: 2 });
+    const executor = createResearchWorkflowExecutor({
+      readInput: async () => createWorkflowInput(),
+      createProviders: () => providers,
+      now: () => "2026-07-22T09:00:00.000Z",
+    });
+    const { writer, getStatus } = createStatefulWriter();
+    const handler = createRunResearchHandler({
+      authorize: async () => undefined,
+      executeWorkflow: executor,
+      createWriter: async () => writer,
+    });
+    const { calls, step } = createMemoizingStep();
+
+    await expect(
+      handler({ event: { data: eventData }, step, attempt: 0, maxAttempts: 2 }),
+    ).rejects.toThrow("WORKFLOW_FAILED");
+    expect(getStatus()).toBe("running");
+    await expect(
+      handler({ event: { data: eventData }, step, attempt: 1, maxAttempts: 2 }),
+    ).resolves.toMatchObject({ status: "ready" });
+    expect(getStatus()).toBe("ready");
+
+    expect(
+      providers.calls.filter((call) => call.idempotencyKey === "run_1:planning"),
+    ).toHaveLength(1);
+    expect(
+      providers.calls.filter(
+        (call) => call.idempotencyKey === "run_1:searching:0",
+      ),
+    ).toHaveLength(1);
+    expect(
+      providers.calls.filter(
+        (call) => call.idempotencyKey === "run_1:searching:1",
+      ),
+    ).toHaveLength(2);
+    expect(calls).not.toContain("run-research-workflow");
+    expect(writer.begin).toHaveBeenCalledTimes(1);
+    expect(writer.fail).not.toHaveBeenCalled();
+    expect(writer.persist).toHaveBeenCalledTimes(1);
+  });
+
+  it("marks the run failed only on the final function attempt", async () => {
+    const { writer, getStatus } = createStatefulWriter();
+    const handler = createRunResearchHandler({
+      authorize: async () => undefined,
+      executeWorkflow: async () => {
+        throw new Error("WORKFLOW_FAILED");
+      },
+      createWriter: async () => writer,
+    });
+    const { step } = createMemoizingStep();
+
+    await expect(
+      handler({ event: { data: eventData }, step, attempt: 0, maxAttempts: 3 }),
+    ).rejects.toThrow("WORKFLOW_FAILED");
+    expect(getStatus()).toBe("running");
+    expect(writer.fail).not.toHaveBeenCalled();
+
+    await expect(
+      handler({ event: { data: eventData }, step, attempt: 1, maxAttempts: 3 }),
+    ).rejects.toThrow("WORKFLOW_FAILED");
+    expect(getStatus()).toBe("running");
+    expect(writer.fail).not.toHaveBeenCalled();
+
+    await expect(
+      handler({ event: { data: eventData }, step, attempt: 2, maxAttempts: 3 }),
+    ).rejects.toThrow("WORKFLOW_FAILED");
+    expect(getStatus()).toBe("failed");
+    expect(writer.begin).toHaveBeenCalledTimes(1);
+    expect(writer.fail).toHaveBeenCalledTimes(1);
+  });
+
+  it("reapplies memoized usage before allowing another paid call", async () => {
+    const providers = createFixtureResearchProviders({
+      costOverrides: { plan: 0.6, search: 0.4 },
+    });
+    const executor = createResearchWorkflowExecutor({
+      readInput: async () => createWorkflowInput(),
+      createProviders: () => providers,
+      now: () => "2026-07-22T09:00:00.000Z",
+    });
+    const handler = createRunResearchHandler({
+      authorize: async () => undefined,
+      executeWorkflow: executor,
+      createWriter: async () => ({
+        begin: async () => undefined,
+        persist: async () => undefined,
+        fail: async () => undefined,
+      }),
+    });
+    const { step } = createMemoizingStep();
+
+    await expect(handler({ event: { data: eventData }, step })).rejects.toThrow(
+      "RUN_COST_LIMIT_EXCEEDED",
+    );
+    await expect(handler({ event: { data: eventData }, step })).rejects.toThrow(
+      "RUN_COST_LIMIT_EXCEEDED",
+    );
+
+    expect(
+      providers.calls.filter((call) => call.idempotencyKey === "run_1:planning"),
+    ).toHaveLength(1);
+    expect(
+      providers.calls.filter(
+        (call) => call.idempotencyKey === "run_1:searching:0",
+      ),
+    ).toHaveLength(1);
+    expect(
+      providers.calls.filter(
+        (call) => call.idempotencyKey === "run_1:searching:1",
+      ),
+    ).toHaveLength(0);
   });
 
   it("uses run idempotency, owner concurrency, and three retries", () => {

@@ -12,6 +12,7 @@ const rows: ManagedWorkspaceRows = {
     owner_id: "owner_1",
     title: "持久化研究",
     question: "工作流结果如何安全保存？",
+    language: "zh",
     status: "active",
     visibility: "private",
     slug: "research-project-1",
@@ -261,5 +262,29 @@ describe("managed workspace store", () => {
       runId: "run_1",
     });
     expect(queries.listReports).toHaveBeenCalledWith({ projectId: "project_1" });
+  });
+
+  it("maps current text-embedding-v4 chunk metadata", async () => {
+    const currentChunks = rows.chunks.map((chunk) => ({
+      ...chunk,
+      embedding_model: "text-embedding-v4" as const,
+    }));
+    const queries = createQueries({
+      listChunks: vi.fn(async () => currentChunks),
+    });
+    const store = createManagedWorkspaceStore(queries);
+
+    const result = await store.load({
+      ownerId: "owner_1",
+      projectId: "project_1",
+      locale: "zh",
+    });
+
+    expect(result).toMatchObject({
+      state: "ready",
+      data: {
+        chunks: [expect.objectContaining({ embeddingModel: "text-embedding-v4" })],
+      },
+    });
   });
 });

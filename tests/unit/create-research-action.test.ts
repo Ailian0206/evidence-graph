@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { createResearch } from "@/features/projects/actions";
 import type { ProjectStore } from "@/features/projects/project-store";
 import {
   retryManagedResearchDispatch,
@@ -51,6 +52,22 @@ const createStore = (overrides: Partial<ProjectStore> = {}): ProjectStore => ({
   updateProject: vi.fn(async () => createdResearch.project),
   deleteProject: vi.fn(async () => undefined),
   ...overrides,
+});
+
+describe("create research Server Action", () => {
+  it("returns a manual URL field error for malformed input", async () => {
+    const formData = new FormData();
+    formData.set("title", "Source review");
+    formData.set("question", "Does this source support the claim?");
+    formData.set("language", "en");
+    formData.set("manualUrls", "not-a-url");
+
+    await expect(createResearch("en", { status: "idle" }, formData)).resolves.toEqual({
+      status: "error",
+      code: "INVALID_INPUT",
+      fieldErrors: expect.objectContaining({ manualUrls: expect.any(Array) }),
+    });
+  });
 });
 
 describe("managed research submission", () => {

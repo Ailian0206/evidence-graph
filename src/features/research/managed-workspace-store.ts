@@ -23,6 +23,7 @@ type ProjectRow = {
   owner_id: string;
   title: string;
   question: string;
+  language: "zh" | "en";
   status: "active" | "archived" | "deleted";
   visibility: "private" | "public";
   slug: string;
@@ -87,7 +88,7 @@ type SourceChunkRow = {
   body: string;
   start_char: number;
   end_char: number;
-  embedding_model: "text-embedding-3-small";
+  embedding_model: "text-embedding-3-small" | "text-embedding-v4";
   embedding_dimensions: 1536;
 };
 
@@ -184,7 +185,7 @@ export type ManagedWorkspaceResult =
   | { state: "not-found" };
 
 const projectColumns =
-  "id,owner_id,title,question,status,visibility,slug,created_at,updated_at";
+  "id,owner_id,title,question,language,status,visibility,slug,created_at,updated_at";
 const runColumns =
   "id,project_id,owner_id,status,step,source_limit,manual_url_limit,max_content_chars,estimated_cost_usd,search_count,token_count,error_message,created_at,updated_at";
 const sourceColumns =
@@ -310,6 +311,7 @@ const mapProject = (row: ProjectRow) =>
     ownerId: row.owner_id,
     title: row.title,
     question: row.question,
+    language: row.language,
     status: row.status,
     visibility: row.visibility,
     slug: row.slug,

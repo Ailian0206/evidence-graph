@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(18);
+select plan(22);
 
 select has_extension('vector', 'pgvector extension is enabled');
 select has_table('public', 'projects', 'projects table exists');
@@ -203,6 +203,123 @@ values
     'text-embedding-3-small',
     1536
   );
+
+select lives_ok(
+  $$
+    insert into public.source_chunks (
+      id,
+      source_id,
+      project_id,
+      chunk_index,
+      body,
+      start_char,
+      end_char,
+      embedding_model,
+      embedding_dimensions
+    )
+    values (
+      'chunk_explicit_old_model',
+      'source_a',
+      'project_a',
+      1,
+      'Old model metadata.',
+      0,
+      19,
+      'text-embedding-3-small',
+      1536
+    )
+  $$,
+  'historical chunks may preserve the old embedding model metadata'
+);
+
+select lives_ok(
+  $$
+    insert into public.source_chunks (
+      id,
+      source_id,
+      project_id,
+      chunk_index,
+      body,
+      start_char,
+      end_char,
+      embedding_model,
+      embedding_dimensions
+    )
+    values (
+      'chunk_explicit_v4_model',
+      'source_a',
+      'project_a',
+      2,
+      'New model metadata.',
+      0,
+      19,
+      'text-embedding-v4',
+      1536
+    )
+  $$,
+  'new chunks may record text-embedding-v4 metadata'
+);
+
+insert into public.source_chunks (
+  id,
+  source_id,
+  project_id,
+  chunk_index,
+  body,
+  start_char,
+  end_char,
+  embedding_dimensions
+)
+values (
+  'chunk_default_embedding_model',
+  'source_a',
+  'project_a',
+  3,
+  'Default model metadata.',
+  0,
+  23,
+  1536
+);
+
+select is(
+  (
+    select embedding_model
+    from public.source_chunks
+    where id = 'chunk_default_embedding_model'
+  ),
+  'text-embedding-v4',
+  'new chunks default to text-embedding-v4 metadata'
+);
+
+select throws_ok(
+  $$
+    insert into public.source_chunks (
+      id,
+      source_id,
+      project_id,
+      chunk_index,
+      body,
+      start_char,
+      end_char,
+      embedding_model,
+      embedding_dimensions
+    )
+    values (
+      'chunk_unknown_embedding_model',
+      'source_a',
+      'project_a',
+      4,
+      'Unknown model metadata.',
+      0,
+      23,
+      'unknown-embedding-model',
+      1536
+    )
+  $$,
+  '23514',
+  null,
+  'unknown embedding models remain rejected'
+);
 
 insert into public.claims (
   id,
