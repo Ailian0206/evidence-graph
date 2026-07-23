@@ -288,6 +288,15 @@ Run: `claude --permission-mode auto --model sonnet -p "/codex-independent-pr-rev
 
 Expected: `CLAUDE_REVIEW_RESULT=pass` 且审核 SHA 等于当前 head；两个 GitHub CI job 成功后 merge commit 合并。
 
-- [ ] **Step 6: 配置 Production 并验收**
+- [x] **Step 6: 配置 Production 并验收**
 
 把三类 Key 只写入 Vercel Production，重新部署并同步 Inngest。创建一个低范围中文研究，确认真实来源、ready 状态、主张、引文报告和费用记录；失败时停用 live 配置并按原部署回滚。
+
+Result (2026-07-23):
+
+- Production 兼容迁移与四项 Provider 变量已配置，Vercel Deployment `7MJSshcbs2A7ccYqHdcSUaTXrG6h` 为 `Ready / Current`；Inngest 应用 `evidence-graph` 已同步 1 个函数。
+- 最终默认 Production smoke 的四项非付费检查全部通过，未调用真实 Provider。
+- 低范围中文真实研究 `run_00efc30e-49dd-4fc1-8fca-65654fc1b9ad` 达到 `ready`：3 次搜索、18 个来源、1078 个来源分块、2 个主张、3 条证据关系、1 份草稿报告、3 条引文，估算费用 `0.084784 USD`，无业务错误。
+- 发布验收依次暴露并修复 Unicode 来源分块偏移、来源正文预算、Inngest 32 MiB 向量状态、混合证据中的非精确 quote，以及数据库 ready 后 Inngest 重试误报；对应提交为 `35353a6`、`3839f12`、`c6c5f17`、`38ec8f6`、`6bd3e79`。
+- 最终完整门禁通过 93 项数据库断言、291 个单元测试、Production build 和 82 个 E2E；五个修复的独立审查均无 Critical/Important finding。
+- 已完成研究的零 Provider 重放 `01KY6TBFHVRJBH8YMGGVQ72P5N` 在 2.155 秒内完成，Provider steps 与 lifecycle steps 均为 0。

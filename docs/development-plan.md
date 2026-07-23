@@ -16,7 +16,7 @@
 | 8 | `feat/durable-research-results` | 原子创建研究、Inngest 快照持久化、真实工作台和 Claim 审核 | 已完成；PR #14 通过独立审核和 CI 后以 merge commit `ce4b1a2` 合并 |
 | 9 | `feat/report-publishing` | 报告发布、撤销、公开 slug、版本切换和分享页 | 已完成；PR #15 通过独立审核和 CI 后以 merge commit `f42ae20` 合并 |
 | 10 | `feat/ui-experience-refresh` | 全站字体、间距、信息层级和视觉语言统一，移除左侧装饰边线与明显 AI 化样式 | 已完成；PR #16 通过独立重审和两个 CI job 后以 merge commit `72d3f55` 合并 |
-| 11 | `feat/real-provider-integration` | Production 直连 Tavily、DeepSeek 与百炼，开发和 CI 保持 fixtures | 代码已完成；PR [#17](https://github.com/Ailian0206/evidence-graph/pull/17) 通过独立审核和全部 CI 后以 merge commit `69b0109` 合并，Production 发布待确认 |
+| 11 | `feat/real-provider-integration` | Production 直连 Tavily、DeepSeek 与百炼，开发和 CI 保持 fixtures | 已完成；PR [#17](https://github.com/Ailian0206/evidence-graph/pull/17) 通过独立审核和全部 CI 后以 merge commit `69b0109` 合并，Production 发布与真实研究验收通过 |
 
 ## 跨模块规则
 
@@ -34,4 +34,4 @@
 
 ## 当前模块
 
-`feat/managed-deployment`、`feat/durable-research-results`、`feat/report-publishing`、`feat/ui-experience-refresh` 与 `feat/real-provider-integration` 已依次通过 PR #13、#14、#15、#16、#17 合并。真实 Provider 接入包含 Tavily Search/Extract、DeepSeek `deepseek-v4-flash`、百炼 `text-embedding-v4`、真实 Supabase 输入、Inngest durable steps、兼容迁移和专用付费门禁；一次已授权真实冒烟、完整 `test:managed`、独立审核与 GitHub CI 均通过。Production 迁移、Vercel Provider 变量、重新部署和真实研究验收仍是独立敏感发布门禁，当前尚未执行。
+`feat/managed-deployment`、`feat/durable-research-results`、`feat/report-publishing`、`feat/ui-experience-refresh` 与 `feat/real-provider-integration` 已依次通过 PR #13、#14、#15、#16、#17 合并。真实 Provider 接入包含 Tavily Search/Extract、DeepSeek `deepseek-v4-flash`、百炼 `text-embedding-v4`、真实 Supabase 输入、Inngest durable steps、兼容迁移和专用付费门禁；已授权真实冒烟、完整 `test:managed`、独立审核、GitHub CI、Production 迁移、Vercel 变量与部署、Inngest 同步和低范围中文真实研究验收均已完成。发布中发现的 Unicode 分块偏移、正文预算、Inngest 状态体积、非精确 quote 和完成态重放问题均已修复；日常开发继续只使用本地环境，明确发版时才更新 `release`。

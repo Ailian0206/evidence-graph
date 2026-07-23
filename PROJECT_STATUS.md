@@ -4,14 +4,14 @@
 
 ## 当前阶段
 
-- 阶段：真实 Provider Production 发布进行中；数据库迁移和托管变量已完成，等待 `release` 部署、Inngest 同步和真实研究验收。
+- 阶段：真实 Provider Production 发布与真实研究验收已完成，后续回到本地优先的功能开发。
 - 分支：`main` 是日常集成分支；`release` 是唯一 Vercel Production Branch，Preview 自动部署已关闭。
 - PR：真实 Provider 接入唯一 PR [#17](https://github.com/Ailian0206/evidence-graph/pull/17) 已通过独立审核和全部 CI 后以 merge commit 合并。
-- 当前任务：通过 `release` 触发 Production 部署，随后同步 Inngest 并完成低范围中文真实研究验收。
+- 当前任务：里程碑已闭环；日常改动继续集成到 `main`，只有明确发版时才更新 `release`。
 - UI 优化：中文优先的 Neutral Product Studio 与均衡密度已覆盖公共页面、认证/项目页、工作台全部状态和公开报告，并合并到 `main`。
-- 外部 Provider 调用：已接入 Tavily Search/Extract 与 DeepSeek `deepseek-v4-flash`；四项 Provider 变量已加密配置到 Vercel Production，等待新部署加载。
+- 外部 Provider 调用：已接入 Tavily Search/Extract 与 DeepSeek `deepseek-v4-flash`；四项 Provider 变量已加密配置到 Vercel Production，并由最终部署加载。
 - Embedding Provider：阿里云百炼 `text-embedding-v4` 固定输出 1536 维；兼容前向迁移 `20260723000100` 已应用到 Production。
-- 生产部署：`https://evidence-graph-pi.vercel.app` 当前版本已 Ready；真实 Provider 版本等待 `release` 更新触发重新部署。
+- 生产部署：`https://evidence-graph-pi.vercel.app` 的真实 Provider 版本已部署为 `Ready / Current`，Deployment ID 为 `7MJSshcbs2A7ccYqHdcSUaTXrG6h`。
 - 部署拓扑：只维护本地和 Production；本地使用本地 Supabase 和 fixtures，Vercel Preview 自动部署已关闭，只有 `release` 更新触发 Production。
 - Node.js：本地和 CI 使用 `v22.22.1`。
 - Cursor Bugbot：本月额度已耗尽，不等待、不重复触发，也不作为当前合并门禁。
@@ -40,7 +40,7 @@
 | 持久化研究结果 | 已完成 | PR [#14](https://github.com/Ailian0206/evidence-graph/pull/14) 已通过独立审核和 CI，并以 merge commit `ce4b1a2` 合并 |
 | 报告发布 | 已完成 | PR [#15](https://github.com/Ailian0206/evidence-graph/pull/15) 已通过独立审核和 CI，并以 merge commit `f42ae20` 合并 |
 | 全局 UI 体验优化 | 已完成 | PR [#16](https://github.com/Ailian0206/evidence-graph/pull/16) 首轮 finding 已按 TDD 修复，重审与两个 CI job 通过后以 merge commit `72d3f55` 合并 |
-| 真实 Provider 接入 | Production 发布中 | PR [#17](https://github.com/Ailian0206/evidence-graph/pull/17) 已通过独立审核和全部 CI，并以 merge commit `69b0109` 合并；迁移和托管变量已完成，等待部署与真实研究验收 |
+| 真实 Provider 接入 | 已完成 | PR [#17](https://github.com/Ailian0206/evidence-graph/pull/17) 已通过独立审核和全部 CI，并以 merge commit `69b0109` 合并；Production 迁移、变量、部署、Inngest 同步和真实研究验收均已完成 |
 
 ## 验证摘要
 
@@ -142,8 +142,14 @@
 - `20260723000100_embedding_model_v4.sql` 保留历史 `text-embedding-3-small` 元数据、新行默认 v4、未知模型继续拒绝；本地完整迁移链 4 个 pgTAP 文件共 93 项和 Schema lint 通过。
 - 真实 Provider 里程碑完整 `npm run test:managed` 在显式清空 Provider 变量后通过 Provider 边界、数据库、lint、typecheck、24 个文件共 282 个单元测试、生产 build 和 82 个 E2E，默认路径未调用 Provider 网络。
 - PR #17 独立 Claude 审核对 head `302ead5057ad4895db2b174da2fb8c5f1056af14` 返回 `pass`，质量、数据库和 Vercel 检查全部成功，随后以 merge commit `69b0109890566e539dfc0d3b517ea5c8208866fa` 合并；远端模块分支已删除。
+- Production 发布期间依次修复 Unicode 来源分块偏移、来源正文预算、Inngest 32 MiB 向量状态、混合证据中的非精确 quote，以及数据库已 ready 后 Inngest 重试误报失败；对应提交为 `35353a6`、`3839f12`、`c6c5f17`、`38ec8f6` 和 `6bd3e79`。
+- 最终 `npm run test:managed` 通过 Provider 边界、93 项数据库断言、Schema lint、全仓 lint、typecheck、291 个单元测试、Production build 和 82 个 E2E；五个发布修复均经独立审查，Critical/Important 为 0。
+- Vercel 最终 Deployment `7MJSshcbs2A7ccYqHdcSUaTXrG6h` 为 `Ready / Current`；Inngest Production 应用 `evidence-graph` 已同步 1 个函数，结果为 `No change / Synced app`。
+- 最终默认 Production smoke 通过公开首页与安全 Header、公开确定性示例、Auth 重定向和 Inngest 无签名拒绝四项检查，未调用付费 Provider。
+- 低范围中文真实研究 `run_00efc30e-49dd-4fc1-8fca-65654fc1b9ad` 验收为 `ready`：3 次搜索、18 个来源、1078 个来源分块、2 个主张、3 条证据关系、1 份草稿报告和 3 条引文，估算费用 `0.084784 USD`，无业务错误。
+- 已完成研究的最终重放 `01KY6TBFHVRJBH8YMGGVQ72P5N` 在 2.155 秒内完成，Provider steps 与 lifecycle steps 均为 0，确认不会重复调用 Provider 或改写已完成结果。
 
 ## 下一步
 
-1. 重新取得敏感远端写入确认，再应用 Production 数据库迁移、配置四个 Provider 变量、重新部署并同步 Inngest。
-2. 创建一个低范围中文研究，核对真实来源、ready 状态、主张、引文报告和费用记录；失败时停用 live 配置并回滚部署。
+1. 回到本地优先的功能开发，日常验证使用本地 Supabase 与 fixtures，不触发付费 Provider。
+2. 仅在明确发版时将已验证的 `main` 更新到 `release`，触发唯一的 Vercel Production 部署。
