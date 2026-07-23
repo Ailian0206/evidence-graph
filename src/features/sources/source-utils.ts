@@ -53,36 +53,43 @@ export const chunkSourceText = ({
   text: string;
 }): SourceChunk[] => {
   const paragraphs = Array.from(text.matchAll(/\S[\s\S]*?(?=\n\n|$)/g));
+  let sourceCodePointOffset = 0;
+  let sourceUtf16Offset = 0;
 
   const slices = paragraphs.flatMap((match) => {
     const paragraph = match[0].trimEnd();
-    const paragraphStart = match.index ?? 0;
-    const chunkCount = Math.ceil(paragraph.length / MAX_CHUNK_CHARACTERS);
-    const balancedSize = Math.floor(paragraph.length / chunkCount);
+    const paragraphCharacters = Array.from(paragraph);
+    const matchStart = match.index ?? 0;
+    sourceCodePointOffset += Array.from(text.slice(sourceUtf16Offset, matchStart)).length;
+    const paragraphStart = sourceCodePointOffset;
+    sourceUtf16Offset = matchStart + match[0].length;
+    sourceCodePointOffset += Array.from(match[0]).length;
+    const chunkCount = Math.ceil(paragraphCharacters.length / MAX_CHUNK_CHARACTERS);
+    const balancedSize = Math.floor(paragraphCharacters.length / chunkCount);
     const sizes: number[] = [];
 
     if (balancedSize >= MIN_CHUNK_CHARACTERS) {
-      const remainder = paragraph.length % chunkCount;
+      const remainder = paragraphCharacters.length % chunkCount;
 
       for (let index = 0; index < chunkCount; index += 1) {
         sizes.push(balancedSize + (index < remainder ? 1 : 0));
       }
     } else {
       // Keep indivisible paragraphs whole instead of creating a sub-800 character tail.
-      sizes.push(paragraph.length);
+      sizes.push(paragraphCharacters.length);
     }
 
     let localOffset = 0;
     return sizes.map((size) => {
       const startChar = paragraphStart + localOffset;
-      const chunkText = paragraph.slice(localOffset, localOffset + size);
+      const chunkText = paragraphCharacters.slice(localOffset, localOffset + size).join("");
       localOffset += size;
 
-      return { chunkText, startChar };
+      return { chunkText, startChar, endChar: startChar + size };
     });
   });
 
-  return slices.map(({ chunkText, startChar }, chunkIndex) => {
+  return slices.map(({ chunkText, startChar, endChar }, chunkIndex) => {
 
     return {
       id: `${sourceId}_chunk_${chunkIndex}`,
@@ -91,7 +98,7 @@ export const chunkSourceText = ({
       chunkIndex,
       text: chunkText,
       startChar,
-      endChar: startChar + chunkText.length,
+      endChar,
       embeddingModel: currentEmbeddingModel,
       embeddingDimensions: 1536,
     };

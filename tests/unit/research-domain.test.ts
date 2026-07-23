@@ -179,6 +179,44 @@ describe("source utilities", () => {
     expect(chunks[0].startChar).toBe(0);
     expect(chunks.at(-1)?.endChar).toBe(length);
   });
+
+  it("uses Unicode code point offsets and slices that the repository accepts", () => {
+    const text = `${"A".repeat(800)}😀${"B".repeat(799)}`;
+    const chunks = chunkSourceText({
+      sourceId: "source_unicode",
+      projectId: "project_demo",
+      text,
+    });
+
+    expect(chunks.map(({ text: chunkText, startChar, endChar }) => ({
+      text: chunkText,
+      startChar,
+      endChar,
+    }))).toEqual([
+      { text: "A".repeat(800), startChar: 0, endChar: 800 },
+      { text: `😀${"B".repeat(799)}`, startChar: 800, endChar: 1600 },
+    ]);
+
+    const fixture = createDemoResearchFixture();
+    fixture.sources = [{
+      ...fixture.sources[0],
+      id: "source_unicode",
+      body: text,
+      contentHash: createContentHash(text),
+    }];
+    fixture.chunks = chunks.map((chunk, chunkIndex) => ({
+      ...chunk,
+      id: `source_unicode_chunk_${chunkIndex}`,
+      text: chunkIndex === 0 ? "A".repeat(800) : `😀${"B".repeat(799)}`,
+      startChar: chunkIndex * 800,
+      endChar: (chunkIndex + 1) * 800,
+    }));
+    fixture.claims = [];
+    fixture.evidenceLinks = [];
+    fixture.claimRelations = [];
+
+    expect(() => createInMemoryProjectRepository(fixture)).not.toThrow();
+  });
 });
 
 describe("claim utilities", () => {

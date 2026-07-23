@@ -166,6 +166,7 @@ export const createInMemoryProjectRepository = (
   for (const input of fixture.chunks) {
     const chunk = sourceChunkSchema.parse(input);
     const source = sources.get(chunk.sourceId);
+    const sourceCharacters = source ? Array.from(source.body) : [];
     const duplicate =
       chunks.has(chunk.id) ||
       Array.from(chunks.values()).some(
@@ -180,9 +181,9 @@ export const createInMemoryProjectRepository = (
     const offsetsMatchSource =
       source &&
       chunk.startChar < chunk.endChar &&
-      chunk.endChar <= source.body.length &&
-      chunk.text.length === chunk.endChar - chunk.startChar &&
-      source.body.slice(chunk.startChar, chunk.endChar) === chunk.text;
+      chunk.endChar <= sourceCharacters.length &&
+      Array.from(chunk.text).length === chunk.endChar - chunk.startChar &&
+      sourceCharacters.slice(chunk.startChar, chunk.endChar).join("") === chunk.text;
 
     if (!source || source.projectId !== chunk.projectId || !offsetsMatchSource) {
       throw new Error("CHUNK_SOURCE_MISMATCH");
