@@ -278,7 +278,7 @@ Run: `npm run test:managed`
 
 Expected: Provider 扫描、数据库、lint、typecheck、unit、build、E2E 全部通过，默认路径未调用真实 Provider。
 
-- [ ] **Step 4: 提交并创建唯一 Draft PR**
+- [x] **Step 4: 提交并创建唯一 Draft PR**
 
 使用中文 Conventional Commits，push `feat/real-provider-integration`，创建一个 Draft PR 并更新 `PROJECT_STATUS.md`。
 

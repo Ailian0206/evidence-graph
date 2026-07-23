@@ -5,8 +5,8 @@
 ## 当前阶段
 
 - 阶段：真实 Provider 接入里程碑已完成本地 TDD、一次低成本真实冒烟和完整模块门禁，等待 Draft PR、独立审核与 GitHub CI。
-- 分支：`feat/real-provider-integration` 已同步 `main` 的公开报告测试类型修复 `90b3d18`，真实 Provider 实现提交为 `5757a5c`；Draft PR 待创建。
-- PR：真实 Provider 接入尚未创建 PR；完成提交后只创建一个 Draft PR。
+- 分支：`feat/real-provider-integration` 已同步 `main` 的公开报告测试类型修复 `90b3d18`，真实 Provider 实现提交为 `5757a5c`，并已推送远端。
+- PR：真实 Provider 接入唯一 Draft PR [#17](https://github.com/Ailian0206/evidence-graph/pull/17) 已创建，等待独立审核与 GitHub CI。
 - 当前任务：完成 Provider 里程碑 PR 闭环；Production 数据库、Vercel 环境变量、重新部署和真实研究验收继续作为合并后的独立敏感发布门禁。
 - UI 优化：中文优先的 Neutral Product Studio 与均衡密度已覆盖公共页面、认证/项目页、工作台全部状态和公开报告，并合并到 `main`。
 - 外部 Provider 调用：分支已接入 Tavily Search/Extract 与 DeepSeek `deepseek-v4-flash`；Production 尚未配置新变量，当前线上仍未启用。
@@ -40,7 +40,7 @@
 | 持久化研究结果 | 已完成 | PR [#14](https://github.com/Ailian0206/evidence-graph/pull/14) 已通过独立审核和 CI，并以 merge commit `ce4b1a2` 合并 |
 | 报告发布 | 已完成 | PR [#15](https://github.com/Ailian0206/evidence-graph/pull/15) 已通过独立审核和 CI，并以 merge commit `f42ae20` 合并 |
 | 全局 UI 体验优化 | 已完成 | PR [#16](https://github.com/Ailian0206/evidence-graph/pull/16) 首轮 finding 已按 TDD 修复，重审与两个 CI job 通过后以 merge commit `72d3f55` 合并 |
-| 真实 Provider 接入 | 本地完成 | 三家真实适配器、兼容迁移、专用冒烟和完整模块门禁通过；等待 Draft PR、独立审核与 CI |
+| 真实 Provider 接入 | 审核中 | 三家真实适配器、兼容迁移、专用冒烟和完整模块门禁通过；Draft PR [#17](https://github.com/Ailian0206/evidence-graph/pull/17) 等待独立审核与 CI |
 
 ## 验证摘要
 
@@ -144,6 +144,6 @@
 
 ## 下一步
 
-1. 提交并推送 `feat/real-provider-integration`，创建唯一 Draft PR，完成独立 Claude 审核和 GitHub CI 后以 merge commit 合并。
+1. 对 Draft PR [#17](https://github.com/Ailian0206/evidence-graph/pull/17) 完成独立 Claude 审核和 GitHub CI，通过后以 merge commit 合并。
 2. 合并后重新取得敏感远端写入确认，再应用 Production 数据库迁移、配置四个 Provider 变量、重新部署并同步 Inngest。
 3. 创建一个低范围中文研究，核对真实来源、ready 状态、主张、引文报告和费用记录；失败时停用 live 配置并回滚部署。
