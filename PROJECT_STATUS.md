@@ -1,16 +1,16 @@
 # Evidence Graph 项目状态
 
-更新时间：2026-07-22
+更新时间：2026-07-23
 
 ## 当前阶段
 
-- 阶段：规划内代码里程碑、最小 Production 发布和首个真实用户闭环验收均已完成，项目回到产品体验与实际使用修正阶段。
-- 分支：`main` 已包含 UI 里程碑 merge commit `72d3f55`、生产匿名访问修复 `e4789c9`、真实工作台动态渲染修复 `3c92b30` 和动态公开报告修复 `af71530`。
-- PR：UI 里程碑唯一 PR [#16](https://github.com/Ailian0206/evidence-graph/pull/16) 已通过修复重审和 GitHub CI 后合并。
-- 当前任务：保持“本地开发 + Production”的个人项目拓扑，以线上实际使用和必要 bug 修正为主，不再扩展预发布或企业级运维流程。
+- 阶段：真实 Provider 接入里程碑已完成本地 TDD、一次低成本真实冒烟和完整模块门禁，等待 Draft PR、独立审核与 GitHub CI。
+- 分支：`feat/real-provider-integration` 已同步 `main` 的公开报告测试类型修复 `90b3d18`，真实 Provider 实现提交为 `5757a5c`；Draft PR 待创建。
+- PR：真实 Provider 接入尚未创建 PR；完成提交后只创建一个 Draft PR。
+- 当前任务：完成 Provider 里程碑 PR 闭环；Production 数据库、Vercel 环境变量、重新部署和真实研究验收继续作为合并后的独立敏感发布门禁。
 - UI 优化：中文优先的 Neutral Product Studio 与均衡密度已覆盖公共页面、认证/项目页、工作台全部状态和公开报告，并合并到 `main`。
-- 外部 Provider 调用：已禁用。
-- Embedding Provider：已决定后续接入阿里云百炼 `text-embedding-v4` 并固定输出 1536 维；等待用户提供账号和密钥，当前不接入、不调用真实服务。
+- 外部 Provider 调用：分支已接入 Tavily Search/Extract 与 DeepSeek `deepseek-v4-flash`；Production 尚未配置新变量，当前线上仍未启用。
+- Embedding Provider：分支已接入阿里云百炼 `text-embedding-v4` 和 1536 维输出；兼容前向迁移只在本地验证，尚未应用到 Production。
 - 生产部署：`https://evidence-graph-pi.vercel.app` 已 Ready；Vercel 托管变量、Supabase Redirect、Inngest 同步、三条数据库迁移和默认生产冒烟均已完成。
 - 部署拓扑：不维护预发布环境；本地使用本地 Supabase 和 fixtures，Vercel 只连接 Production 服务。`main` 自动部署，回滚演练和密钥轮换不作为个人项目的例行门禁。
 - Node.js：本地和 CI 使用 `v22.22.1`。
@@ -40,6 +40,7 @@
 | 持久化研究结果 | 已完成 | PR [#14](https://github.com/Ailian0206/evidence-graph/pull/14) 已通过独立审核和 CI，并以 merge commit `ce4b1a2` 合并 |
 | 报告发布 | 已完成 | PR [#15](https://github.com/Ailian0206/evidence-graph/pull/15) 已通过独立审核和 CI，并以 merge commit `f42ae20` 合并 |
 | 全局 UI 体验优化 | 已完成 | PR [#16](https://github.com/Ailian0206/evidence-graph/pull/16) 首轮 finding 已按 TDD 修复，重审与两个 CI job 通过后以 merge commit `72d3f55` 合并 |
+| 真实 Provider 接入 | 本地完成 | 三家真实适配器、兼容迁移、专用冒烟和完整模块门禁通过；等待 Draft PR、独立审核与 CI |
 
 ## 验证摘要
 
@@ -136,8 +137,13 @@
 - Production 首个真实用户闭环已完成：GitHub 登录、创建中文研究、Inngest fixture 运行完成、证据/图谱读取、Claim 审核写回、报告发布、匿名公开访问和引文锚点跳转均通过；未调用真实或付费 Provider。
 - 真实项目页与动态公开报告首次访问暴露 `DYNAMIC_SERVER_USAGE`。两个路由移除仅适用于 fixture 的 `generateStaticParams` 后均改为请求时渲染，分别以 `3c92b30` 和 `af71530` 提交并完成 Production 复验。
 - 生产闭环修复门禁通过全仓 lint、22 个测试文件共 182 个单元测试、生产构建，以及认证与报告发布 9 个 E2E；匿名公开报告请求返回 `200 text/html`。
+- 真实 Provider 适配器已覆盖 Tavily Search/Extract、DeepSeek `deepseek-v4-flash` 五类结构化操作和百炼 `text-embedding-v4` 1536 维向量；Production 强制 live，开发和 CI 默认 fixtures。
+- 专用付费冒烟在显式 `0.10 USD` 上限内通过 Tavily、DeepSeek 和百炼三家真实请求，未输出 Key、请求 payload、来源正文或模型正文；实现变化未触及已验证的请求参数，因此未重复产生费用。
+- `20260723000100_embedding_model_v4.sql` 保留历史 `text-embedding-3-small` 元数据、新行默认 v4、未知模型继续拒绝；本地完整迁移链 4 个 pgTAP 文件共 93 项和 Schema lint 通过。
+- 真实 Provider 里程碑完整 `npm run test:managed` 在显式清空 Provider 变量后通过 Provider 边界、数据库、lint、typecheck、24 个文件共 282 个单元测试、生产 build 和 82 个 E2E，默认路径未调用 Provider 网络。
 
 ## 下一步
 
-1. 继续以线上实际使用体验和现有功能修正为主，不扩展部署环境或运维流程；当前确定性 fixture 用户闭环已经可用。
-2. 用户后续明确决定接入 Provider 时，再在成本上限下评估阿里云百炼 `text-embedding-v4`；当前不接入、不调用真实服务。
+1. 提交并推送 `feat/real-provider-integration`，创建唯一 Draft PR，完成独立 Claude 审核和 GitHub CI 后以 merge commit 合并。
+2. 合并后重新取得敏感远端写入确认，再应用 Production 数据库迁移、配置四个 Provider 变量、重新部署并同步 Inngest。
+3. 创建一个低范围中文研究，核对真实来源、ready 状态、主张、引文报告和费用记录；失败时停用 live 配置并回滚部署。
