@@ -102,6 +102,7 @@ const createSourceId = (projectId: string, contentHash: string) =>
   `source_${projectId}_${contentHash.replace("sha256_", "").slice(0, 20)}`;
 const createClaimId = (projectId: string, candidateId: string) =>
   `claim_${projectId}_${candidateId}`;
+const countUnicodeCodePoints = (content: string) => Array.from(content).length;
 
 const roundCost = (cost: number) => Math.round(cost * 1_000_000) / 1_000_000;
 
@@ -356,7 +357,10 @@ const runResearchWorkflowAttempt = async ({
         .getSnapshot()
         .sources.filter((source) => source.projectId === run.projectId);
       const selectedSources: Source[] = [];
+      const selectedSourceIds = new Set<string>();
       const pendingSources: Source[] = [];
+      let contentCodePoints = 0;
+      let exceededContentBudget = false;
 
       for (const candidate of [
         ...manualSources,
@@ -370,9 +374,6 @@ const runResearchWorkflowAttempt = async ({
         if (canonicalUrls.has(canonicalUrl) || contentHashes.has(contentHash)) {
           continue;
         }
-
-        canonicalUrls.add(canonicalUrl);
-        contentHashes.add(contentHash);
 
         const existingSource = currentSources.find(
           (source) =>
@@ -391,7 +392,23 @@ const runResearchWorkflowAttempt = async ({
           contentHash,
           retrievedAt: now(),
         };
+
+        if (selectedSourceIds.has(source.id)) {
+          continue;
+        }
+
+        const sourceCodePoints = countUnicodeCodePoints(source.body);
+
+        if (contentCodePoints + sourceCodePoints > run.maxContentChars) {
+          exceededContentBudget = true;
+          continue;
+        }
+
         selectedSources.push(source);
+        selectedSourceIds.add(source.id);
+        canonicalUrls.add(canonicalUrl);
+        contentHashes.add(contentHash);
+        contentCodePoints += sourceCodePoints;
 
         if (!existingSource) {
           pendingSources.push(source);
@@ -402,12 +419,7 @@ const runResearchWorkflowAttempt = async ({
         }
       }
 
-      const contentCharacters = selectedSources.reduce(
-        (total, source) => total + source.body.length,
-        0,
-      );
-
-      if (contentCharacters > run.maxContentChars) {
+      if (selectedSources.length === 0 && exceededContentBudget) {
         throw new Error("CONTENT_LIMIT_EXCEEDED");
       }
 

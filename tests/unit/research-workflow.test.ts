@@ -1416,6 +1416,138 @@ describe("research workflow", () => {
     expect(store.getSnapshot().sources).toEqual([]);
   });
 
+  it("skips later sources that exceed the Unicode content budget", async () => {
+    const fixture = createDemoResearchFixture();
+    const body = "Evidence Graph keeps claims connected to exact quotes for review. 😀";
+    fixture.researchRuns[0].sourceLimit = 2;
+    fixture.researchRuns[0].maxContentChars = Array.from(body).length;
+    fixture.sources = [];
+    fixture.chunks = [];
+    fixture.claims = [];
+    fixture.evidenceLinks = [];
+    fixture.claimRelations = [];
+    const providers = createFixtureResearchProviders({ evidenceCount: 1 });
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [
+        {
+          url: "https://example.com/research",
+          title: "Product research interview",
+          body,
+          sourceType: "primary_interview",
+        },
+      ],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+
+    const sources = store.getSnapshot().sources;
+
+    expect(result.run.status).toBe("ready");
+    expect(sources).toHaveLength(1);
+    expect(sources[0]).toMatchObject({
+      canonicalUrl: "https://example.com/research",
+      body,
+    });
+    expect(sources.reduce((total, source) => total + Array.from(source.body).length, 0)).toBe(
+      fixture.researchRuns[0].maxContentChars,
+    );
+  });
+
+  it("allows a later duplicate URL when an earlier candidate exceeds the content budget", async () => {
+    const fixture = createDemoResearchFixture();
+    const body = "Evidence Graph keeps claims connected to exact quotes for review.";
+    fixture.researchRuns[0].sourceLimit = 2;
+    fixture.researchRuns[0].maxContentChars = Array.from(body).length;
+    fixture.sources = [];
+    fixture.chunks = [];
+    fixture.claims = [];
+    fixture.evidenceLinks = [];
+    fixture.claimRelations = [];
+    const providers = createFixtureResearchProviders({ evidenceCount: 1 });
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [
+        {
+          url: "https://example.com/research",
+          title: "Oversized manual source",
+          body: `${body} ${body}`,
+          sourceType: "primary_interview",
+        },
+      ],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+
+    expect(result.run.status).toBe("ready");
+    expect(store.getSnapshot().sources).toEqual([
+      expect.objectContaining({
+        canonicalUrl: "https://example.com/research",
+        body,
+      }),
+    ]);
+  });
+
+  it("deduplicates candidates that resolve to the same existing source", async () => {
+    const fixture = createDemoResearchFixture();
+    const existingSource = fixture.sources[0];
+    fixture.researchRuns[0].sourceLimit = 2;
+    fixture.sources = [existingSource];
+    fixture.chunks = [];
+    fixture.claims = [];
+    fixture.evidenceLinks = [];
+    fixture.claimRelations = [];
+    const providers = createFixtureResearchProviders({ evidenceCount: 1 });
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [
+        {
+          url: existingSource.canonicalUrl,
+          title: "Duplicate URL candidate",
+          body: "A different body resolves through the existing canonical URL.",
+          sourceType: "primary_interview",
+        },
+        {
+          url: "https://duplicate-content.example.com/research",
+          title: "Duplicate content candidate",
+          body: existingSource.body,
+          sourceType: "article",
+        },
+        {
+          url: "https://unique.example.com/research",
+          title: "Unique source",
+          body: "A distinct source must remain available after existing-source deduplication.",
+          sourceType: "article",
+        },
+      ],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+    const sourceIds = (store.getCheckpoint("run_demo", "collecting")?.output as {
+      sourceIds: string[];
+    }).sourceIds;
+
+    expect(result.run.status).toBe("ready");
+    expect(sourceIds).toHaveLength(2);
+    expect(new Set(sourceIds).size).toBe(2);
+    expect(sourceIds).toContain(existingSource.id);
+    expect(store.getSnapshot().sources).toContainEqual(
+      expect.objectContaining({ canonicalUrl: "https://unique.example.com/research" }),
+    );
+  });
+
   it("caps deduplicated search sources at the run source limit", async () => {
     const fixture = createDemoResearchFixture();
     fixture.researchRuns[0].sourceLimit = 3;
