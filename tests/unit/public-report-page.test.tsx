@@ -26,6 +26,7 @@ describe("public report page", () => {
   it("loads a published report by its runtime slug", async () => {
     await PublicReportPage({
       params: Promise.resolve({ slug: "runtime-report" }),
+      searchParams: Promise.resolve({}),
     });
 
     expect(mocks.loadPublicReport).toHaveBeenCalledWith("runtime-report");
