@@ -32,6 +32,7 @@ export default defineConfig({
     env: {
       INNGEST_DEV: "1",
       NEXT_TELEMETRY_DISABLED: "1",
+      RESEARCH_PROVIDER_MODE: "fixture",
     },
   },
 });

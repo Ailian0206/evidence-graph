@@ -4,9 +4,9 @@
 
 ## 1. 部署边界
 
-- 日常测试只使用 fixture providers，不调用 Tavily、DeepSeek 或阿里云百炼。
+- 自动化回归只使用 fixture providers，不调用 Tavily、DeepSeek 或阿里云百炼。
 - 不把 `.env.local`、Service Role、Signing Key、Sentry Auth Token、Provider 响应或包含私人来源正文的报告提交到 Git。
-- 本地开发使用本地 Supabase 和确定性 fixtures；Vercel 只配置 Production，不维护 Preview 环境变量或预发布服务。
+- 普通 `npm run dev` 默认使用 fixtures；`npm run dev:local` 使用受控 live Provider，并编排本地 Supabase 与 Inngest。Vercel 只配置 Production，不维护 Preview 环境变量或预发布服务。
 - Vercel 已关闭 Preview 自动部署；`main` 只承担日常集成，只有 `release` 更新才自动部署 Production。
 - 默认生产冒烟不创建项目、不运行研究、不调用付费 Provider。
 - 真实 Provider 冒烟必须同时设置 `RESEARCH_PROVIDER_MODE=live`、`ALLOW_PAID_PROVIDER_SMOKE=I_CONFIRM_PAID_PROVIDER_CALLS` 和不高于 `0.10 USD` 的显式成本上限；未取得当次授权时不得执行。
@@ -21,9 +21,24 @@ npm ci
 npm run check:provider-boundary
 npm run test:db
 npm run test:ci
+npm run test:managed
 ```
 
 `test:db` 只连接本地 Supabase。CI 使用独立 database job 启动本地 Postgres，并在成功或失败后删除本地测试数据卷。
+
+### 2.1 本地真实研究
+
+`npm run dev:local` 要求 `.env.local` 包含四项 Provider 凭据，并设置以下门禁：
+
+```bash
+RESEARCH_PROVIDER_MODE=live
+ALLOW_LOCAL_LIVE_RESEARCH=I_CONFIRM_LOCAL_PAID_RESEARCH
+LOCAL_LIVE_RESEARCH_COST_LIMIT_USD=0.15
+```
+
+脚本只接受 Node.js 22，使用固定的 `127.0.0.1:3218` 启动 Next.js，在 `127.0.0.1:8288` 启动 Inngest，并从本地 Supabase CLI 安全更新本地 URL 与 Key。完整 UI 研究使用真实 Tavily、DeepSeek 和阿里云百炼，达到 `0.15 USD` 累计估算上限后不再开始下一次 Provider 调用。
+
+`npm run test:unit`、`npm run test:e2e`、`npm run test:ci` 和 `npm run test:managed` 会显式覆盖 `RESEARCH_PROVIDER_MODE=fixture`。本地 `.env.local` 即使配置为 live，也不会改变自动化回归语义。
 
 ## 3. 资源创建顺序
 
@@ -70,7 +85,7 @@ npx supabase db push --linked
 2. 将 Production 同步地址配置为 `https://<production-host>/api/inngest`。
 3. 取得 Production Event Key 与 Signing Key，并只写入 Vercel Production 变量。
 4. 同步后确认函数 `run-managed-research` 的 owner 并发为 1、重试次数为 3、幂等键为 `runId`。
-5. Production 执行器强制使用 Tavily、DeepSeek 和阿里云百炼，不会静默回退 fixtures；本地和 CI 默认仍使用确定性 fixtures。
+5. Production 执行器强制使用 Tavily、DeepSeek 和阿里云百炼，不会静默回退 fixtures；本地 `dev:local` 使用受控 live，自动化回归固定使用 fixtures。
 
 ### 3.4 Sentry
 
@@ -102,11 +117,14 @@ npx supabase db push --linked
 | `SENTRY_PROJECT`                       | 不配置                  | 可选             | 否         | Sentry 项目名          |
 | `PRODUCTION_BASE_URL`                  | 不配置                  | 冒烟终端临时设置 | 否         | 生产站点 HTTPS Origin  |
 | `ALLOW_PRODUCTION_SMOKE`               | 不配置                  | 冒烟终端临时设置 | 否         | 防止误触发生产请求     |
-| `TAVILY_API_KEY`                       | 默认不配置              | Production 值    | 否         | Tavily Search/Extract  |
-| `DEEPSEEK_API_KEY`                     | 默认不配置              | Production 值    | 否         | DeepSeek 结构化生成    |
-| `BAILIAN_API_KEY`                      | 默认不配置              | Production 值    | 否         | 百炼 Embedding         |
-| `BAILIAN_WORKSPACE_ID`                 | 默认不配置              | Production 值    | 否         | 百炼北京地域工作空间   |
-| `RESEARCH_PROVIDER_MODE`               | 默认不配置              | 无需配置         | 否         | Production 强制 live；本地 live 仍需付费门禁 |
+| `LOCAL_DEV_AUTH_ENABLED`               | `dev:local` 自动设置     | 不配置           | 否         | 仅 loopback 本地登录   |
+| `TAVILY_API_KEY`                       | `dev:local` 必需         | Production 值    | 否         | Tavily Search/Extract  |
+| `DEEPSEEK_API_KEY`                     | `dev:local` 必需         | Production 值    | 否         | DeepSeek 结构化生成    |
+| `BAILIAN_API_KEY`                      | `dev:local` 必需         | Production 值    | 否         | 百炼 Embedding         |
+| `BAILIAN_WORKSPACE_ID`                 | `dev:local` 必需         | Production 值    | 否         | 百炼北京地域工作空间   |
+| `RESEARCH_PROVIDER_MODE`               | `dev:local` 设为 live    | 无需配置         | 否         | 自动化回归显式覆盖为 fixture |
+| `ALLOW_LOCAL_LIVE_RESEARCH`            | `dev:local` 必需         | 不配置           | 否         | 本地完整研究确认令牌   |
+| `LOCAL_LIVE_RESEARCH_COST_LIMIT_USD`   | `dev:local` 必需         | 不配置           | 否         | 本地完整研究上限，至多 0.15 |
 | `ALLOW_PAID_PROVIDER_SMOKE`            | 默认不配置              | 不持久配置       | 否         | 专用冒烟精确确认令牌   |
 | `PAID_PROVIDER_SMOKE_COST_LIMIT_USD`   | 默认不配置              | 不持久配置       | 否         | 专用冒烟上限，至多 0.10 |
 

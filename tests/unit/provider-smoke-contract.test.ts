@@ -17,10 +17,38 @@ describe("paid Provider smoke command contract", () => {
       'include: ["tests/unit/**/*.test.ts", "tests/unit/**/*.test.tsx"]',
     );
     expect(defaultConfig).not.toContain("tests/provider-smoke/");
+    expect(defaultConfig).toContain('RESEARCH_PROVIDER_MODE: "fixture"');
     expect(providerSmokeConfig).toContain('environment: "node"');
     expect(providerSmokeConfig).toContain(
       'include: ["tests/provider-smoke/live-providers.test.ts"]',
     );
+  });
+
+  it("forces fixture mode for the E2E build and Playwright server", async () => {
+    const packageJson = JSON.parse(await readWorkspaceFile("package.json")) as {
+      scripts: Record<string, string>;
+    };
+    const playwrightConfig = await readWorkspaceFile("playwright.config.ts");
+
+    expect(packageJson.scripts["test:e2e"]).toBe(
+      "RESEARCH_PROVIDER_MODE=fixture npm run build && playwright test",
+    );
+    expect(playwrightConfig).toContain('RESEARCH_PROVIDER_MODE: "fixture"');
+  });
+
+  it("keeps routine test commands free of paid confirmation tokens", async () => {
+    const packageJson = JSON.parse(await readWorkspaceFile("package.json")) as {
+      scripts: Record<string, string>;
+    };
+
+    for (const name of ["test:unit", "test:e2e", "test:ci", "test:managed"]) {
+      expect(packageJson.scripts[name]).not.toContain(
+        "I_CONFIRM_LOCAL_PAID_RESEARCH",
+      );
+      expect(packageJson.scripts[name]).not.toContain(
+        "I_CONFIRM_PAID_PROVIDER_CALLS",
+      );
+    }
   });
 
   it("loads ignored local credentials without supplying paid-call confirmation", async () => {
@@ -49,6 +77,10 @@ describe("paid Provider smoke command contract", () => {
     expect(environmentTemplate).toContain("RESEARCH_PROVIDER_MODE=");
     expect(environmentTemplate).toContain("ALLOW_PAID_PROVIDER_SMOKE=");
     expect(environmentTemplate).toContain("PAID_PROVIDER_SMOKE_COST_LIMIT_USD=");
+    expect(environmentTemplate).toContain("ALLOW_LOCAL_LIVE_RESEARCH=");
+    expect(environmentTemplate).toContain(
+      "LOCAL_LIVE_RESEARCH_COST_LIMIT_USD=",
+    );
 
     expect(deploymentGuide).toContain(
       "ALLOW_PAID_PROVIDER_SMOKE=I_CONFIRM_PAID_PROVIDER_CALLS",
@@ -64,5 +96,17 @@ describe("paid Provider smoke command contract", () => {
       "低于 `0.01 USD` 的成本上限会在创建 Provider 和发送请求前被拒绝",
     );
     expect(deploymentGuide).not.toContain("YES_I_ACCEPT_PROVIDER_COST");
+  });
+
+  it("documents the fixed local live workspace separately from routine tests", async () => {
+    const readme = await readWorkspaceFile("README.md");
+    const deploymentGuide = await readWorkspaceFile("docs/deployment.md");
+
+    expect(readme).toContain("npm run dev:local");
+    expect(readme).toContain("http://127.0.0.1:3218/zh/auth/login");
+    expect(readme).toContain("http://127.0.0.1:8288");
+    expect(deploymentGuide).toContain("普通 `npm run dev` 默认使用 fixtures");
+    expect(deploymentGuide).toContain("`npm run dev:local` 使用受控 live Provider");
+    expect(deploymentGuide).toContain("LOCAL_LIVE_RESEARCH_COST_LIMIT_USD=0.15");
   });
 });
