@@ -373,6 +373,35 @@ describe("Inngest research workflow entry", () => {
     expect(writer.persist).toHaveBeenCalledWith({ event: eventData, snapshot });
   });
 
+  it("short-circuits an already-ready run before durable steps or Provider calls", async () => {
+    const executeWorkflow = vi.fn(async () => ({
+      output: { status: "ready" },
+      snapshot: {} as ResearchWorkflowSnapshot,
+    }));
+    const createWriter = vi.fn(async () => ({
+      begin: vi.fn(async () => undefined),
+      persist: vi.fn(async () => undefined),
+      fail: vi.fn(async () => undefined),
+    }));
+    const step = {
+      run: vi.fn(async (_id: string, operation: () => Promise<unknown>) => operation()),
+    };
+    const handler = createRunResearchHandler({
+      authorize: async () => ({ status: "ready" }),
+      executeWorkflow,
+      createWriter,
+    });
+
+    await expect(handler({ event: { data: eventData }, step })).resolves.toEqual({
+      status: "ready",
+      completedSteps: [],
+      reportId: null,
+    });
+    expect(step.run).not.toHaveBeenCalled();
+    expect(executeWorkflow).not.toHaveBeenCalled();
+    expect(createWriter).not.toHaveBeenCalled();
+  });
+
   it("compacts durable embedding results while preserving replayed vectors", async () => {
     const vectors = Array.from({ length: 10 }, (_, rowIndex) =>
       Array.from({ length: 1536 }, (_, columnIndex) =>

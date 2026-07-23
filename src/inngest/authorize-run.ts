@@ -1,12 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { NonRetriableError } from "inngest";
 
+import { runStatusSchema, type ResearchRun } from "@/features/research/domain";
 import type { ResearchRequestedEventData } from "@/inngest/events";
 
 export type ResearchRunAuthorization = {
   id: string;
   ownerId: string;
   projectId: string;
+  status?: ResearchRun["status"];
 };
 
 export type ReadResearchRun = (
@@ -39,7 +41,7 @@ export const createSupabaseRunAuthorizationReader = (
 ): ReadResearchRun => async ({ ownerId, projectId, runId }) => {
   const { data, error } = await client
     .from("research_runs")
-    .select("id,owner_id,project_id")
+    .select("id,owner_id,project_id,status")
     .eq("id", runId)
     .eq("owner_id", ownerId)
     .eq("project_id", projectId)
@@ -54,6 +56,7 @@ export const createSupabaseRunAuthorizationReader = (
         id: data.id as string,
         ownerId: data.owner_id as string,
         projectId: data.project_id as string,
+        status: runStatusSchema.parse(data.status),
       }
     : null;
 };

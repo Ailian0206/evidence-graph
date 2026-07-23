@@ -1,4 +1,5 @@
 import { createDemoResearchFixture } from "@/features/research/fixtures";
+import type { ResearchRun } from "@/features/research/domain";
 import {
   runResearchWorkflow,
   type ProviderCallExecutor,
@@ -37,7 +38,9 @@ type DurableStep = {
 };
 
 type RunResearchHandlerDependencies = {
-  authorize: (event: ResearchRequestedEventData) => Promise<unknown>;
+  authorize: (
+    event: ResearchRequestedEventData,
+  ) => Promise<{ status?: ResearchRun["status"] } | void>;
   executeWorkflow: (
     event: ResearchRequestedEventData,
     executeProviderCall: ProviderCallExecutor,
@@ -189,7 +192,12 @@ export const createRunResearchHandler = ({
     maxAttempts?: number;
   }) => {
     const parsedEvent = researchRequestedEventSchema.parse(event.data);
-    await authorize(parsedEvent);
+    const authorization = await authorize(parsedEvent);
+
+    if (authorization?.status === "ready") {
+      return { status: "ready", completedSteps: [], reportId: null };
+    }
+
     const writer = await createWriter();
     await step.run("begin-research-workflow", () => writer.begin(parsedEvent));
     const executeProviderCall: ProviderCallExecutor = async (
