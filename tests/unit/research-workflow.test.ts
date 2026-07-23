@@ -593,8 +593,11 @@ describe("research workflow", () => {
 
         if (linkAttempts === 1) {
           const invalidResult = structuredClone(result);
-          (invalidResult.data as { evidence: Array<{ quote: string }> }).evidence[0].quote =
-            "This quote is absent from every source chunk";
+          for (const evidence of (
+            invalidResult.data as { evidence: Array<{ quote: string }> }
+          ).evidence) {
+            evidence.quote = "This quote is absent from every source chunk";
+          }
           return invalidResult;
         }
       }
@@ -1280,8 +1283,32 @@ describe("research workflow", () => {
     expect(providers.calls.some((call) => call.operation === "link_evidence")).toBe(false);
   });
 
-  it("fails without a report when evidence contains a non-exact quote", async () => {
+  it("discards non-exact evidence when an exact candidate remains", async () => {
     const providers = createFixtureResearchProviders({ invalidQuote: true });
+    const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+
+    expect(result.run.status).toBe("ready");
+    expect(result.evidenceLinks).toEqual([
+      expect.objectContaining({
+        claimId: expect.stringContaining("claim_links_unnecessary"),
+        quote:
+          "A cited report should use only claims with stored evidence links and preserved source excerpts",
+      }),
+    ]);
+    expect(result.report?.citations).toHaveLength(1);
+  });
+
+  it("fails without a report when every evidence quote is non-exact", async () => {
+    const providers = createFixtureResearchProviders({ invalidQuote: true, evidenceCount: 1 });
     const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
 
     const result = await runResearchWorkflow({

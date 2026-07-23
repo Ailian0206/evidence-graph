@@ -583,19 +583,21 @@ const runResearchWorkflowAttempt = async ({
           if (!claimCandidateIds.has(candidate.claimCandidateId)) {
             throw new Error("CLAIM_CANDIDATE_NOT_FOUND");
           }
+        }
 
+        const exactEvidence = output.evidence.filter((candidate) => {
           const sourceUrl = canonicalizeUrl(candidate.sourceUrl);
-          const hasExactSourceQuote = sourceChunks.some(
+          return sourceChunks.some(
             (chunk) =>
               chunk.sourceUrl === sourceUrl && chunk.text.includes(candidate.quote),
           );
+        });
 
-          if (!hasExactSourceQuote) {
-            throw new Error("QUOTE_NOT_FOUND");
-          }
+        if (exactEvidence.length === 0) {
+          throw new Error("QUOTE_NOT_FOUND");
         }
 
-        return { ...providerResult, data: output };
+        return { ...providerResult, data: { evidence: exactEvidence } };
       });
       applyUsage(idempotencyKey, result.usage);
       const sourceByUrl = new Map(
