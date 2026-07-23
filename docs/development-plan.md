@@ -1,37 +1,111 @@
 # Evidence Graph 开发计划
 
-## 交付策略
+## 1. 计划用途
 
-开发采用双轨交付：小型 bug、局部样式/交互、文案、测试和少量文档维护，在完成相应验证后直接提交 `main`；只有形成独立里程碑的改动才使用模块分支和 Draft PR，使 CI 和自动审核器聚焦完整交付面。每个里程碑必须可在本地运行、可独立测试，并且只有达到本地完成门禁后才创建一个 PR。
+本文件只定义里程碑的执行方法。产品顺序、用户可见结果和每阶段边界以 `docs/roadmap.md` 为准；实时进度以 `PROJECT_STATUS.md` 为准；已经完成的细粒度技术记录由 Git 历史、PR 和对应 `docs/superpowers/plans/` 保留。
 
-| 顺序 | 分支 | 范围 | 本地完成门禁 |
-| ---: | --- | --- | --- |
-| 1 | `feat/foundation-portfolio` | Next.js、双语作品集、设计系统、测试和 CI | 已完成；PR [#1](https://github.com/Ailian0206/evidence-graph/pull/1) 已合并 |
-| 2 | `feat/research-domain` | 研究实体、fixtures、项目生命周期和持久化边界 | 已完成；PR [#3](https://github.com/Ailian0206/evidence-graph/pull/3) 已合并 |
-| 3 | `feat/research-workflow` | 搜索/LLM Provider 接口、确定性工作流和精确引文 | 已完成；PR [#4](https://github.com/Ailian0206/evidence-graph/pull/4) 已合并 |
-| 4 | `chore/pr-review-skill-setup` | 独立 Claude Code PR 审核流程 | PR [#6](https://github.com/Ailian0206/evidence-graph/pull/6) 和 [#8](https://github.com/Ailian0206/evidence-graph/pull/8) 已合并；当前补充串行闭环约束 |
-| 5 | `fix/source-hash-project-scope-v2` | 来源内容哈希限制为项目内唯一 | PR [#7](https://github.com/Ailian0206/evidence-graph/pull/7) 已通过完整门禁和独立审核后合并 |
-| 6 | `feat/evidence-workspace` | 主张列表、图谱、来源查看器、审核动作和响应式应用 | 已完成；PR [#11](https://github.com/Ailian0206/evidence-graph/pull/11) 已通过独立审核和 CI 后合并 |
-| 7 | `feat/managed-deployment` | Supabase Auth/RLS/pgvector、Inngest、Sentry 和 Vercel | 代码已通过 PR #13 合并；Vercel 生产验证后置为独立发布门禁 |
-| 8 | `feat/durable-research-results` | 原子创建研究、Inngest 快照持久化、真实工作台和 Claim 审核 | 已完成；PR #14 通过独立审核和 CI 后以 merge commit `ce4b1a2` 合并 |
-| 9 | `feat/report-publishing` | 报告发布、撤销、公开 slug、版本切换和分享页 | 已完成；PR #15 通过独立审核和 CI 后以 merge commit `f42ae20` 合并 |
-| 10 | `feat/ui-experience-refresh` | 全站字体、间距、信息层级和视觉语言统一，移除左侧装饰边线与明显 AI 化样式 | 已完成；PR #16 通过独立重审和两个 CI job 后以 merge commit `72d3f55` 合并 |
-| 11 | `feat/real-provider-integration` | Production 直连 Tavily、DeepSeek 与百炼，开发和 CI 保持 fixtures | 已完成；PR [#17](https://github.com/Ailian0206/evidence-graph/pull/17) 通过独立审核和全部 CI 后以 merge commit `69b0109` 合并，Production 发布与真实研究验收通过 |
+## 2. 历史技术基线
 
-## 跨模块规则
+以下能力已经进入 `main`，后续里程碑在其上收口产品，不重复建设：
 
-- 每个里程碑模块开始前在 `docs/superpowers/plans/` 编写中文实施计划；直接提交 `main` 的小型维护不强制新增计划。
-- 每个行为变更都执行 RED-GREEN-REFACTOR。
-- Provider 测试默认使用 fixtures；只有带确认令牌的专用冒烟命令可以调用真实服务。
-- 所有改动使用小粒度中文 Conventional Commits；小型维护完成聚焦验证后直接提交并 push `main`，不创建 PR。
-- 数据库 Schema/迁移、鉴权或 RLS、Provider/部署边界、跨模块契约、新的完整用户流程、依赖升级和大范围重构按里程碑处理，使用模块分支并且只创建一个 Draft PR。
-- 分支、PR、CI 或里程碑状态变化时更新 `PROJECT_STATUS.md`；不改变项目状态的日常维护无需追加状态流水。
-- 模块只有在 lint、typecheck、unit、build 和相关 Playwright 测试通过后才算完成。
-- Vercel 账号审核不阻塞托管代码里程碑合并；生产 URL、Inngest 同步、生产冒烟和回滚演练仍是上线前的必需发布门禁。
-- `docs/bugbot-autofix-workflow.md` 定义自动审核流程。Bugbot 不可用时不阻塞本地开发，由独立 Claude 审核承担必需门禁。
-- 里程碑 PR 创建后由当前进程依次完成 Claude 审核、问题修复、重新审核、CI 等待和合并；当前 PR 完整闭环前不开始下一个里程碑。
-- Claude 审核和 CI 通过后由 Codex 自动 merge commit，不包含人工审核步骤。
+| 能力 | 技术状态 | 代表性 PR |
+| --- | --- | --- |
+| 双语作品集与 Next.js 基线 | 已合并 | #1 |
+| 研究领域模型与确定性工作流 | 已合并 | #3、#4 |
+| Source 项目隔离 | 已合并 | #7 |
+| 证据工作台 | 已合并 | #11 |
+| Supabase Auth/RLS、Inngest、Sentry 与托管边界 | 已合并 | #13 |
+| 持久化研究结果 | 已合并 | #14 |
+| 报告发布与公开分享 | 已合并 | #15 |
+| 全局 UI 体验优化 | 已合并 | #16 |
+| Tavily、DeepSeek、百炼真实 Provider | 已合并 | #17 |
 
-## 当前模块
+这张表只代表代码能力存在，不代表已经通过用户本地验收，也不代表 MVP 完成。
 
-`feat/managed-deployment`、`feat/durable-research-results`、`feat/report-publishing`、`feat/ui-experience-refresh` 与 `feat/real-provider-integration` 已依次通过 PR #13、#14、#15、#16、#17 合并。真实 Provider 接入包含 Tavily Search/Extract、DeepSeek `deepseek-v4-flash`、百炼 `text-embedding-v4`、真实 Supabase 输入、Inngest durable steps、兼容迁移和专用付费门禁；已授权真实冒烟、完整 `test:managed`、独立审核、GitHub CI、Production 迁移、Vercel 变量与部署、Inngest 同步和低范围中文真实研究验收均已完成。发布中发现的 Unicode 分块偏移、正文预算、Inngest 状态体积、非精确 quote 和完成态重放问题均已修复；日常开发继续只使用本地环境，明确发版时才更新 `release`。
+## 3. 当前产品路线
+
+开发按以下顺序串行执行：
+
+```text
+C0 规划重置
+-> C1 本地真实研究运行环境
+-> C2 核心研究闭环与缺陷收敛
+-> C3 Settings 与账号/数据生命周期
+-> C4 Evidence Eval
+-> C5 真实案例与作品集回填
+-> C6 本地 Release Candidate
+-> R1 Production Beta
+```
+
+当前只允许推进 `PROJECT_STATUS.md` 标记的一个有限里程碑。后续里程碑不能因为依赖已经存在而提前实现。
+
+## 4. 单个里程碑执行流程
+
+### 4.1 启动
+
+1. 确认上一里程碑已通过用户本地验收；C0 文档里程碑除外。
+2. 从干净、已同步的 `main` 创建一个模块分支，优先使用 `.worktrees/` 隔离。
+3. 在 `docs/superpowers/specs/` 写当前里程碑设计，固定范围、方案、数据边界、风险和“不做”。
+4. Agent 完成设计自审后，在 `docs/superpowers/plans/` 写一个可按 TDD 执行的实施计划并直接推进；只有付费调用、Production 写入或会显著改变产品/数据结构的歧义需要提前确认。
+5. 更新 `PROJECT_STATUS.md`，只把该里程碑标记为进行中。
+
+### 4.2 实现
+
+1. 行为变化遵循 RED-GREEN-REFACTOR；先运行聚焦失败测试，再做最小实现。
+2. 每个逻辑提交使用中文 Conventional Commit，不混入无关重构。
+3. 日常测试强制 fixture-only。真实 Provider 只通过专用命令、一次性确认和成本上限调用。
+4. 数据库、Auth/RLS、Provider、跨模块契约和完整用户流程留在同一里程碑分支与唯一 Draft PR。
+5. 当前计划外发现按 P0/P1/P2 记录；只有阻塞当前验收的 P0/P1 可以纳入本周期。
+
+缺陷等级固定为：
+
+- P0：数据丢失、跨用户访问、密钥泄露、失控付费调用，或核心流程完全无法继续。
+- P1：证据/引文错误、关键状态误导、失败无法恢复，或主要桌面/移动流程严重受损。
+- P2：不阻塞目标的视觉细节、文案偏好、便利性改进和新增能力建议。
+
+### 4.3 自动化完成门禁
+
+按风险运行聚焦门禁，并在里程碑结束前至少通过：
+
+```bash
+npm run lint
+npm run typecheck
+npm run test:unit
+npm run build
+npm run test:e2e
+npm run test:managed
+```
+
+界面改动还必须检查 390x844、1024x768 和 1440x1000，确认无横向溢出、文字裁切、异常重叠、主要视觉空白或图谱 canvas 空白。
+
+### 4.4 用户本地验收门禁
+
+1. 自动化门禁通过后，Agent 启动该里程碑需要的本地 Supabase、Inngest 和 Next.js 服务。
+2. Agent 提供唯一入口 URL、准备好的本地数据和不超过一屏的验收清单。
+3. 用户亲自操作并反馈结果。
+4. 验收失败时，问题留在当前里程碑按 TDD 修复并重新提供验收。
+5. 用户明确通过前，不把里程碑写成完成，不合并 PR，不进入下一里程碑。
+
+### 4.5 PR 与收口
+
+1. 用户本地验收通过后，推送当前模块分支并创建或更新唯一 Draft PR。
+2. 运行独立 Claude Code 审核；成立的问题在原分支修复并重新验证。
+3. 当前 head 的独立审核为 `pass` 且 GitHub CI 全部通过后，使用 merge commit 合并并删除远端模块分支。
+4. 同步本地 `main`，更新 `PROJECT_STATUS.md` 的完成结果和下一个里程碑。
+5. 审核修复改变用户可见行为时，合并前重新完成对应本地验收。
+6. 当前里程碑结束后停止；下一里程碑在新的开发周期开始。
+
+小型 bug、局部样式/交互、文案、测试和有限文档维护仍可在干净、同步的 `main` 上直接提交；它们不能被用来绕过里程碑的本地验收或 PR 门禁。
+
+## 5. Production 边界
+
+- `main` 是日常开发与集成分支。
+- `release` 是唯一 Vercel Production Branch。
+- Vercel Preview 自动部署保持关闭。
+- C1-C6 只操作本地环境，不更新 `release`。
+- 只有 C6 固定候选提交且用户明确批准 R1 后，才能执行 Production 数据库、环境变量、Inngest、部署和真实研究写入。
+- R1 失败时只处理发布阻塞或回滚，不在 Production 临时开发功能。
+
+## 6. 当前有限周期
+
+C0 规划重置已经完成。下一个周期只能是 C1“本地真实研究运行环境”；开始时必须先创建独立设计说明与实施计划，不能同时夹带 C2 缺陷收敛、C3 Settings 或 Production 工作。
