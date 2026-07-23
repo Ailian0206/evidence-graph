@@ -7,7 +7,7 @@
 - 日常测试只使用 fixture providers，不调用 Tavily、DeepSeek 或阿里云百炼。
 - 不把 `.env.local`、Service Role、Signing Key、Sentry Auth Token、Provider 响应或包含私人来源正文的报告提交到 Git。
 - 本地开发使用本地 Supabase 和确定性 fixtures；Vercel 只配置 Production，不维护 Preview 环境变量或预发布服务。
-- `main` 由 Vercel 自动部署；日常发布只做必要验证和一次默认生产冒烟，不例行执行回滚演练或密钥轮换。
+- Vercel 已关闭 Preview 自动部署；`main` 只承担日常集成，只有 `release` 更新才自动部署 Production。
 - 默认生产冒烟不创建项目、不运行研究、不调用付费 Provider。
 - 真实 Provider 冒烟必须同时设置 `RESEARCH_PROVIDER_MODE=live`、`ALLOW_PAID_PROVIDER_SMOKE=I_CONFIRM_PAID_PROVIDER_CALLS` 和不高于 `0.10 USD` 的显式成本上限；未取得当次授权时不得执行。
 
@@ -31,11 +31,11 @@ npm run test:ci
 
 | 服务 | 环境或标识 | 状态 |
 | --- | --- | --- |
-| Supabase | Production `dibngceljmdkcgrzxubx`，东京 | 三条仓库迁移已应用；现代 API Key、GitHub Provider 和 Redirect 已配置 |
+| Supabase | Production `dibngceljmdkcgrzxubx`，东京 | 四条仓库迁移已应用；现代 API Key、GitHub Provider 和 Redirect 已配置 |
 | GitHub OAuth | Production App `3734035` | Production Provider 与站点回调已配置 |
 | Inngest | Production | 应用 `evidence-graph` 和函数 `run-managed-research` 已同步 |
 | Sentry | EU 组织 `ailian0206`，项目 `evidence-graph` | DSN 已配置；Source Map Token 保持可选未配置 |
-| Vercel | `https://evidence-graph-pi.vercel.app` | Hobby Production 已 Ready，托管变量与默认生产冒烟已通过 |
+| Vercel | `https://evidence-graph-pi.vercel.app` | Hobby Production 已 Ready；Production Branch 为 `release`，Preview 自动部署已关闭 |
 
 此前创建的 Supabase Preview `vooexhwkqzymltwewcqc`、GitHub OAuth Preview App `3734029` 和 Inngest Preview `preview-e7881f94` 不再接入 Vercel，也不承担发布门禁。它们保持闲置，删除前需单独确认。
 
@@ -82,8 +82,10 @@ npx supabase db push --linked
 ### 3.5 Vercel
 
 1. 从 GitHub 导入仓库，使用 Node.js 22、`npm ci` 和 `npm run build`。
-2. 本地门禁通过后推送 `main`，由 Git 集成直接部署 Production。
-3. 不在构建日志、部署说明或 PR 中粘贴密钥值。
+2. 日常开发和集成提交推送到 `main`，不触发 Vercel 部署。
+3. 发布前确认 `main` 的完整门禁通过，再把 `main` 快进或合并到 `release`；只有 `release` 更新才由 Git 集成部署 Production。
+4. Vercel 项目级关闭 Preview 自动部署，不为功能分支、PR 或 `main` 创建 Preview。
+5. 不在构建日志、部署说明或 PR 中粘贴密钥值。
 
 ## 4. 环境变量作用域
 
@@ -104,7 +106,7 @@ npx supabase db push --linked
 | `DEEPSEEK_API_KEY`                     | 默认不配置              | Production 值    | 否         | DeepSeek 结构化生成    |
 | `BAILIAN_API_KEY`                      | 默认不配置              | Production 值    | 否         | 百炼 Embedding         |
 | `BAILIAN_WORKSPACE_ID`                 | 默认不配置              | Production 值    | 否         | 百炼北京地域工作空间   |
-| `RESEARCH_PROVIDER_MODE`               | 默认不配置              | `live`           | 否         | 本地 live 仍需付费门禁 |
+| `RESEARCH_PROVIDER_MODE`               | 默认不配置              | 无需配置         | 否         | Production 强制 live；本地 live 仍需付费门禁 |
 | `ALLOW_PAID_PROVIDER_SMOKE`            | 默认不配置              | 不持久配置       | 否         | 专用冒烟精确确认令牌   |
 | `PAID_PROVIDER_SMOKE_COST_LIMIT_USD`   | 默认不配置              | 不持久配置       | 否         | 专用冒烟上限，至多 0.10 |
 
@@ -151,10 +153,11 @@ npm run test:providers:live
 
 ## 6. 发布与回滚
 
-1. 小型维护验证后直接推送 `main`，由 Vercel 自动部署 Production。
-2. 有数据库迁移时先通过本地数据库门禁，再前向应用同一迁移；不对 Production 做盲目逆向迁移。
-3. 部署完成后运行一次默认生产冒烟。没有真实故障时不做例行回滚演练。
-4. 真实发布故障时，把上一个已验证 Deployment 提升为 Production，并重新运行默认冒烟。
+1. 小型维护验证后可以直接推送 `main`；该操作只更新集成分支，不触发 Vercel。
+2. 准备发版时确认 `main` 的完整门禁通过，再把 `main` 快进或合并到 `release`；推送 `release` 后由 Vercel 自动部署 Production。
+3. 有数据库迁移时先通过本地数据库门禁，再前向应用同一迁移；不对 Production 做盲目逆向迁移。
+4. 部署完成后运行一次默认生产冒烟。没有真实故障时不做例行回滚演练。
+5. 真实发布故障时，把上一个已验证 Deployment 提升为 Production，并重新运行默认冒烟。
 
 ## 7. 备份与恢复
 

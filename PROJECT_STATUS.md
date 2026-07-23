@@ -4,15 +4,15 @@
 
 ## 当前阶段
 
-- 阶段：真实 Provider 接入代码里程碑已通过本地门禁、独立审核和 GitHub CI 后合并；等待单独确认 Production 发布门禁。
-- 分支：`main` 已包含真实 Provider 接入 merge commit `69b0109` 和公开报告测试类型修复 `90b3d18`；远端模块分支已删除。
+- 阶段：真实 Provider Production 发布进行中；数据库迁移和托管变量已完成，等待 `release` 部署、Inngest 同步和真实研究验收。
+- 分支：`main` 是日常集成分支；`release` 是唯一 Vercel Production Branch，Preview 自动部署已关闭。
 - PR：真实 Provider 接入唯一 PR [#17](https://github.com/Ailian0206/evidence-graph/pull/17) 已通过独立审核和全部 CI 后以 merge commit 合并。
-- 当前任务：等待 Production 敏感远端写入确认，再执行数据库迁移、Vercel 环境变量、重新部署、Inngest 同步和真实研究验收。
+- 当前任务：通过 `release` 触发 Production 部署，随后同步 Inngest 并完成低范围中文真实研究验收。
 - UI 优化：中文优先的 Neutral Product Studio 与均衡密度已覆盖公共页面、认证/项目页、工作台全部状态和公开报告，并合并到 `main`。
-- 外部 Provider 调用：分支已接入 Tavily Search/Extract 与 DeepSeek `deepseek-v4-flash`；Production 尚未配置新变量，当前线上仍未启用。
-- Embedding Provider：分支已接入阿里云百炼 `text-embedding-v4` 和 1536 维输出；兼容前向迁移只在本地验证，尚未应用到 Production。
-- 生产部署：`https://evidence-graph-pi.vercel.app` 已 Ready；Vercel 托管变量、Supabase Redirect、Inngest 同步、三条数据库迁移和默认生产冒烟均已完成。
-- 部署拓扑：不维护预发布环境；本地使用本地 Supabase 和 fixtures，Vercel 只连接 Production 服务。`main` 自动部署，回滚演练和密钥轮换不作为个人项目的例行门禁。
+- 外部 Provider 调用：已接入 Tavily Search/Extract 与 DeepSeek `deepseek-v4-flash`；四项 Provider 变量已加密配置到 Vercel Production，等待新部署加载。
+- Embedding Provider：阿里云百炼 `text-embedding-v4` 固定输出 1536 维；兼容前向迁移 `20260723000100` 已应用到 Production。
+- 生产部署：`https://evidence-graph-pi.vercel.app` 当前版本已 Ready；真实 Provider 版本等待 `release` 更新触发重新部署。
+- 部署拓扑：只维护本地和 Production；本地使用本地 Supabase 和 fixtures，Vercel Preview 自动部署已关闭，只有 `release` 更新触发 Production。
 - Node.js：本地和 CI 使用 `v22.22.1`。
 - Cursor Bugbot：本月额度已耗尽，不等待、不重复触发，也不作为当前合并门禁。
 - 独立 Claude 审核：由全局 `/codex-independent-pr-review <PR编号>` 执行，不在仓库维护第二套同名 reviewer。
@@ -40,7 +40,7 @@
 | 持久化研究结果 | 已完成 | PR [#14](https://github.com/Ailian0206/evidence-graph/pull/14) 已通过独立审核和 CI，并以 merge commit `ce4b1a2` 合并 |
 | 报告发布 | 已完成 | PR [#15](https://github.com/Ailian0206/evidence-graph/pull/15) 已通过独立审核和 CI，并以 merge commit `f42ae20` 合并 |
 | 全局 UI 体验优化 | 已完成 | PR [#16](https://github.com/Ailian0206/evidence-graph/pull/16) 首轮 finding 已按 TDD 修复，重审与两个 CI job 通过后以 merge commit `72d3f55` 合并 |
-| 真实 Provider 接入 | 代码已完成 | PR [#17](https://github.com/Ailian0206/evidence-graph/pull/17) 已通过独立审核和全部 CI，并以 merge commit `69b0109` 合并；Production 发布待单独确认 |
+| 真实 Provider 接入 | Production 发布中 | PR [#17](https://github.com/Ailian0206/evidence-graph/pull/17) 已通过独立审核和全部 CI，并以 merge commit `69b0109` 合并；迁移和托管变量已完成，等待部署与真实研究验收 |
 
 ## 验证摘要
 
