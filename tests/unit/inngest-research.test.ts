@@ -296,6 +296,21 @@ describe("Inngest research workflow entry", () => {
     ]);
   });
 
+  it("passes the Provider runtime cost limit into the workflow", async () => {
+    const providers = createFixtureResearchProviders();
+    const executor = createResearchWorkflowExecutor({
+      readInput: async () => createWorkflowInput(),
+      createProviders: () => ({ ...providers, maxCostUsd: 0.02 }),
+      now: () => "2026-07-22T09:00:00.000Z",
+    });
+
+    await expect(executor(eventData)).rejects.toThrow("RUN_COST_LIMIT_EXCEEDED");
+    expect(
+      providers.calls.filter((call) => call.operation === "search"),
+    ).toHaveLength(1);
+    expect(providers.calls.some((call) => call.operation === "embed")).toBe(false);
+  });
+
   it.each([
     { id: "run_other", ownerId: "owner_1", projectId: "project_1" },
     { id: "run_1", ownerId: "owner_other", projectId: "project_1" },

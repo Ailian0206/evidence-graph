@@ -51,6 +51,7 @@ type RunResearchWorkflowInput = {
   manualSources: SearchResult[];
   manualUrls?: string[];
   providers: ResearchWorkflowProviders;
+  maxCostUsd?: number;
   executeProviderCall?: ProviderCallExecutor;
   store: InMemoryResearchWorkflowStore;
   now: () => string;
@@ -136,10 +137,15 @@ const runResearchWorkflowAttempt = async ({
   manualSources,
   manualUrls = [],
   providers,
+  maxCostUsd = 1,
   executeProviderCall = executeProviderCallDirectly,
   store,
   now,
 }: RunResearchWorkflowInput): Promise<ResearchWorkflowResult> => {
+  if (!Number.isFinite(maxCostUsd) || maxCostUsd <= 0 || maxCostUsd > 1) {
+    throw new Error("RUN_COST_LIMIT_INVALID");
+  }
+
   let run = store.requireRun({ runId, ownerId });
   const completedSteps: WorkflowStep[] = [];
   const project = store
@@ -201,13 +207,13 @@ const runResearchWorkflowAttempt = async ({
       updatedAt: now(),
     });
 
-    if (nextCost > 1) {
+    if (nextCost > maxCostUsd) {
       throw new Error("RUN_COST_LIMIT_EXCEEDED");
     }
   };
 
   const assertProviderBudget = () => {
-    if (run.estimatedCostUsd >= 1) {
+    if (run.estimatedCostUsd >= maxCostUsd) {
       throw new Error("RUN_COST_LIMIT_EXCEEDED");
     }
   };

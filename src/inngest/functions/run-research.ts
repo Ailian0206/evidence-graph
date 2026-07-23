@@ -59,7 +59,7 @@ type ResearchWorkflowProviders = {
 
 type ResearchWorkflowExecutorDependencies = {
   readInput: (event: ResearchRequestedEventData) => Promise<WorkflowInput>;
-  createProviders: () => ResearchWorkflowProviders;
+  createProviders: () => ResearchWorkflowProviders & { maxCostUsd?: number };
   now: () => string;
 };
 
@@ -254,12 +254,14 @@ export const createResearchWorkflowExecutor = ({
     fixture.claimRelations = [];
 
     const store = createInMemoryResearchWorkflowStore(fixture);
+    const providerRuntime = createProviders();
     const result = await runResearchWorkflow({
       runId: input.run.id,
       ownerId: input.project.ownerId,
       manualSources: [],
       manualUrls: input.manualUrls,
-      providers: createProviders(),
+      providers: providerRuntime,
+      maxCostUsd: providerRuntime.maxCostUsd ?? 1,
       executeProviderCall,
       store,
       now,

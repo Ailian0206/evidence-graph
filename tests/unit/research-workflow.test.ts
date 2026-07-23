@@ -1381,6 +1381,30 @@ describe("research workflow", () => {
     expect(providers.calls.some((call) => call.operation === "search")).toBe(false);
   });
 
+  it("uses an injected local cost limit and stops before the next provider call", async () => {
+    const providers = createFixtureResearchProviders();
+    const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      maxCostUsd: 0.05,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+
+    expect(result.run).toMatchObject({
+      status: "failed",
+      errorMessage: "RUN_COST_LIMIT_EXCEEDED",
+      estimatedCostUsd: 0.051,
+    });
+    expect(providers.calls.some((call) => call.operation === "link_evidence")).toBe(
+      false,
+    );
+  });
+
   it("rejects manual sources above the run limit before provider calls", async () => {
     const providers = createFixtureResearchProviders();
     const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
