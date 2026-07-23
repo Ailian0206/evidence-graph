@@ -4,10 +4,10 @@
 
 ## 当前阶段
 
-- 阶段：真实 Provider 接入里程碑已完成本地 TDD、一次低成本真实冒烟和完整模块门禁，等待 Draft PR、独立审核与 GitHub CI。
-- 分支：`feat/real-provider-integration` 已同步 `main` 的公开报告测试类型修复 `90b3d18`，真实 Provider 实现提交为 `5757a5c`，并已推送远端。
-- PR：真实 Provider 接入唯一 Draft PR [#17](https://github.com/Ailian0206/evidence-graph/pull/17) 已创建，等待独立审核与 GitHub CI。
-- 当前任务：完成 Provider 里程碑 PR 闭环；Production 数据库、Vercel 环境变量、重新部署和真实研究验收继续作为合并后的独立敏感发布门禁。
+- 阶段：真实 Provider 接入代码里程碑已通过本地门禁、独立审核和 GitHub CI 后合并；等待单独确认 Production 发布门禁。
+- 分支：`main` 已包含真实 Provider 接入 merge commit `69b0109` 和公开报告测试类型修复 `90b3d18`；远端模块分支已删除。
+- PR：真实 Provider 接入唯一 PR [#17](https://github.com/Ailian0206/evidence-graph/pull/17) 已通过独立审核和全部 CI 后以 merge commit 合并。
+- 当前任务：等待 Production 敏感远端写入确认，再执行数据库迁移、Vercel 环境变量、重新部署、Inngest 同步和真实研究验收。
 - UI 优化：中文优先的 Neutral Product Studio 与均衡密度已覆盖公共页面、认证/项目页、工作台全部状态和公开报告，并合并到 `main`。
 - 外部 Provider 调用：分支已接入 Tavily Search/Extract 与 DeepSeek `deepseek-v4-flash`；Production 尚未配置新变量，当前线上仍未启用。
 - Embedding Provider：分支已接入阿里云百炼 `text-embedding-v4` 和 1536 维输出；兼容前向迁移只在本地验证，尚未应用到 Production。
@@ -40,7 +40,7 @@
 | 持久化研究结果 | 已完成 | PR [#14](https://github.com/Ailian0206/evidence-graph/pull/14) 已通过独立审核和 CI，并以 merge commit `ce4b1a2` 合并 |
 | 报告发布 | 已完成 | PR [#15](https://github.com/Ailian0206/evidence-graph/pull/15) 已通过独立审核和 CI，并以 merge commit `f42ae20` 合并 |
 | 全局 UI 体验优化 | 已完成 | PR [#16](https://github.com/Ailian0206/evidence-graph/pull/16) 首轮 finding 已按 TDD 修复，重审与两个 CI job 通过后以 merge commit `72d3f55` 合并 |
-| 真实 Provider 接入 | 审核中 | 三家真实适配器、兼容迁移、专用冒烟和完整模块门禁通过；Draft PR [#17](https://github.com/Ailian0206/evidence-graph/pull/17) 等待独立审核与 CI |
+| 真实 Provider 接入 | 代码已完成 | PR [#17](https://github.com/Ailian0206/evidence-graph/pull/17) 已通过独立审核和全部 CI，并以 merge commit `69b0109` 合并；Production 发布待单独确认 |
 
 ## 验证摘要
 
@@ -141,9 +141,9 @@
 - 专用付费冒烟在显式 `0.10 USD` 上限内通过 Tavily、DeepSeek 和百炼三家真实请求，未输出 Key、请求 payload、来源正文或模型正文；实现变化未触及已验证的请求参数，因此未重复产生费用。
 - `20260723000100_embedding_model_v4.sql` 保留历史 `text-embedding-3-small` 元数据、新行默认 v4、未知模型继续拒绝；本地完整迁移链 4 个 pgTAP 文件共 93 项和 Schema lint 通过。
 - 真实 Provider 里程碑完整 `npm run test:managed` 在显式清空 Provider 变量后通过 Provider 边界、数据库、lint、typecheck、24 个文件共 282 个单元测试、生产 build 和 82 个 E2E，默认路径未调用 Provider 网络。
+- PR #17 独立 Claude 审核对 head `302ead5057ad4895db2b174da2fb8c5f1056af14` 返回 `pass`，质量、数据库和 Vercel 检查全部成功，随后以 merge commit `69b0109890566e539dfc0d3b517ea5c8208866fa` 合并；远端模块分支已删除。
 
 ## 下一步
 
-1. 对 Draft PR [#17](https://github.com/Ailian0206/evidence-graph/pull/17) 完成独立 Claude 审核和 GitHub CI，通过后以 merge commit 合并。
-2. 合并后重新取得敏感远端写入确认，再应用 Production 数据库迁移、配置四个 Provider 变量、重新部署并同步 Inngest。
-3. 创建一个低范围中文研究，核对真实来源、ready 状态、主张、引文报告和费用记录；失败时停用 live 配置并回滚部署。
+1. 重新取得敏感远端写入确认，再应用 Production 数据库迁移、配置四个 Provider 变量、重新部署并同步 Inngest。
+2. 创建一个低范围中文研究，核对真实来源、ready 状态、主张、引文报告和费用记录；失败时停用 live 配置并回滚部署。
