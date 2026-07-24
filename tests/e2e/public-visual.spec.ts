@@ -19,10 +19,12 @@ for (const viewport of viewports) {
     if (viewport.name === "mobile") {
       await expect(page.getByRole("button", { name: "打开菜单" })).toBeVisible();
     } else {
+      const navigation = page.getByRole("navigation");
       await expect(
-        page
-          .getByRole("navigation")
-          .getByRole("link", { name: "Evidence Graph", exact: true }),
+        navigation.getByRole("link", { name: "产品介绍", exact: true }),
+      ).toBeVisible();
+      await expect(
+        navigation.getByRole("link", { name: "进入工作台", exact: true }),
       ).toBeVisible();
     }
     await expect(page.locator(".evidence-canvas-hero .canvas-inspector")).toBeVisible();
