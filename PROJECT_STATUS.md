@@ -5,8 +5,8 @@
 ## 当前阶段
 
 - 当前里程碑：C1“本地真实研究运行环境”，正在分支 `feat/c1-local-live-research` 实现。
-- 当前进度：第一次用户验收发现的公共入口和 OAuth callback 同源问题已按 TDD 修复，已验证实现 head 为 `2eb1251`；唯一 Draft PR #18 保持开放，等待 GitHub CI 与用户复验。
-- 下一次用户可见结果：用户从全站“研究工作台”入口重新验证 GitHub 登录，再继续项目列表、fixture 闭环和低范围中文真实研究验收。
+- 当前进度：第二轮用户验收提出的登录反馈、账号信息、工作台导航、报告列表、研究进度、表单样式和返回入口已按 TDD 修复，功能实现 head 为 `f10479b`；唯一 Draft PR #18 保持开放，等待用户复验。
+- 下一次用户可见结果：用户从全站“进入工作台”入口验证 GitHub 登录、账号摘要和“研究项目 / 研究报告”导航，再继续 fixture 闭环和低范围中文真实研究验收。
 - 当前禁止：不得提前实现 C2-C6，不得更新 `release`，不得执行 Production 迁移、变量修改、Inngest 同步或部署。
 - 路线图：`docs/roadmap.md`。
 
@@ -14,8 +14,8 @@
 
 | 维度 | 当前状态 | 说明 |
 | --- | --- | --- |
-| 代码完成度 | C1 验收候选 | 分支 `feat/c1-local-live-research` 的实现 head `2eb1251` 已通过内部托管链路和完整自动化门禁；唯一 Draft PR #18 已创建 |
-| 本地验收度 | 待用户复验 | 第一次验收发现的公共入口缺失和 OAuth callback 跨 host 问题已修复；GitHub 登录和后续完整 UI 流程仍待复验 |
+| 代码完成度 | C1 验收候选 | 分支 `feat/c1-local-live-research` 的功能实现 head `f10479b` 已通过内部托管链路和完整自动化门禁；唯一 Draft PR #18 已创建 |
+| 本地验收度 | 待用户复验 | OAuth 已确认会整页跳转到 GitHub；登录后的账号摘要、项目/报告列表、创建进度和返回路径仍需在用户 Chrome 登录态中复验 |
 | 产品完成度 | 未完成 | Settings/删除、Evidence Eval、3 个真实案例和 Release Candidate 尚未完成 |
 | Production 状态 | 有可用历史基线，当前冻结 | `release` 是唯一 Production Branch；C6 前不再发布 |
 
@@ -26,7 +26,7 @@
 - 分支：`main` 是日常开发与集成分支；`release` 只用于明确批准的 Production 发布。
 - Vercel：Preview 自动部署已关闭。
 - 托管开发数据库：当前 Supabase 项目用于 C1-C6 开发；本地不再启动 Supabase Docker。Schema 继续由仓库 4 条迁移和 4 个 pgTAP 文件管理。
-- 本地应用：固定目标端口 `3218` 正在运行，C1 验收入口为 `http://127.0.0.1:3218/zh/auth/login`。
+- 本地应用：固定目标端口 `3218` 正在运行，C1 验收入口为 `http://127.0.0.1:3218/zh`，登录直达入口为 `http://127.0.0.1:3218/zh/auth/login`。
 - 本地 Inngest：固定端口 `8288` 正在运行，使用 CLI `1.38.1` 可正常扫描队列的最小值 5 个 worker；用户验收结束后停止。
 - 本地认证：使用现有 GitHub OAuth 和 loopback redirect，不启用托管 anonymous sign-in。
 - 本地 Provider：Live adapters 已实现；C1 真实研究使用 Git 忽略且权限收紧的运行文件，并同时限制来源、正文、embedding 批次和费用。
@@ -64,6 +64,12 @@
 
 ## 最近验证基线
 
+- 第二轮验收修复明确区分公共 `/evidence`“产品介绍”和受保护 `/app`“进入工作台”，登录后统一显示“研究项目 / 研究报告”、最小 GitHub 账号摘要和退出入口，并新增 `/app/reports` 报告列表。
+- GitHub 登录按钮增加提交中状态并阻止重复提交；实际本地服务在 390x844 视口点击后已整页跳转到 GitHub 授权登录页，回调保持 `127.0.0.1:3218` 同源。OAuth 设计不是弹窗，已经授权过应用时 GitHub 也可能直接回调而不重复展示授权确认页。
+- 创建研究和 queued/running 状态增加 loading 动画并遵守 reduced motion；新建表单移除双重 focus 边框、允许来源链接动作换行；创建页、运行状态和完成工作台均提供可见返回入口。
+- 功能实现 head `f10479b` 的 `test:managed` 通过：Provider 边界检查、托管 pgTAP `93/93`、Schema lint、全仓 lint/typecheck、单元测试 `347/347`、production build 和 E2E `83/83`；例行门禁未调用付费 Provider。
+- 登录页和确定性完成态工作台已在 390x844、1024x768 和 1440x1000 三档视口完成自动 UI 审计与截图检查，没有横向溢出、文字裁切或异常重叠；实际本地登录页三档视口也没有横向溢出或控制台错误。
+- ChatGPT Chrome Extension 已确认安装、启用且 native host 配置正确，但本次 Codex 会话未发现可控制的 Chrome 标签页，因此没有绕过用户登录态；账号摘要、项目列表、报告列表、新建表单和 queued/running 页面保留给用户最终复验。
 - C1 最终聚焦门禁通过：provider 边界检查、7 个测试文件 `180/180` 和全仓 typecheck。
 - 第一次用户验收发现两个阻塞：公共站点没有受保护工作台入口；OAuth callback 把 `127.0.0.1` 绝对重定向为 `localhost`，导致 host-only 会话 cookie 丢失。`bd3aed3` 增加双语全站入口，`2eb1251` 改为同源相对重定向，两项均先确认 RED 再达到 GREEN。
 - 修复后 `test:managed` 通过：托管 pgTAP `93/93`、Schema lint、全仓 lint/typecheck、单元测试 `328/328`、production build 和 E2E `82/82`；例行门禁未调用付费 Provider。
@@ -77,7 +83,7 @@
 
 ## 已知 MVP 缺口
 
-- 修复后的 GitHub OAuth、项目列表、fixture/live 创建流程和结果页的本地用户 UI 复验。
+- 修复后的登录账号摘要、项目/报告列表、fixture/live 创建进度、表单交互和结果页返回路径的本地用户 UI 复验。
 - 核心研究闭环的用户验收和 P0/P1 缺陷收敛。
 - `/app/settings`、语言偏好、项目数据删除和账号删除。
 - 10 个固定问题及人工样本的 Evidence Eval。
@@ -88,4 +94,4 @@
 
 ## 下一步
 
-等待 Draft PR #18 的 GitHub CI，并通过固定本地 URL 由用户先复验全站入口与 GitHub OAuth，再继续项目列表、fixture/live 研究和结果可追溯性验收；验收前不审核、不合并、不进入 C2。
+通过固定本地 URL 由用户复验 GitHub 登录、账号摘要、项目/报告导航、创建进度、表单样式和返回路径，再继续 fixture/live 研究和结果可追溯性验收；验收前不启动独立 Claude 审核、不合并、不进入 C2。
