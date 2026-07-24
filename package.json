@@ -13,12 +13,14 @@
     "check:provider-boundary": "node scripts/check-provider-boundary.mjs",
     "verify:managed-env": "node --env-file-if-exists=.env.local scripts/verify-managed-env.mjs",
     "smoke:production": "node scripts/smoke-production.mjs",
-    "test:db": "supabase db reset --local && supabase test db --local && supabase db lint --local --level warning",
+    "test:db": "npm run test:db:hosted",
+    "test:db:hosted": "node --env-file-if-exists=.env.local scripts/hosted-database-gate.mjs",
+    "test:db:ci": "supabase db reset --local && supabase test db --local && supabase db lint --local --level warning",
     "test:unit": "vitest run --passWithNoTests",
     "test:providers:live": "node --env-file-if-exists=.env.local ./node_modules/vitest/vitest.mjs run --config vitest.provider-smoke.config.ts",
     "test:e2e": "RESEARCH_PROVIDER_MODE=fixture npm run build && playwright test",
     "test:ci": "npm run lint && npm run typecheck && npm run test:unit && npm run test:e2e",
-    "test:managed": "npm run check:provider-boundary && npm run test:db && npm run test:ci"
+    "test:managed": "npm run check:provider-boundary && npm run test:db:hosted && npm run test:ci"
   },
   "engines": {
     "node": "22.x"

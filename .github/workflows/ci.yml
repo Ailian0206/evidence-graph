@@ -63,7 +63,7 @@ jobs:
         run: npx supabase db start
 
       - name: Run database gate
-        run: npm run test:db
+        run: npm run test:db:ci
 
       - name: Stop local Supabase
         if: always()
