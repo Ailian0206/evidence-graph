@@ -98,7 +98,7 @@ Production 部署状态单独记录，只说明某个提交是否上线，不参
 ### 用户可见结果
 
 1. 通过现有 GitHub OAuth 登录并看到托管开发数据库中的项目列表。
-2. 使用单 worker Inngest 从 UI 完成一条不产生费用的 fixture 研究。
+2. 使用最小可调度的 5 worker Inngest 从 UI 完成一条不产生费用的 fixture 研究。
 3. 在明确成本和资源上限下完成一条低范围中文真实研究。
 4. 看到 queued、running、ready 或明确失败状态。
 5. 打开真实来源、主张、证据关系、运行日志和带引文草稿报告。

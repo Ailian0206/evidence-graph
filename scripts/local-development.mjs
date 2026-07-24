@@ -297,7 +297,7 @@ export const createLocalServiceSpecs = ({ profile, projectRoot: root }) => {
         "--sdk-url",
         `http://${localDevelopmentConstants.appHost}:${localDevelopmentConstants.appPort}/api/inngest`,
         "--queue-workers",
-        "1",
+        "5",
         "--tick",
         "1000",
         "--persist",

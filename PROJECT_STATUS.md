@@ -27,7 +27,7 @@
 - Vercel：Preview 自动部署已关闭。
 - 托管开发数据库：当前 Supabase 项目用于 C1-C6 开发；本地不再启动 Supabase Docker。Schema 继续由仓库 4 条迁移和 4 个 pgTAP 文件管理。
 - 本地应用：固定目标端口为 `3218`，当前未启动；C1 完成后提供统一验收入口。
-- 本地 Inngest：仅在 C1 内部研究验证和最终验收时启动，必须限制为 1 个 worker；当前未启动。
+- 本地 Inngest：仅在 C1 内部研究验证和最终验收时启动，使用 CLI `1.38.1` 可正常扫描队列的最小值 5 个 worker；当前未启动。
 - 本地认证：使用现有 GitHub OAuth 和 loopback redirect，不启用托管 anonymous sign-in。
 - 本地 Provider：Live adapters 已实现；C1 真实研究使用 Git 忽略且权限收紧的运行文件，并同时限制来源、正文、embedding 批次和费用。
 - 数据库门禁：本地 `test:db:hosted` 只运行 linked pgTAP 与 lint；migration reset 仅在 GitHub Actions 的 `test:db:ci` 执行。

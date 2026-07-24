@@ -59,7 +59,7 @@ npm run dev:local:live
 - Inngest：`http://127.0.0.1:8288`
 - 登录方式：现有 GitHub OAuth，回调为 `http://127.0.0.1:3218/auth/callback`
 
-两个 profile 都只启动 Next.js 和单 worker Inngest。启动脚本校验托管 Project Ref，并把 `.env.local` 权限收紧为 `0600`，不会重写文件内容。live 单次研究最多使用 4 个来源、40,000 个正文字符、20 个 embedding 批次和 `0.15 USD`；达到上限后不再开始下一次对应 Provider 调用。
+两个 profile 都只启动 Next.js 和最小可调度的 5 worker Inngest。启动脚本校验托管 Project Ref，并把 `.env.local` 权限收紧为 `0600`，不会重写文件内容。live 单次研究最多使用 4 个来源、40,000 个正文字符、20 个 embedding 批次和 `0.15 USD`；达到上限后不再开始下一次对应 Provider 调用。
 
 ## 开发与测试命令
 

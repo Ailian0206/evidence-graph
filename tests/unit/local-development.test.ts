@@ -129,7 +129,7 @@ describe("hosted local development environment", () => {
     );
   });
 
-  it("uses fixed ports and a one-worker persistent Inngest process", () => {
+  it("uses fixed ports and the minimum viable persistent Inngest workers", () => {
     const projectRoot = "/tmp/evidence-graph";
     const specs = createLocalServiceSpecs({ profile: "live", projectRoot });
 
@@ -159,7 +159,7 @@ describe("hosted local development environment", () => {
           "--sdk-url",
           "http://127.0.0.1:3218/api/inngest",
           "--queue-workers",
-          "1",
+          "5",
           "--tick",
           "1000",
           "--persist",

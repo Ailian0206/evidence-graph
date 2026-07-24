@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 不启动本地 Supabase Docker，让本地 Next.js 和单 worker Inngest 连接当前托管开发 Supabase，并从 GitHub 登录开始完成 fixture 与受限真实研究闭环，最后用一个 Draft PR 交付用户一次性验收。
+**Goal:** 不启动本地 Supabase Docker，让本地 Next.js 和最小可调度的 5 worker Inngest 连接当前托管开发 Supabase，并从 GitHub 登录开始完成 fixture 与受限真实研究闭环，最后用一个 Draft PR 交付用户一次性验收。
 
 **Architecture:** `.env.local` 显式允许一个托管 Supabase Project Ref，本地启动器只校验环境并编排 Next.js 与 Inngest，不创建或修改数据库容器。fixture 与 live 使用同一持久化工作流；live runtime 额外注入来源、正文、embedding 批次和费用上限。托管数据库运行事务内 pgTAP 与 lint，本地不运行 Docker；迁移链重建继续由 GitHub Actions 的独立数据库 job 在云端完成。
 
@@ -100,7 +100,7 @@ expect(createLocalServiceSpecs({ profile: "live", projectRoot })).toEqual(
       name: "inngest",
       args: expect.arrayContaining([
         "--queue-workers",
-        "1",
+        "5",
         "--tick",
         "1000",
         "--persist",
@@ -201,7 +201,7 @@ export const validateHostedDevelopmentEnvironment = ({
   "--sdk-url",
   "http://127.0.0.1:3218/api/inngest",
   "--queue-workers",
-  "1",
+  "5",
   "--tick",
   "1000",
   "--persist",

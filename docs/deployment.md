@@ -35,7 +35,7 @@ ALLOW_LOCAL_LIVE_RESEARCH=I_CONFIRM_LOCAL_PAID_RESEARCH
 LOCAL_LIVE_RESEARCH_COST_LIMIT_USD=0.15
 ```
 
-脚本只接受 Node.js 22，使用固定的 `127.0.0.1:3218` 启动 Next.js，在 `127.0.0.1:8288` 启动单 worker、持久化的 Inngest。它只校验托管 Supabase URL、Project Ref allow-list 和 `.env.local` 权限，不改写环境文件。完整 live UI 研究使用真实 Tavily、DeepSeek 和阿里云百炼，并限制为 4 个来源、40,000 个正文字符、20 个 embedding 批次和 `0.15 USD`。
+脚本只接受 Node.js 22，使用固定的 `127.0.0.1:3218` 启动 Next.js，在 `127.0.0.1:8288` 启动 5 worker、持久化的 Inngest。Inngest CLI `1.38.1` 的队列扫描要求至少 5 个空闲 worker，低于该值会让已调度函数停在队列中。脚本只校验托管 Supabase URL、Project Ref allow-list 和 `.env.local` 权限，不改写环境文件。完整 live UI 研究使用真实 Tavily、DeepSeek 和阿里云百炼，并限制为 4 个来源、40,000 个正文字符、20 个 embedding 批次和 `0.15 USD`。
 
 `npm run test:unit`、`npm run test:e2e` 和 `npm run test:ci` 不执行付费 Provider 外呼。`test:managed` 额外连接托管开发数据库运行事务测试，但 Provider 仍保持 fixture 语义。
 
