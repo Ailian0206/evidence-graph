@@ -45,10 +45,6 @@
     "title": "登录 Evidence Graph",
     "description": "使用 GitHub 继续到研究工作台。",
     "github": "使用 GitHub 登录",
-    "local": {
-      "action": "进入本地研究环境",
-      "description": "仅连接本机 Supabase 数据。"
-    },
     "unconfigured": "托管登录尚未配置",
     "error": "登录没有完成，请重新尝试。"
   },
