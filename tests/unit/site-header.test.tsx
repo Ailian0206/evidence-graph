@@ -30,17 +30,25 @@ afterEach(cleanup);
 
 describe("site header", () => {
   it.each([
-    { locale: "zh", messages: zhMessages, label: "研究工作台", navigation: "主导航" },
+    {
+      locale: "zh",
+      messages: zhMessages,
+      productLabel: "产品介绍",
+      workspaceLabel: "进入工作台",
+      navigation: "主导航",
+    },
     {
       locale: "en",
       messages: enMessages,
-      label: "Research workspace",
+      productLabel: "Product overview",
+      workspaceLabel: "Open workspace",
       navigation: "Primary navigation",
     },
-  ])("exposes the managed workspace from the $locale public navigation", ({
+  ])("distinguishes the product overview and managed workspace in $locale", ({
     locale,
     messages,
-    label,
+    productLabel,
+    workspaceLabel,
     navigation,
   }) => {
     render(
@@ -49,10 +57,14 @@ describe("site header", () => {
       </NextIntlClientProvider>,
     );
 
-    expect(
-      within(screen.getByRole("navigation", { name: navigation })).getByRole("link", {
-        name: label,
-      }),
-    ).toHaveAttribute("href", "/app");
+    const primaryNavigation = within(screen.getByRole("navigation", { name: navigation }));
+    expect(primaryNavigation.getByRole("link", { name: productLabel })).toHaveAttribute(
+      "href",
+      "/evidence",
+    );
+    expect(primaryNavigation.getByRole("link", { name: workspaceLabel })).toHaveAttribute(
+      "href",
+      "/app",
+    );
   });
 });

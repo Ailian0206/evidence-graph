@@ -3,13 +3,20 @@
     "home": "Home",
     "work": "Work",
     "notes": "Notes",
-    "evidence": "Evidence Graph",
-    "workspace": "Research workspace",
+    "evidence": "Product overview",
+    "workspace": "Open workspace",
     "language": "中文",
     "primary": "Primary navigation",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
     "skip": "Skip to main content"
+  },
+  "AppShell": {
+    "navigationLabel": "Workspace navigation",
+    "projects": "Research projects",
+    "reports": "Research reports",
+    "accountFallback": "Signed-in account",
+    "signOut": "Sign out"
   },
   "Portfolio": {
     "eyebrow": "AI product engineering",

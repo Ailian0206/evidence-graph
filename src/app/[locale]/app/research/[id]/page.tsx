@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { EvidenceWorkspace } from "@/components/evidence-workspace/evidence-workspace";
 import { ManagedWorkspaceState } from "@/components/evidence-workspace/managed-workspace-state";
+import { ManagedAppShell } from "@/components/projects/managed-app-shell";
 import { requireManagedUser } from "@/features/auth/server-session";
 import { createEvidenceWorkspaceFixture } from "@/features/research/evidence-workspace-fixture";
 import {
@@ -50,11 +51,22 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
       notFound();
     }
 
-    if (result.state === "ready") {
-      return <EvidenceWorkspace initialData={result.data} persistence="managed" />;
-    }
+    const workspace =
+      result.state === "ready" ? (
+        <EvidenceWorkspace initialData={result.data} persistence="managed" />
+      ) : (
+        <ManagedWorkspaceState locale={locale} projectId={id} result={result} />
+      );
 
-    return <ManagedWorkspaceState locale={locale} projectId={id} result={result} />;
+    return (
+      <ManagedAppShell
+        active="projects"
+        locale={locale}
+        user={{ displayName: user.displayName, email: user.email }}
+      >
+        {workspace}
+      </ManagedAppShell>
+    );
   }
 
   const workspace = createEvidenceWorkspaceFixture(locale);

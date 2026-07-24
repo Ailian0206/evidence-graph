@@ -3,13 +3,20 @@
     "home": "首页",
     "work": "作品",
     "notes": "笔记",
-    "evidence": "Evidence Graph",
-    "workspace": "研究工作台",
+    "evidence": "产品介绍",
+    "workspace": "进入工作台",
     "language": "English",
     "primary": "主导航",
     "openMenu": "打开菜单",
     "closeMenu": "关闭菜单",
     "skip": "跳到主要内容"
+  },
+  "AppShell": {
+    "navigationLabel": "工作台导航",
+    "projects": "研究项目",
+    "reports": "研究报告",
+    "accountFallback": "已登录账户",
+    "signOut": "退出登录"
   },
   "Portfolio": {
     "eyebrow": "AI 产品工程",
