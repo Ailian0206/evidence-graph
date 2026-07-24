@@ -1,6 +1,6 @@
 # C1 本地真实研究运行环境 Implementation Plan
 
-> **状态：已停止，不得继续执行。** 2026-07-23 经用户确认，C1 改用托管开发 Supabase，并取消本地 Supabase Docker 与 remote anonymous 登录。本文保留为第一版实现记录；第二版设计完成书面审阅后必须重写实施计划，未重写前不得恢复实现或启动服务。
+> **状态：已停止，不得继续执行。** 2026-07-23 经用户确认，C1 改用托管开发 Supabase，并取消本地 Supabase Docker 与 remote anonymous 登录。本文保留为第一版实现记录；第三版设计完成书面审阅后必须重写实施计划，未重写前不得恢复实现或启动服务。
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
