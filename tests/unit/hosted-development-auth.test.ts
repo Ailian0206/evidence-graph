@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   createSupabaseServerClient: vi.fn(),
+  exchangeCodeForSession: vi.fn(),
   redirect: vi.fn(),
   signInWithOAuth: vi.fn(),
 }));
@@ -17,6 +18,7 @@ vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: mocks.createSupabaseServerClient,
 }));
 
+import { GET as handleOAuthCallback } from "@/app/auth/callback/route";
 import { signInWithGitHub } from "@/features/auth/actions";
 
 describe("hosted development authentication", () => {
@@ -26,8 +28,12 @@ describe("hosted development authentication", () => {
       data: { url: "https://github.example/authorize" },
       error: null,
     });
+    mocks.exchangeCodeForSession.mockResolvedValue({ error: null });
     mocks.createSupabaseServerClient.mockResolvedValue({
-      auth: { signInWithOAuth: mocks.signInWithOAuth },
+      auth: {
+        exchangeCodeForSession: mocks.exchangeCodeForSession,
+        signInWithOAuth: mocks.signInWithOAuth,
+      },
     });
   });
 
@@ -62,5 +68,20 @@ describe("hosted development authentication", () => {
     expect(config).toContain(
       'additional_redirect_urls = ["http://127.0.0.1:3218/auth/callback"]',
     );
+  });
+
+  it("keeps the OAuth callback redirect on the browser's current host", async () => {
+    mocks.redirect.mockImplementationOnce((path: string) => {
+      throw new Error(`REDIRECT:${path}`);
+    });
+
+    await expect(
+      handleOAuthCallback(
+        new Request(
+          "http://localhost:3218/auth/callback?code=oauth_code&locale=zh&next=%2Fzh%2Fapp",
+        ),
+      ),
+    ).rejects.toThrow("REDIRECT:/zh/app");
+    expect(mocks.exchangeCodeForSession).toHaveBeenCalledWith("oauth_code");
   });
 });
