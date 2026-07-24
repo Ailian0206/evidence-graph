@@ -109,6 +109,31 @@
       }
     }
   },
+  "Reports": {
+    "eyebrow": "Report library",
+    "title": "Research reports",
+    "description": "Review generated report versions and publication status across your research.",
+    "newResearch": "New research",
+    "listLabel": "Research reports",
+    "version": "Version {version}",
+    "publishedAt": "Published {date}",
+    "createdAt": "Created {date}",
+    "openResearch": "Open research",
+    "openPublic": "Open public report",
+    "status": {
+      "draft": "Draft",
+      "published": "Published",
+      "revoked": "Revoked"
+    },
+    "language": {
+      "zh": "Chinese",
+      "en": "English"
+    },
+    "empty": {
+      "title": "No research reports yet",
+      "description": "Generated report versions will appear here after a research run completes."
+    }
+  },
   "Workspace": {
     "eyebrow": "Research run / Evidence review",
     "backToPreview": "Back to product entry",

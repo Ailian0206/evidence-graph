@@ -109,6 +109,31 @@
       }
     }
   },
+  "Reports": {
+    "eyebrow": "报告库",
+    "title": "研究报告",
+    "description": "集中查看每个研究生成的报告版本和公开状态。",
+    "newResearch": "新建研究",
+    "listLabel": "研究报告列表",
+    "version": "版本 {version}",
+    "publishedAt": "发布于 {date}",
+    "createdAt": "创建于 {date}",
+    "openResearch": "打开研究",
+    "openPublic": "打开公开报告",
+    "status": {
+      "draft": "草稿",
+      "published": "已发布",
+      "revoked": "已撤销"
+    },
+    "language": {
+      "zh": "中文",
+      "en": "英文"
+    },
+    "empty": {
+      "title": "还没有研究报告",
+      "description": "研究运行完成后，生成的报告版本会显示在这里。"
+    }
+  },
   "Workspace": {
     "eyebrow": "研究运行 / 证据审核",
     "backToPreview": "返回产品入口",

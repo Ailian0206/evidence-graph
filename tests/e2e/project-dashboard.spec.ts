@@ -16,4 +16,11 @@ test.describe("managed project workspace routes", () => {
     );
     await expect(page.getByRole("heading", { name: "Sign in to Evidence Graph" })).toBeVisible();
   });
+
+  test("protects the report library", async ({ page }) => {
+    await page.goto("/zh/app/reports");
+
+    await expect(page).toHaveURL(/\/zh\/auth\/login\?next=%2Fzh%2Fapp%2Freports$/);
+    await expect(page.getByRole("heading", { name: "登录 Evidence Graph" })).toBeVisible();
+  });
 });
