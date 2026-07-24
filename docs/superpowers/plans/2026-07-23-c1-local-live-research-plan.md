@@ -737,7 +737,7 @@ git commit -m "docs(status): 记录 C1 Draft PR"
 git push
 ```
 
-- [ ] **Step 5: 启动最终验收环境**
+- [x] **Step 5: 启动最终验收环境**
 
 Run:
 
@@ -746,6 +746,8 @@ npm run dev:local:live
 ```
 
 向用户提供 `http://127.0.0.1:3218/zh/auth/login` 和一份完整清单，一次性验收 GitHub 登录、项目列表、研究创建、状态推进、来源、Claim、Evidence、运行日志和带引文报告。服务保持运行到用户完成测试；不启动 Docker。
+
+实际结果：live profile 已启动，登录页返回 HTTP 200；Next 与 Inngest 分别监听 `3218`/`8288`，没有启动 Evidence Graph Docker。服务保持运行等待用户验收。
 
 - [ ] **Step 6: 等待用户结论，不提前审核或合并**
 

@@ -5,8 +5,8 @@
 ## 当前阶段
 
 - 当前里程碑：C1“本地真实研究运行环境”，正在分支 `feat/c1-local-live-research` 实现。
-- 当前进度：C1 实现和内部托管链路验证已完成，已验证实现 head 为 `44971b4`；唯一 Draft PR #18 已从验收候选 head `8b51288` 创建，GitHub CI 正在运行。
-- 下一次用户可见结果：启动固定本地 URL 后，用户一次性验收 GitHub 登录、项目列表、fixture 闭环和低范围中文真实研究。
+- 当前进度：C1 实现和内部托管链路验证已完成，已验证实现 head 为 `44971b4`；唯一 Draft PR #18 已创建，最终本地验收环境正在运行，GitHub CI 状态以该 PR 为准。
+- 下一次用户可见结果：用户通过固定本地 URL 一次性验收 GitHub 登录、项目列表、fixture 闭环和低范围中文真实研究。
 - 当前禁止：不得提前实现 C2-C6，不得更新 `release`，不得执行 Production 迁移、变量修改、Inngest 同步或部署。
 - 路线图：`docs/roadmap.md`。
 
@@ -26,8 +26,8 @@
 - 分支：`main` 是日常开发与集成分支；`release` 只用于明确批准的 Production 发布。
 - Vercel：Preview 自动部署已关闭。
 - 托管开发数据库：当前 Supabase 项目用于 C1-C6 开发；本地不再启动 Supabase Docker。Schema 继续由仓库 4 条迁移和 4 个 pgTAP 文件管理。
-- 本地应用：固定目标端口为 `3218`，当前未启动；C1 完成后提供统一验收入口。
-- 本地 Inngest：仅在 C1 内部研究验证和最终验收时启动，使用 CLI `1.38.1` 可正常扫描队列的最小值 5 个 worker；当前未启动。
+- 本地应用：固定目标端口 `3218` 正在运行，C1 验收入口为 `http://127.0.0.1:3218/zh/auth/login`。
+- 本地 Inngest：固定端口 `8288` 正在运行，使用 CLI `1.38.1` 可正常扫描队列的最小值 5 个 worker；用户验收结束后停止。
 - 本地认证：使用现有 GitHub OAuth 和 loopback redirect，不启用托管 anonymous sign-in。
 - 本地 Provider：Live adapters 已实现；C1 真实研究使用 Git 忽略且权限收紧的运行文件，并同时限制来源、正文、embedding 批次和费用。
 - 数据库门禁：本地 `test:db:hosted` 只运行 linked pgTAP 与 lint；migration reset 仅在 GitHub Actions 的 `test:db:ci` 执行。
@@ -86,4 +86,4 @@
 
 ## 下一步
 
-等待 Draft PR #18 的 GitHub CI 完成并启动固定本地 URL，随后由用户一次性完成 GitHub OAuth、项目列表、fixture/live 研究和结果可追溯性验收；验收前不审核、不合并、不进入 C2。
+等待 Draft PR #18 的 GitHub CI 和用户一次性完成 GitHub OAuth、项目列表、fixture/live 研究和结果可追溯性验收；验收前不审核、不合并、不进入 C2。
