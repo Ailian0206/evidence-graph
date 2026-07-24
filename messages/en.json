@@ -137,6 +137,7 @@
   "Workspace": {
     "eyebrow": "Research run / Evidence review",
     "backToPreview": "Back to product entry",
+    "backToProjects": "Back to projects",
     "runSummary": "Research run summary",
     "claims": "Claims",
     "sources": "Sources",
@@ -288,7 +289,8 @@
       "retry": "Retry research dispatch",
       "retrying": "Retrying dispatch...",
       "retrySentDescription": "The original research run was dispatched again and is waiting to start.",
-      "retryError": "Dispatch retry failed. Try again later."
+      "retryError": "Dispatch retry failed. Try again later.",
+      "back": "Back to projects"
     }
   },
   "Footer": {

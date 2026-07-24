@@ -137,6 +137,7 @@
   "Workspace": {
     "eyebrow": "研究运行 / 证据审核",
     "backToPreview": "返回产品入口",
+    "backToProjects": "返回项目列表",
     "runSummary": "研究运行摘要",
     "claims": "主张",
     "sources": "来源",
@@ -288,7 +289,8 @@
       "retry": "重新投递研究",
       "retrying": "正在重新投递...",
       "retrySentDescription": "原研究运行已重新投递，正在等待执行。",
-      "retryError": "重新投递失败，请稍后再试。"
+      "retryError": "重新投递失败，请稍后再试。",
+      "back": "返回项目列表"
     }
   },
   "Footer": {
