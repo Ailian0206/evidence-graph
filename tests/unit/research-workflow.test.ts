@@ -754,7 +754,10 @@ describe("research workflow", () => {
   });
 
   it("embeds ordered chunks in stable durable batches of at most ten", async () => {
-    const paragraphs = Array.from({ length: 11 }, (_, index) => `Paragraph ${index + 1}`);
+    const paragraphs = Array.from(
+      { length: 11 },
+      (_, index) => `${String(index + 1).padStart(2, "0")}${"A".repeat(798)}`,
+    );
     const providers = createFixtureResearchProviders();
     const originalEmbed = providers.embedding.embed;
     const batches: string[][] = [];
@@ -830,7 +833,7 @@ describe("research workflow", () => {
           title: "Eleven chunks",
           body: Array.from(
             { length: 11 },
-            (_, index) => `Paragraph ${index + 1}`,
+            (_, index) => `${String(index + 1).padStart(2, "0")}${"A".repeat(798)}`,
           ).join("\n\n"),
           sourceType: "article",
         },
@@ -1507,7 +1510,7 @@ describe("research workflow", () => {
     expect(store.getSnapshot().sources).toEqual([]);
   });
 
-  it("rejects more than 1500 chunks before embedding", async () => {
+  it("coalesces more than 1500 short paragraphs before embedding", async () => {
     const fixture = createDemoResearchFixture();
     fixture.researchRuns[0].sourceLimit = 1;
     fixture.sources = [];
@@ -1516,9 +1519,7 @@ describe("research workflow", () => {
     fixture.evidenceLinks = [];
     fixture.claimRelations = [];
     const providers = createFixtureResearchProviders();
-    const embed = vi.fn(async () => {
-      throw new Error("EMBEDDING_CALLED");
-    });
+    const embed = vi.fn(providers.embedding.embed);
     providers.embedding.embed = embed;
     const store = createInMemoryResearchWorkflowStore(fixture);
 
@@ -1538,11 +1539,8 @@ describe("research workflow", () => {
       now: () => "2026-07-15T01:00:00.000Z",
     });
 
-    expect(result.run).toMatchObject({
-      status: "failed",
-      errorMessage: "CONTENT_LIMIT_EXCEEDED",
-    });
-    expect(embed).not.toHaveBeenCalled();
+    expect(result.run.errorMessage).not.toBe("CONTENT_LIMIT_EXCEEDED");
+    expect(embed).toHaveBeenCalledTimes(1);
   });
 
   it("skips later sources that exceed the Unicode content budget", async () => {

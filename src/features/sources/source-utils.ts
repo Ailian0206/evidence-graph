@@ -52,11 +52,12 @@ export const chunkSourceText = ({
   projectId: string;
   text: string;
 }): SourceChunk[] => {
+  const sourceCharacters = Array.from(text);
   const paragraphs = Array.from(text.matchAll(/\S[\s\S]*?(?=\n\n|$)/g));
   let sourceCodePointOffset = 0;
   let sourceUtf16Offset = 0;
 
-  const slices = paragraphs.flatMap((match) => {
+  const paragraphSlices = paragraphs.flatMap((match) => {
     const paragraph = match[0].trimEnd();
     const paragraphCharacters = Array.from(paragraph);
     const matchStart = match.index ?? 0;
@@ -82,21 +83,41 @@ export const chunkSourceText = ({
     let localOffset = 0;
     return sizes.map((size) => {
       const startChar = paragraphStart + localOffset;
-      const chunkText = paragraphCharacters.slice(localOffset, localOffset + size).join("");
       localOffset += size;
 
-      return { chunkText, startChar, endChar: startChar + size };
+      return { startChar, endChar: startChar + size };
     });
   });
 
-  return slices.map(({ chunkText, startChar, endChar }, chunkIndex) => {
+  // Pack adjacent short paragraphs while keeping every chunk an exact source slice.
+  const slices = paragraphSlices.reduce<Array<{ startChar: number; endChar: number }>>(
+    (merged, current) => {
+      const previous = merged.at(-1);
+      const currentLength = current.endChar - current.startChar;
+
+      if (
+        previous &&
+        currentLength < MIN_CHUNK_CHARACTERS &&
+        current.endChar - previous.startChar <= MAX_CHUNK_CHARACTERS
+      ) {
+        previous.endChar = current.endChar;
+        return merged;
+      }
+
+      merged.push({ ...current });
+      return merged;
+    },
+    [],
+  );
+
+  return slices.map(({ startChar, endChar }, chunkIndex) => {
 
     return {
       id: `${sourceId}_chunk_${chunkIndex}`,
       sourceId,
       projectId,
       chunkIndex,
-      text: chunkText,
+      text: sourceCharacters.slice(startChar, endChar).join(""),
       startChar,
       endChar,
       embeddingModel: currentEmbeddingModel,
