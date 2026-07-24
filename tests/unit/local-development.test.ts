@@ -9,21 +9,30 @@ import {
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { parseEnv } from "node:util";
 
 import { describe, expect, it } from "vitest";
 
 import {
   assertPortAvailable,
   assertSupportedNodeVersion,
-  buildLocalEnvironment,
+  createLocalServiceSpecs,
   localDevelopmentConstants,
-  serializeEnvironment,
-  validateLocalLiveEnvironment,
-  writeEnvironmentFile,
+  parseLocalDevelopmentArguments,
+  readHostedSupabaseProjectRef,
+  secureEnvironmentFile,
+  validateHostedDevelopmentEnvironment,
 } from "../../scripts/local-development.mjs";
 
-const providerEnvironment = {
+const hostedEnvironment = {
+  NEXT_PUBLIC_SUPABASE_URL:
+    "https://dibngceljmdkcgrzxubx.supabase.co",
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "publishable",
+  SUPABASE_SERVICE_ROLE_KEY: "service-role-secret",
+  LOCAL_DEVELOPMENT_SUPABASE_PROJECT_REF: "dibngceljmdkcgrzxubx",
+};
+
+const liveEnvironment = {
+  ...hostedEnvironment,
   RESEARCH_PROVIDER_MODE: "live",
   ALLOW_LOCAL_LIVE_RESEARCH: "I_CONFIRM_LOCAL_PAID_RESEARCH",
   LOCAL_LIVE_RESEARCH_COST_LIMIT_USD: "0.15",
@@ -33,82 +42,152 @@ const providerEnvironment = {
   BAILIAN_WORKSPACE_ID: "workspace-secret",
 };
 
-describe("local development environment", () => {
-  it("merges local Supabase values without replacing Provider credentials", () => {
-    const environment = buildLocalEnvironment(providerEnvironment, {
-      API_URL: "http://127.0.0.1:54321",
-      PUBLISHABLE_KEY: "publishable-local",
-      SECRET_KEY: "secret-local",
-    });
-
-    expect(environment).toMatchObject({
-      ...providerEnvironment,
-      NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
-      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "publishable-local",
-      SUPABASE_SERVICE_ROLE_KEY: "secret-local",
-      LOCAL_DEV_AUTH_ENABLED: "true",
-      INNGEST_DEV: "1",
-    });
-  });
-
-  it("falls back to the legacy local service role key", () => {
+describe("hosted local development environment", () => {
+  it("accepts only an explicitly allowed hosted Supabase project", () => {
     expect(
-      buildLocalEnvironment({}, {
-        API_URL: "http://127.0.0.1:54321",
-        PUBLISHABLE_KEY: "publishable-local",
-        SERVICE_ROLE_KEY: "service-role-local",
-      }).SUPABASE_SERVICE_ROLE_KEY,
-    ).toBe("service-role-local");
+      readHostedSupabaseProjectRef(
+        "https://dibngceljmdkcgrzxubx.supabase.co",
+      ),
+    ).toBe("dibngceljmdkcgrzxubx");
+
+    expect(
+      validateHostedDevelopmentEnvironment({
+        environment: hostedEnvironment,
+        profile: "fixture",
+      }),
+    ).toEqual({
+      profile: "fixture",
+      projectRef: "dibngceljmdkcgrzxubx",
+    });
   });
 
-  it("rejects incomplete live configuration without exposing configured values", () => {
-    const configuredSecret = "must-not-appear-in-errors";
+  it.each([
+    "http://127.0.0.1:54321",
+    "https://example.com",
+    "not-a-url",
+  ])("rejects non-hosted Supabase URL %s", (url) => {
+    expect(() => readHostedSupabaseProjectRef(url)).toThrow(
+      "HOSTED_SUPABASE_URL_INVALID",
+    );
+  });
 
+  it("rejects a hosted project that does not match the explicit allow-list", () => {
     expect(() =>
-      validateLocalLiveEnvironment({
-        ...providerEnvironment,
-        TAVILY_API_KEY: configuredSecret,
-        DEEPSEEK_API_KEY: "",
+      validateHostedDevelopmentEnvironment({
+        environment: {
+          ...hostedEnvironment,
+          LOCAL_DEVELOPMENT_SUPABASE_PROJECT_REF: "otherprojectref",
+        },
+        profile: "fixture",
       }),
-    ).toThrow("LOCAL_LIVE_RESEARCH_ENV_INCOMPLETE: DEEPSEEK_API_KEY");
+    ).toThrow("HOSTED_SUPABASE_PROJECT_REF_MISMATCH");
+  });
 
+  it("validates live Provider configuration without exposing secrets", () => {
+    expect(
+      validateHostedDevelopmentEnvironment({
+        environment: liveEnvironment,
+        profile: "live",
+      }),
+    ).toEqual({
+      profile: "live",
+      projectRef: "dibngceljmdkcgrzxubx",
+    });
+
+    const configuredSecret = "must-not-appear-in-errors";
     try {
-      validateLocalLiveEnvironment({
-        ...providerEnvironment,
-        TAVILY_API_KEY: configuredSecret,
-        DEEPSEEK_API_KEY: "",
+      validateHostedDevelopmentEnvironment({
+        environment: {
+          ...liveEnvironment,
+          TAVILY_API_KEY: configuredSecret,
+          DEEPSEEK_API_KEY: "",
+        },
+        profile: "live",
       });
+      throw new Error("EXPECTED_VALIDATION_FAILURE");
     } catch (error) {
+      expect(String(error)).toContain(
+        "LOCAL_LIVE_RESEARCH_ENV_INCOMPLETE: DEEPSEEK_API_KEY",
+      );
       expect(String(error)).not.toContain(configuredSecret);
     }
   });
 
-  it("accepts the fixed local live research gate", () => {
-    expect(validateLocalLiveEnvironment(providerEnvironment)).toEqual({
-      costLimitUsd: 0.15,
+  it("parses a fixed Provider profile and check-only mode", () => {
+    expect(
+      parseLocalDevelopmentArguments(["--profile=fixture", "--check"]),
+    ).toEqual({ checkOnly: true, profile: "fixture" });
+    expect(parseLocalDevelopmentArguments(["--profile=live"])).toEqual({
+      checkOnly: false,
+      profile: "live",
     });
+    expect(() =>
+      parseLocalDevelopmentArguments(["--profile=unknown"]),
+    ).toThrow("LOCAL_DEVELOPMENT_PROFILE_INVALID");
+    expect(() => parseLocalDevelopmentArguments(["--verbose"])).toThrow(
+      "LOCAL_DEVELOPMENT_ARGUMENT_INVALID",
+    );
   });
 
-  it("serializes values so Node can parse them without losing special characters", () => {
-    const serialized = serializeEnvironment({
-      SIMPLE: "value",
-      COMPLEX: "spaces # quotes \" dollar $ and newline\n",
-    });
+  it("uses fixed ports and a one-worker persistent Inngest process", () => {
+    const projectRoot = "/tmp/evidence-graph";
+    const specs = createLocalServiceSpecs({ profile: "live", projectRoot });
 
-    expect(parseEnv(serialized)).toEqual({
-      SIMPLE: "value",
-      COMPLEX: "spaces # quotes \" dollar $ and newline\n",
-    });
-    expect(serialized).not.toContain("undefined");
-  });
-
-  it("keeps local ports and file permissions stable", () => {
     expect(localDevelopmentConstants).toMatchObject({
       appHost: "127.0.0.1",
       appPort: 3218,
+      inngestHost: "127.0.0.1",
       inngestPort: 8288,
       environmentFileMode: 0o600,
     });
+    expect(specs).toEqual([
+      expect.objectContaining({
+        name: "next",
+        cwd: projectRoot,
+        args: ["dev", "--hostname", "127.0.0.1", "--port", "3218"],
+      }),
+      expect.objectContaining({
+        name: "inngest",
+        cwd: join(projectRoot, "output", "inngest"),
+        args: [
+          "dev",
+          "--no-discovery",
+          "--host",
+          "127.0.0.1",
+          "--port",
+          "8288",
+          "--sdk-url",
+          "http://127.0.0.1:3218/api/inngest",
+          "--queue-workers",
+          "1",
+          "--tick",
+          "1000",
+          "--persist",
+          "--log-level",
+          "warn",
+        ],
+      }),
+    ]);
+  });
+
+  it("does not retain a Supabase or Docker startup path", async () => {
+    const source = await readFile(
+      join(process.cwd(), "scripts/local-development.mjs"),
+      "utf8",
+    );
+    const packageJson = JSON.parse(
+      await readFile(join(process.cwd(), "package.json"), "utf8"),
+    ) as {
+      scripts: Record<string, string>;
+      devDependencies: Record<string, string>;
+    };
+
+    expect(source).not.toContain('localBinary("supabase")');
+    expect(source).not.toContain("supabase status");
+    expect(source).not.toContain("docker");
+    expect(packageJson.scripts["dev:local"]).toContain("--profile=fixture");
+    expect(packageJson.scripts["dev:local:live"]).toContain("--profile=live");
+    expect(packageJson.devDependencies["inngest-cli"]).toBe("1.38.1");
   });
 
   it("requires the repository Node.js major version", () => {
@@ -140,52 +219,38 @@ describe("local development environment", () => {
     }
   });
 
-  it("writes local environment files with owner-only permissions", async () => {
-    const directory = await mkdtemp(join(tmpdir(), "evidence-graph-local-env-"));
+  it("tightens the environment file without rewriting its contents", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "evidence-graph-env-"));
     const environmentPath = join(directory, ".env.local");
+    const contents = "SECRET=unchanged\n";
 
     try {
-      await writeEnvironmentFile(environmentPath, providerEnvironment);
+      await writeFile(environmentPath, contents, { mode: 0o644 });
+      await secureEnvironmentFile(environmentPath);
 
       const file = await lstat(environmentPath);
       expect(file.mode & 0o777).toBe(0o600);
-      expect(parseEnv(await readFile(environmentPath, "utf8"))).toEqual(
-        providerEnvironment,
-      );
+      expect(await readFile(environmentPath, "utf8")).toBe(contents);
     } finally {
       await rm(directory, { force: true, recursive: true });
     }
   });
 
-  it("refuses to replace a symlinked local environment file", async () => {
-    const directory = await mkdtemp(join(tmpdir(), "evidence-graph-local-env-"));
+  it("rejects a symlinked environment file", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "evidence-graph-env-"));
     const targetPath = join(directory, "target");
     const environmentPath = join(directory, ".env.local");
 
     try {
-      await writeFile(targetPath, "DO_NOT_REPLACE=true\n", "utf8");
+      await writeFile(targetPath, "SECRET=unchanged\n", "utf8");
       await symlink(targetPath, environmentPath);
 
-      await expect(
-        writeEnvironmentFile(environmentPath, providerEnvironment),
-      ).rejects.toThrow("LOCAL_DEVELOPMENT_ENV_SYMLINK_REJECTED");
-      expect(await readFile(targetPath, "utf8")).toBe("DO_NOT_REPLACE=true\n");
+      await expect(secureEnvironmentFile(environmentPath)).rejects.toThrow(
+        "LOCAL_DEVELOPMENT_ENV_SYMLINK_REJECTED",
+      );
+      expect(await readFile(targetPath, "utf8")).toBe("SECRET=unchanged\n");
     } finally {
       await rm(directory, { force: true, recursive: true });
     }
-  });
-
-  it("exposes one local command with a pinned Inngest CLI", async () => {
-    const packageJson = JSON.parse(
-      await readFile(join(process.cwd(), "package.json"), "utf8"),
-    ) as {
-      scripts: Record<string, string>;
-      devDependencies: Record<string, string>;
-    };
-
-    expect(packageJson.scripts["dev:local"]).toBe(
-      "node scripts/local-development.mjs",
-    );
-    expect(packageJson.devDependencies["inngest-cli"]).toBe("1.38.1");
   });
 });

@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:local": "node scripts/local-development.mjs",
+    "dev:local": "node --env-file-if-exists=.env.local scripts/local-development.mjs --profile=fixture",
+    "dev:local:live": "node --env-file-if-exists=.env.local scripts/local-development.mjs --profile=live",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

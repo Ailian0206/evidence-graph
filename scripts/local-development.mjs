@@ -1,20 +1,10 @@
-import { execFile, spawn } from "node:child_process";
-import { randomUUID } from "node:crypto";
-import {
-  chmod,
-  lstat,
-  open,
-  readFile,
-  rename,
-  unlink,
-} from "node:fs/promises";
+import { spawn } from "node:child_process";
+import { chmod, lstat, mkdir } from "node:fs/promises";
 import { createServer } from "node:net";
 import { dirname, join, resolve } from "node:path";
 import process from "node:process";
-import { promisify, parseEnv } from "node:util";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-const execFileAsync = promisify(execFile);
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 export const localDevelopmentConstants = Object.freeze({
@@ -37,32 +27,7 @@ const fail = (code) => {
   throw new LocalDevelopmentError(code);
 };
 
-const requiredStatus = (status, key) => {
-  const value = status[key];
-
-  if (typeof value !== "string" || value.trim() === "") {
-    fail(`LOCAL_SUPABASE_STATUS_INCOMPLETE: ${key}`);
-  }
-
-  return value;
-};
-
-export const buildLocalEnvironment = (existing, status) => ({
-  ...existing,
-  NEXT_PUBLIC_SUPABASE_URL: requiredStatus(status, "API_URL"),
-  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: requiredStatus(
-    status,
-    "PUBLISHABLE_KEY",
-  ),
-  SUPABASE_SERVICE_ROLE_KEY:
-    typeof status.SECRET_KEY === "string" && status.SECRET_KEY.trim() !== ""
-      ? status.SECRET_KEY
-      : requiredStatus(status, "SERVICE_ROLE_KEY"),
-  LOCAL_DEV_AUTH_ENABLED: "true",
-  INNGEST_DEV: "1",
-});
-
-const requireEnvironmentValue = (environment, name, expected) => {
+const requireEnvironmentValue = (environment, name, expected, errorCode) => {
   const value = environment[name];
 
   if (
@@ -70,23 +35,49 @@ const requireEnvironmentValue = (environment, name, expected) => {
     value.trim() === "" ||
     (expected !== undefined && value !== expected)
   ) {
-    fail(`LOCAL_LIVE_RESEARCH_ENV_INCOMPLETE: ${name}`);
+    fail(`${errorCode}: ${name}`);
   }
 
-  return value;
+  return value.trim();
+};
+
+export const readHostedSupabaseProjectRef = (rawUrl) => {
+  let url;
+
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    fail("HOSTED_SUPABASE_URL_INVALID");
+  }
+
+  const match = /^([a-z0-9]+)\.supabase\.co$/.exec(url.hostname);
+
+  if (url.protocol !== "https:" || url.port !== "" || !match) {
+    fail("HOSTED_SUPABASE_URL_INVALID");
+  }
+
+  return match[1];
 };
 
 export const validateLocalLiveEnvironment = (environment) => {
-  requireEnvironmentValue(environment, "RESEARCH_PROVIDER_MODE", "live");
+  requireEnvironmentValue(
+    environment,
+    "RESEARCH_PROVIDER_MODE",
+    "live",
+    "LOCAL_LIVE_RESEARCH_ENV_INCOMPLETE",
+  );
   requireEnvironmentValue(
     environment,
     "ALLOW_LOCAL_LIVE_RESEARCH",
     "I_CONFIRM_LOCAL_PAID_RESEARCH",
+    "LOCAL_LIVE_RESEARCH_ENV_INCOMPLETE",
   );
 
   const rawCostLimit = requireEnvironmentValue(
     environment,
     "LOCAL_LIVE_RESEARCH_COST_LIMIT_USD",
+    undefined,
+    "LOCAL_LIVE_RESEARCH_ENV_INCOMPLETE",
   );
   const costLimitUsd = Number(rawCostLimit);
 
@@ -104,36 +95,62 @@ export const validateLocalLiveEnvironment = (environment) => {
     "BAILIAN_API_KEY",
     "BAILIAN_WORKSPACE_ID",
   ]) {
-    requireEnvironmentValue(environment, name);
+    requireEnvironmentValue(
+      environment,
+      name,
+      undefined,
+      "LOCAL_LIVE_RESEARCH_ENV_INCOMPLETE",
+    );
   }
 
   return { costLimitUsd };
 };
 
-const serializeValue = (name, value) => {
-  if (!value.includes("'")) {
-    return `'${value}'`;
+export const validateHostedDevelopmentEnvironment = ({
+  environment,
+  profile,
+}) => {
+  const projectRef = readHostedSupabaseProjectRef(
+    requireEnvironmentValue(
+      environment,
+      "NEXT_PUBLIC_SUPABASE_URL",
+      undefined,
+      "LOCAL_DEVELOPMENT_ENV_INCOMPLETE",
+    ),
+  );
+
+  requireEnvironmentValue(
+    environment,
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+    undefined,
+    "LOCAL_DEVELOPMENT_ENV_INCOMPLETE",
+  );
+  requireEnvironmentValue(
+    environment,
+    "SUPABASE_SERVICE_ROLE_KEY",
+    undefined,
+    "LOCAL_DEVELOPMENT_ENV_INCOMPLETE",
+  );
+
+  const allowedProjectRef = requireEnvironmentValue(
+    environment,
+    "LOCAL_DEVELOPMENT_SUPABASE_PROJECT_REF",
+    undefined,
+    "LOCAL_DEVELOPMENT_ENV_INCOMPLETE",
+  );
+
+  if (allowedProjectRef !== projectRef) {
+    fail("HOSTED_SUPABASE_PROJECT_REF_MISMATCH");
   }
 
-  if (!value.includes('"')) {
-    return `"${value}"`;
+  if (profile === "live") {
+    validateLocalLiveEnvironment(environment);
+  } else if (profile !== "fixture") {
+    fail("LOCAL_DEVELOPMENT_PROFILE_INVALID");
   }
 
-  fail(`LOCAL_DEVELOPMENT_ENV_VALUE_UNSUPPORTED: ${name}`);
+  return { profile, projectRef };
 };
-
-export const serializeEnvironment = (environment) =>
-  `${Object.entries(environment)
-    .filter(([, value]) => value !== undefined)
-    .sort(([left], [right]) => left.localeCompare(right))
-    .map(([name, value]) => {
-      if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) {
-        fail(`LOCAL_DEVELOPMENT_ENV_NAME_INVALID: ${name}`);
-      }
-
-      return `${name}=${serializeValue(name, String(value))}`;
-    })
-    .join("\n")}\n`;
 
 const inspectEnvironmentPath = async (environmentPath) => {
   try {
@@ -147,37 +164,25 @@ const inspectEnvironmentPath = async (environmentPath) => {
   }
 };
 
-export const writeEnvironmentFile = async (environmentPath, environment) => {
-  const existing = await inspectEnvironmentPath(environmentPath);
+export const secureEnvironmentFile = async (environmentPath) => {
+  const file = await inspectEnvironmentPath(environmentPath);
 
-  if (existing?.isSymbolicLink()) {
+  if (!file) {
+    fail("LOCAL_DEVELOPMENT_ENV_MISSING");
+  }
+
+  if (file.isSymbolicLink()) {
     fail("LOCAL_DEVELOPMENT_ENV_SYMLINK_REJECTED");
   }
 
-  const temporaryPath = `${environmentPath}.${process.pid}.${randomUUID()}.tmp`;
-  let file;
+  if (!file.isFile()) {
+    fail("LOCAL_DEVELOPMENT_ENV_INVALID");
+  }
 
   try {
-    file = await open(
-      temporaryPath,
-      "wx",
-      localDevelopmentConstants.environmentFileMode,
-    );
-    await file.writeFile(serializeEnvironment(environment), "utf8");
-    await file.sync();
-    await file.close();
-    file = undefined;
-    await rename(temporaryPath, environmentPath);
     await chmod(environmentPath, localDevelopmentConstants.environmentFileMode);
-  } catch (error) {
-    await file?.close().catch(() => undefined);
-    await unlink(temporaryPath).catch(() => undefined);
-
-    if (error instanceof LocalDevelopmentError) {
-      throw error;
-    }
-
-    fail("LOCAL_DEVELOPMENT_ENV_WRITE_FAILED");
+  } catch {
+    fail("LOCAL_DEVELOPMENT_ENV_PERMISSION_FAILED");
   }
 };
 
@@ -224,66 +229,85 @@ export const assertPortAvailable = ({ host, port }) =>
     });
   });
 
-const readExistingEnvironment = async (environmentPath) => {
-  const existing = await inspectEnvironmentPath(environmentPath);
+export const parseLocalDevelopmentArguments = (argumentsList) => {
+  let checkOnly = false;
+  let profile;
 
-  if (!existing) {
-    return {};
+  for (const argument of argumentsList) {
+    if (argument === "--check") {
+      checkOnly = true;
+      continue;
+    }
+
+    if (argument.startsWith("--profile=")) {
+      if (profile !== undefined) {
+        fail("LOCAL_DEVELOPMENT_ARGUMENT_INVALID");
+      }
+
+      profile = argument.slice("--profile=".length);
+      continue;
+    }
+
+    fail("LOCAL_DEVELOPMENT_ARGUMENT_INVALID");
   }
 
-  if (existing.isSymbolicLink()) {
-    fail("LOCAL_DEVELOPMENT_ENV_SYMLINK_REJECTED");
+  if (profile !== "fixture" && profile !== "live") {
+    fail("LOCAL_DEVELOPMENT_PROFILE_INVALID");
   }
 
-  try {
-    return parseEnv(await readFile(environmentPath, "utf8"));
-  } catch {
-    fail("LOCAL_DEVELOPMENT_ENV_READ_FAILED");
-  }
+  return { checkOnly, profile };
 };
 
-const localBinary = (name) => join(projectRoot, "node_modules", ".bin", name);
+const localBinary = (root, name) => join(root, "node_modules", ".bin", name);
 
-const runPrivateCommand = async (command, args, failureCode) => {
-  try {
-    return await execFileAsync(command, args, {
-      cwd: projectRoot,
-      encoding: "utf8",
-      maxBuffer: 10 * 1024 * 1024,
-    });
-  } catch {
-    fail(failureCode);
-  }
-};
-
-const prepareEnvironment = async () => {
-  const environmentPath = join(projectRoot, ".env.local");
-  const existingEnvironment = await readExistingEnvironment(environmentPath);
-  const supabase = localBinary("supabase");
-
-  await runPrivateCommand(
-    supabase,
-    ["start"],
-    "LOCAL_SUPABASE_START_FAILED",
-  );
-  const { stdout } = await runPrivateCommand(
-    supabase,
-    ["status", "--output", "json"],
-    "LOCAL_SUPABASE_STATUS_FAILED",
-  );
-
-  let status;
-  try {
-    status = JSON.parse(stdout);
-  } catch {
-    fail("LOCAL_SUPABASE_STATUS_INVALID");
+export const createLocalServiceSpecs = ({ profile, projectRoot: root }) => {
+  if (profile !== "fixture" && profile !== "live") {
+    fail("LOCAL_DEVELOPMENT_PROFILE_INVALID");
   }
 
-  const environment = buildLocalEnvironment(existingEnvironment, status);
-  validateLocalLiveEnvironment(environment);
-  await writeEnvironmentFile(environmentPath, environment);
+  const environment = {
+    INNGEST_DEV: "1",
+    RESEARCH_PROVIDER_MODE: profile,
+  };
 
-  return environment;
+  return [
+    {
+      name: "next",
+      command: localBinary(root, "next"),
+      args: [
+        "dev",
+        "--hostname",
+        localDevelopmentConstants.appHost,
+        "--port",
+        String(localDevelopmentConstants.appPort),
+      ],
+      cwd: root,
+      environment,
+    },
+    {
+      name: "inngest",
+      command: localBinary(root, "inngest-cli"),
+      args: [
+        "dev",
+        "--no-discovery",
+        "--host",
+        localDevelopmentConstants.inngestHost,
+        "--port",
+        String(localDevelopmentConstants.inngestPort),
+        "--sdk-url",
+        `http://${localDevelopmentConstants.appHost}:${localDevelopmentConstants.appPort}/api/inngest`,
+        "--queue-workers",
+        "1",
+        "--tick",
+        "1000",
+        "--persist",
+        "--log-level",
+        "warn",
+      ],
+      cwd: join(root, "output", "inngest"),
+      environment,
+    },
+  ];
 };
 
 const waitForChild = (child, name) =>
@@ -306,44 +330,23 @@ const stopChild = (child) => {
   }
 };
 
-const runServices = async (environment) => {
-  const childEnvironment = { ...process.env, ...environment };
-  const next = spawn(
-    localBinary("next"),
-    [
-      "dev",
-      "--hostname",
-      localDevelopmentConstants.appHost,
-      "--port",
-      String(localDevelopmentConstants.appPort),
-    ],
-    { cwd: projectRoot, env: childEnvironment, stdio: "inherit" },
-  );
-  const inngest = spawn(
-    localBinary("inngest-cli"),
-    [
-      "dev",
-      "--no-discovery",
-      "--host",
-      localDevelopmentConstants.inngestHost,
-      "--port",
-      String(localDevelopmentConstants.inngestPort),
-      "--sdk-url",
-      `http://${localDevelopmentConstants.appHost}:${localDevelopmentConstants.appPort}/api/inngest`,
-    ],
-    { cwd: projectRoot, env: childEnvironment, stdio: "inherit" },
-  );
-
-  const children = [next, inngest];
-  const stopServices = () => children.forEach(stopChild);
+const runServices = async (specs) => {
+  const children = specs.map((spec) => ({
+    child: spawn(spec.command, spec.args, {
+      cwd: spec.cwd,
+      env: { ...process.env, ...spec.environment },
+      stdio: "inherit",
+    }),
+    name: spec.name,
+  }));
+  const stopServices = () => children.forEach(({ child }) => stopChild(child));
   process.once("SIGINT", stopServices);
   process.once("SIGTERM", stopServices);
 
   try {
-    const result = await Promise.race([
-      waitForChild(next, "next"),
-      waitForChild(inngest, "inngest"),
-    ]);
+    const result = await Promise.race(
+      children.map(({ child, name }) => waitForChild(child, name)),
+    );
     stopServices();
     process.exitCode = result.code ?? (result.signal ? 0 : 1);
   } finally {
@@ -353,11 +356,8 @@ const runServices = async (environment) => {
   }
 };
 
-const main = async () => {
-  assertSupportedNodeVersion(process.version);
-  const environment = await prepareEnvironment();
-
-  await Promise.all([
+const assertLocalPortsAvailable = () =>
+  Promise.all([
     assertPortAvailable({
       host: localDevelopmentConstants.appHost,
       port: localDevelopmentConstants.appPort,
@@ -368,13 +368,30 @@ const main = async () => {
     }),
   ]);
 
+const main = async () => {
+  const { checkOnly, profile } = parseLocalDevelopmentArguments(
+    process.argv.slice(2),
+  );
+  assertSupportedNodeVersion(process.version);
+  await secureEnvironmentFile(join(projectRoot, ".env.local"));
+  validateHostedDevelopmentEnvironment({ environment: process.env, profile });
+  await assertLocalPortsAvailable();
+
+  if (checkOnly) {
+    console.log("[local-dev] ready");
+    return;
+  }
+
+  const specs = createLocalServiceSpecs({ profile, projectRoot });
+  await mkdir(join(projectRoot, "output", "inngest"), { recursive: true });
+
   console.log(
-    `[local-dev] 本地研究环境 / Local research workspace: http://${localDevelopmentConstants.appHost}:${localDevelopmentConstants.appPort}/zh/auth/login`,
+    `[local-dev] Local research workspace: http://${localDevelopmentConstants.appHost}:${localDevelopmentConstants.appPort}/zh/auth/login`,
   );
   console.log(
     `[local-dev] Inngest: http://${localDevelopmentConstants.inngestHost}:${localDevelopmentConstants.inngestPort}`,
   );
-  await runServices(environment);
+  await runServices(specs);
 };
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
