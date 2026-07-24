@@ -1,4 +1,5 @@
-import { spawn } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
+import { lookup } from "node:dns";
 import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import process from "node:process";
@@ -40,10 +41,53 @@ export const assertLinkedProjectRef = ({
   return linked;
 };
 
-export const createHostedDatabaseCommands = () => [
-  ["test", "db", "--linked"],
-  ["db", "lint", "--linked", "--level", "warning"],
-];
+export const isReservedBenchmarkAddress = (address) => {
+  const octets = address.split(".").map(Number);
+
+  return (
+    octets.length === 4 &&
+    octets.every(
+      (octet) => Number.isInteger(octet) && octet >= 0 && octet <= 255,
+    ) &&
+    octets[0] === 198 &&
+    (octets[1] === 18 || octets[1] === 19)
+  );
+};
+
+export const createPoolerDatabaseUrl = ({ poolerUrl, projectRef, role }) => {
+  let url;
+
+  try {
+    url = new URL(poolerUrl.trim());
+  } catch {
+    fail("HOSTED_SUPABASE_POOLER_INVALID");
+  }
+
+  if (
+    (url.protocol !== "postgresql:" && url.protocol !== "postgres:") ||
+    !/^[a-z0-9-]+\.pooler\.supabase\.com$/.test(url.hostname) ||
+    url.username !== `postgres.${projectRef}` ||
+    !/^[A-Za-z0-9_]+$/.test(role)
+  ) {
+    fail("HOSTED_SUPABASE_POOLER_INVALID");
+  }
+
+  url.username = `${role}.${projectRef}`;
+  url.password = "";
+
+  return url.toString();
+};
+
+export const createHostedDatabaseCommands = ({ databaseUrl } = {}) => {
+  const connectionArguments = databaseUrl
+    ? ["--db-url", databaseUrl]
+    : ["--linked"];
+
+  return [
+    ["test", "db", ...connectionArguments],
+    ["db", "lint", ...connectionArguments, "--level", "warning"],
+  ];
+};
 
 const readLinkedProjectRef = async () => {
   try {
@@ -60,13 +104,124 @@ const readLinkedProjectRef = async () => {
   }
 };
 
-const runSupabaseCommand = (args) =>
+const readPoolerUrl = async () => {
+  try {
+    return await readFile(
+      join(projectRoot, "supabase", ".temp", "pooler-url"),
+      "utf8",
+    );
+  } catch {
+    fail("HOSTED_SUPABASE_POOLER_MISSING");
+  }
+};
+
+const lookupAddresses = (host) =>
+  new Promise((resolvePromise) => {
+    lookup(host, { all: true }, (error, addresses) => {
+      resolvePromise(error ? [] : addresses.map(({ address }) => address));
+    });
+  });
+
+const readKeychainAccessToken = () =>
+  new Promise((resolvePromise, rejectPromise) => {
+    execFile(
+      "/usr/bin/security",
+      [
+        "find-generic-password",
+        "-a",
+        "supabase",
+        "-s",
+        "Supabase CLI",
+        "-w",
+      ],
+      { encoding: "utf8" },
+      (error, stdout) => {
+        if (error || stdout.trim() === "") {
+          rejectPromise(
+            new HostedDatabaseGateError(
+              "HOSTED_SUPABASE_ACCESS_TOKEN_MISSING",
+            ),
+          );
+          return;
+        }
+
+        resolvePromise(stdout.trim());
+      },
+    );
+  });
+
+const readSupabaseAccessToken = async () => {
+  const configured = process.env.SUPABASE_ACCESS_TOKEN?.trim();
+
+  if (configured) {
+    return configured;
+  }
+
+  if (process.platform !== "darwin") {
+    fail("HOSTED_SUPABASE_ACCESS_TOKEN_MISSING");
+  }
+
+  return readKeychainAccessToken();
+};
+
+const createTemporaryPoolerConnection = async (projectRef) => {
+  let response;
+
+  try {
+    response = await fetch(
+      `https://api.supabase.com/v1/projects/${projectRef}/cli/login-role`,
+      {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${await readSupabaseAccessToken()}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ read_only: false }),
+        signal: AbortSignal.timeout(20_000),
+      },
+    );
+  } catch {
+    fail("HOSTED_SUPABASE_POOLER_AUTH_FAILED");
+  }
+
+  if (!response.ok) {
+    fail("HOSTED_SUPABASE_POOLER_AUTH_FAILED");
+  }
+
+  let credentials;
+  try {
+    credentials = await response.json();
+  } catch {
+    fail("HOSTED_SUPABASE_POOLER_AUTH_FAILED");
+  }
+
+  if (
+    !credentials ||
+    typeof credentials.role !== "string" ||
+    typeof credentials.password !== "string" ||
+    credentials.password === ""
+  ) {
+    fail("HOSTED_SUPABASE_POOLER_AUTH_FAILED");
+  }
+
+  return {
+    databaseUrl: createPoolerDatabaseUrl({
+      poolerUrl: await readPoolerUrl(),
+      projectRef,
+      role: credentials.role,
+    }),
+    password: credentials.password,
+  };
+};
+
+const runSupabaseCommand = (args, environment = {}) =>
   new Promise((resolvePromise, rejectPromise) => {
     const child = spawn(
       join(projectRoot, "node_modules", ".bin", "supabase"),
       args,
       {
         cwd: projectRoot,
+        env: { ...process.env, ...environment },
         stdio: "inherit",
       },
     );
@@ -91,14 +246,26 @@ const runSupabaseCommand = (args) =>
   });
 
 const main = async () => {
-  assertLinkedProjectRef({
+  const projectRef = assertLinkedProjectRef({
     allowedProjectRef:
       process.env.LOCAL_DEVELOPMENT_SUPABASE_PROJECT_REF,
     linkedProjectRef: await readLinkedProjectRef(),
   });
 
-  for (const args of createHostedDatabaseCommands()) {
-    await runSupabaseCommand(args);
+  const directAddresses = await lookupAddresses(
+    `db.${projectRef}.supabase.co`,
+  );
+  const poolerConnection = directAddresses.some(isReservedBenchmarkAddress)
+    ? await createTemporaryPoolerConnection(projectRef)
+    : undefined;
+
+  for (const args of createHostedDatabaseCommands({
+    databaseUrl: poolerConnection?.databaseUrl,
+  })) {
+    await runSupabaseCommand(
+      args,
+      poolerConnection ? { PGPASSWORD: poolerConnection.password } : undefined,
+    );
   }
 
   console.log("[hosted-db] ready");

@@ -1,6 +1,8 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
+set local role postgres;
+set local search_path = public, extensions;
 
 select plan(21);
 
@@ -40,7 +42,7 @@ select lives_ok(
   'authenticated owners create a project and run atomically'
 );
 
-reset role;
+set local role postgres;
 
 select is(
   (select owner_id from public.projects where id = 'durable_project_a_1'),
@@ -96,7 +98,7 @@ select throws_ok(
   'owners cannot create another research while a run is active'
 );
 
-reset role;
+set local role postgres;
 
 select is(
   (select count(*) from public.projects where id = 'durable_project_active_conflict'),
@@ -152,7 +154,7 @@ select lives_ok(
   'the owner can mark a queued event dispatch as failed'
 );
 
-reset role;
+set local role postgres;
 
 select is(
   (
@@ -185,7 +187,7 @@ select lives_ok(
   'service role retries and finalizes the same run'
 );
 
-reset role;
+set local role postgres;
 
 select is(
   (
@@ -224,7 +226,7 @@ select lives_ok(
   'repeated finalization is accepted'
 );
 
-reset role;
+set local role postgres;
 
 select is(
   (
@@ -255,7 +257,7 @@ select * from public.create_managed_research(
   '[]'::jsonb
 );
 
-reset role;
+set local role postgres;
 set local role service_role;
 select public.begin_research_run(
   '00000000-0000-4000-8000-000000000021',
@@ -271,7 +273,7 @@ select public.finalize_research_run(
   0
 );
 
-reset role;
+set local role postgres;
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-000000000021', true);
 select set_config(
@@ -290,7 +292,7 @@ select * from public.create_managed_research(
   '[]'::jsonb
 );
 
-reset role;
+set local role postgres;
 set local role service_role;
 select public.begin_research_run(
   '00000000-0000-4000-8000-000000000021',
@@ -306,7 +308,7 @@ select public.finalize_research_run(
   0
 );
 
-reset role;
+set local role postgres;
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-000000000021', true);
 select set_config(
@@ -349,7 +351,7 @@ select throws_ok(
   'more than five manual URLs are rejected'
 );
 
-reset role;
+set local role postgres;
 set local role anon;
 select set_config('request.jwt.claim.sub', '', true);
 select set_config('request.jwt.claims', '{"role":"anon"}', true);
@@ -371,7 +373,7 @@ select throws_ok(
   'anonymous callers cannot create managed research'
 );
 
-reset role;
+set local role postgres;
 
 select is(
   (

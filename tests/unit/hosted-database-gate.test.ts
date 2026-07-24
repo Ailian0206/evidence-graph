@@ -25,12 +25,45 @@ describe("hosted database gate", () => {
   });
 
   it("allows only linked transaction tests and lint", async () => {
-    const { createHostedDatabaseCommands } = await loadHostedDatabaseGate();
+    const {
+      createHostedDatabaseCommands,
+      createPoolerDatabaseUrl,
+      isReservedBenchmarkAddress,
+    } = await loadHostedDatabaseGate();
 
     expect(createHostedDatabaseCommands()).toEqual([
       ["test", "db", "--linked"],
       ["db", "lint", "--linked", "--level", "warning"],
     ]);
+
+    expect(isReservedBenchmarkAddress("198.18.0.1")).toBe(true);
+    expect(isReservedBenchmarkAddress("198.19.255.255")).toBe(true);
+    expect(isReservedBenchmarkAddress("198.20.0.1")).toBe(false);
+    expect(isReservedBenchmarkAddress("127.0.0.1")).toBe(false);
+
+    const databaseUrl = createPoolerDatabaseUrl({
+      poolerUrl:
+        "postgresql://postgres.dibngceljmdkcgrzxubx@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres",
+      projectRef: "dibngceljmdkcgrzxubx",
+      role: "cli_login_postgres",
+    });
+
+    expect(databaseUrl).toBe(
+      "postgresql://cli_login_postgres.dibngceljmdkcgrzxubx@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres",
+    );
+    expect(databaseUrl).not.toContain("password");
+    expect(createHostedDatabaseCommands({ databaseUrl })).toEqual([
+      ["test", "db", "--db-url", databaseUrl],
+      ["db", "lint", "--db-url", databaseUrl, "--level", "warning"],
+    ]);
+    expect(() =>
+      createPoolerDatabaseUrl({
+        poolerUrl:
+          "postgresql://postgres.otherprojectref@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres",
+        projectRef: "dibngceljmdkcgrzxubx",
+        role: "cli_login_postgres",
+      }),
+    ).toThrow("HOSTED_SUPABASE_POOLER_INVALID");
   });
 
   it("keeps hosted and CI database responsibilities separate", async () => {
