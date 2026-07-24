@@ -109,7 +109,7 @@ Production 部署状态单独记录，只说明某个提交是否上线，不参
 - 为托管开发环境隔离、OAuth loopback、Provider 成本与资源门禁和轻量启动脚本补充测试。
 - 主工作区的运行配置不依赖已完成模块的旧 worktree；本地密钥文件保持 Git 忽略并限制为当前用户可读写。
 - 现有 Provider fixtures、数据库、Auth、Inngest 和研究闭环测试保持通过。
-- 完整 `npm run test:managed` 通过，默认路径不调用真实 Provider。
+- 完整 `npm run test:managed` 通过；托管数据库测试在事务中回滚，本机不启动 Docker，Provider 路径不执行真实外呼。
 - 专用真实验收只允许一条最多 4 个来源、40,000 字符、20 个 embedding 批次和 `0.15 USD` 的研究，并记录脱敏的次数、状态和估算费用。
 
 ### 本地验收清单

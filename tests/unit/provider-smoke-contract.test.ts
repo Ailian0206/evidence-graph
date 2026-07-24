@@ -103,10 +103,15 @@ describe("paid Provider smoke command contract", () => {
     const deploymentGuide = await readWorkspaceFile("docs/deployment.md");
 
     expect(readme).toContain("npm run dev:local");
+    expect(readme).toContain("npm run dev:local:live");
     expect(readme).toContain("http://127.0.0.1:3218/zh/auth/login");
     expect(readme).toContain("http://127.0.0.1:8288");
-    expect(deploymentGuide).toContain("普通 `npm run dev` 默认使用 fixtures");
-    expect(deploymentGuide).toContain("`npm run dev:local` 使用受控 live Provider");
+    expect(deploymentGuide).toContain(
+      "`npm run dev:local` 使用 fixture Provider",
+    );
+    expect(deploymentGuide).toContain(
+      "`npm run dev:local:live` 使用受控真实 Provider",
+    );
     expect(deploymentGuide).toContain("LOCAL_LIVE_RESEARCH_COST_LIMIT_USD=0.15");
   });
 });

@@ -5,7 +5,7 @@
 ## 当前阶段
 
 - 当前里程碑：C1“本地真实研究运行环境”，正在分支 `feat/c1-local-live-research` 实现。
-- 当前进度：第三版托管开发数据库设计已确认；覆盖整个 C1 的第二版实施计划已写入，等待选择执行方式后开始。
+- 当前进度：托管双 profile 启动器、GitHub OAuth、live 资源限制和 hosted/CI 数据库门禁已实现并通过聚焦测试；正在完成文档与完整环境验证。
 - 下一次用户可见结果：C1 全部实现和自动化门禁完成后，用户通过固定本地 URL 一次性验收登录、项目列表、fixture 闭环和低范围中文真实研究。
 - 当前禁止：不得提前实现 C2-C6，不得更新 `release`，不得执行 Production 迁移、变量修改、Inngest 同步或部署。
 - 路线图：`docs/roadmap.md`。
@@ -14,7 +14,7 @@
 
 | 维度 | 当前状态 | 说明 |
 | --- | --- | --- |
-| 代码完成度 | 核心技术能力已存在 | Auth、项目、研究工作流、证据工作台、报告和真实 Provider 已进入 `main` |
+| 代码完成度 | C1 实现已进入验证 | Auth、项目、研究工作流、证据工作台、报告和真实 Provider 已在 `main`；C1 分支已补本地运行与资源门禁 |
 | 本地验收度 | 未完成 | C1 完成并创建唯一 Draft PR 后进行一次完整本地验收 |
 | 产品完成度 | 未完成 | Settings/删除、Evidence Eval、3 个真实案例和 Release Candidate 尚未完成 |
 | Production 状态 | 有可用历史基线，当前冻结 | `release` 是唯一 Production Branch；C6 前不再发布 |
@@ -30,6 +30,7 @@
 - 本地 Inngest：仅在 C1 内部研究验证和最终验收时启动，必须限制为 1 个 worker；当前未启动。
 - 本地认证：使用现有 GitHub OAuth 和 loopback redirect，不启用托管 anonymous sign-in。
 - 本地 Provider：Live adapters 已实现；C1 真实研究使用 Git 忽略且权限收紧的运行文件，并同时限制来源、正文、embedding 批次和费用。
+- 数据库门禁：本地 `test:db:hosted` 只运行 linked pgTAP 与 lint；migration reset 仅在 GitHub Actions 的 `test:db:ci` 执行。
 - Node.js：本地和 CI 使用 `v22.22.1`。
 
 ## 产品里程碑
@@ -63,8 +64,9 @@
 
 ## 最近验证基线
 
-- `npm run test:managed` 最近通过 Provider 边界、93 项数据库断言、Schema lint、全仓 lint、typecheck、291 个单元测试、Production build 和 82 个 E2E。
-- 常规测试显式禁用真实托管连接和付费 Provider。
+- C1 聚焦测试已通过：本地启动器 13 项、hosted OAuth 7 项、Provider/workflow/Inngest 133 项、数据库门禁组合 16 项。
+- C1 改动已分别通过相关 lint 和全仓 typecheck；完整 `test:managed`、fixture/live UI 和真实研究尚待执行。
+- 常规单元、E2E 和工程测试禁用付费 Provider；`test:managed` 的数据库部分连接托管开发库并在 pgTAP 事务中回滚。
 - 真实 Provider 已通过 Tavily、DeepSeek 和百炼的专用低成本 smoke；日常测试不会外呼。
 - Production 曾完成一条低范围中文真实研究和完成态重放验证。这是已存在部署的技术证据，不替代 C1-C6 的本地产品验收。
 
@@ -81,4 +83,4 @@
 
 ## 下一步
 
-按 `docs/superpowers/plans/2026-07-23-c1-local-live-research-plan.md` 执行整个 C1。全部实现和完整门禁通过后只创建一个 Draft PR，再提供本地环境供用户一次性验收；验收前不合并、不进入 C2。
+完成托管环境 check、linked 数据库门禁、fixture/live UI 闭环和完整 `test:managed`。全部通过后只创建一个 Draft PR，再提供固定本地 URL 供用户一次性验收；验收前不合并、不进入 C2。
