@@ -714,7 +714,7 @@ git add PROJECT_STATUS.md docs/superpowers/plans/2026-07-23-c1-local-live-resear
 git commit -m "docs(status): 记录 C1 本地验收候选"
 ```
 
-- [ ] **Step 3: 推送并创建唯一 Draft PR**
+- [x] **Step 3: 推送并创建唯一 Draft PR**
 
 在 Git 忽略的 `output/c1-pr-body.md` 写入目标、主要改动、门禁结果、真实研究脱敏汇总、用户验收清单和明确不做。Run:
 
@@ -725,7 +725,9 @@ gh pr create --draft --base main --head feat/c1-local-live-research --title "fea
 
 Expected: 只创建一个 C1 Draft PR；不更新 `release`，不触发 Vercel Preview 或 Production。
 
-- [ ] **Step 4: 把 PR 状态写回同一分支**
+实际结果：分支已推送并创建唯一 Draft PR #18，创建时 head 为 `8b51288`；`release`、Vercel Preview 和 Production 均未修改。
+
+- [x] **Step 4: 把 PR 状态写回同一分支**
 
 把 PR 编号、head SHA 和 CI 状态写入 `PROJECT_STATUS.md`，提交并 push 到同一 PR：
 

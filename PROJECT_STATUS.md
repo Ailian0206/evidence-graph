@@ -5,8 +5,8 @@
 ## 当前阶段
 
 - 当前里程碑：C1“本地真实研究运行环境”，正在分支 `feat/c1-local-live-research` 实现。
-- 当前进度：C1 实现和内部托管链路验证已完成，已验证实现 head 为 `44971b4`；正在记录验收候选并创建唯一 Draft PR。
-- 下一次用户可见结果：Draft PR 建立后，用户通过固定本地 URL 一次性验收 GitHub 登录、项目列表、fixture 闭环和低范围中文真实研究。
+- 当前进度：C1 实现和内部托管链路验证已完成，已验证实现 head 为 `44971b4`；唯一 Draft PR #18 已从验收候选 head `8b51288` 创建，GitHub CI 正在运行。
+- 下一次用户可见结果：启动固定本地 URL 后，用户一次性验收 GitHub 登录、项目列表、fixture 闭环和低范围中文真实研究。
 - 当前禁止：不得提前实现 C2-C6，不得更新 `release`，不得执行 Production 迁移、变量修改、Inngest 同步或部署。
 - 路线图：`docs/roadmap.md`。
 
@@ -14,7 +14,7 @@
 
 | 维度 | 当前状态 | 说明 |
 | --- | --- | --- |
-| 代码完成度 | C1 验收候选 | 分支 `feat/c1-local-live-research` 的实现 head `44971b4` 已通过内部托管链路和完整自动化门禁 |
+| 代码完成度 | C1 验收候选 | 分支 `feat/c1-local-live-research` 的实现 head `44971b4` 已通过内部托管链路和完整自动化门禁；唯一 Draft PR #18 已创建 |
 | 本地验收度 | 待用户验收 | fixture 与受限 live 工作流已在本地服务连接托管开发库后达到 `ready`；GitHub OAuth 和完整 UI 点击流程仍待 Draft PR 后验收 |
 | 产品完成度 | 未完成 | Settings/删除、Evidence Eval、3 个真实案例和 Release Candidate 尚未完成 |
 | Production 状态 | 有可用历史基线，当前冻结 | `release` 是唯一 Production Branch；C6 前不再发布 |
@@ -86,4 +86,4 @@
 
 ## 下一步
 
-提交 C1 验收候选文档，创建唯一 Draft PR 并启动固定本地 URL，等待用户一次性完成 GitHub OAuth、项目列表、fixture/live 研究和结果可追溯性验收；验收前不审核、不合并、不进入 C2。
+等待 Draft PR #18 的 GitHub CI 完成并启动固定本地 URL，随后由用户一次性完成 GitHub OAuth、项目列表、fixture/live 研究和结果可追溯性验收；验收前不审核、不合并、不进入 C2。
