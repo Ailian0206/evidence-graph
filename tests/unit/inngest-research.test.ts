@@ -311,6 +311,40 @@ describe("Inngest research workflow entry", () => {
     expect(providers.calls.some((call) => call.operation === "embed")).toBe(false);
   });
 
+  it("narrows local execution limits without mutating the persisted run", async () => {
+    const providers = createFixtureResearchProviders();
+    const persistedInput = createWorkflowInput();
+    persistedInput.run.sourceLimit = 12;
+    persistedInput.run.maxContentChars = 200_000;
+    const executor = createResearchWorkflowExecutor({
+      readInput: async () => persistedInput,
+      createProviders: () => ({
+        ...providers,
+        maxCostUsd: 0.15,
+        executionLimits: {
+          sourceLimit: 4,
+          maxContentChars: 40_000,
+          maxEmbeddingBatches: 20,
+        },
+      }),
+      now: () => "2026-07-22T09:00:00.000Z",
+    });
+
+    const result = await executor(eventData);
+
+    expect(result.snapshot.runs).toEqual([
+      expect.objectContaining({
+        id: "run_1",
+        sourceLimit: 4,
+        maxContentChars: 40_000,
+      }),
+    ]);
+    expect(persistedInput.run).toMatchObject({
+      sourceLimit: 12,
+      maxContentChars: 200_000,
+    });
+  });
+
   it.each([
     { id: "run_other", ownerId: "owner_1", projectId: "project_1" },
     { id: "run_1", ownerId: "owner_other", projectId: "project_1" },

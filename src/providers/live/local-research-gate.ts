@@ -4,6 +4,11 @@ import type { ProviderEnvironment } from "@/providers/live/smoke-gate";
 
 const LOCAL_LIVE_CONFIRMATION = "I_CONFIRM_LOCAL_PAID_RESEARCH";
 const LOCAL_LIVE_COST_LIMIT_USD = 0.15;
+const LOCAL_LIVE_EXECUTION_LIMITS = {
+  sourceLimit: 4,
+  maxContentChars: 40_000,
+  maxEmbeddingBatches: 20,
+} as const;
 
 export const readLocalResearchEnvironment = (
   environment: ProviderEnvironment = process.env,
@@ -26,10 +31,14 @@ export const readLocalResearchEnvironment = (
     throw new Error("LOCAL_LIVE_RESEARCH_COST_LIMIT_INVALID");
   }
 
-  return { costLimitUsd };
+  return {
+    costLimitUsd,
+    executionLimits: LOCAL_LIVE_EXECUTION_LIMITS,
+  };
 };
 
 export const localResearchConstants = {
   liveConfirmation: LOCAL_LIVE_CONFIRMATION,
   maximumCostLimitUsd: LOCAL_LIVE_COST_LIMIT_USD,
+  executionLimits: LOCAL_LIVE_EXECUTION_LIMITS,
 } as const;

@@ -52,6 +52,7 @@ type RunResearchWorkflowInput = {
   manualUrls?: string[];
   providers: ResearchWorkflowProviders;
   maxCostUsd?: number;
+  maxEmbeddingBatches?: number;
   executeProviderCall?: ProviderCallExecutor;
   store: InMemoryResearchWorkflowStore;
   now: () => string;
@@ -70,7 +71,10 @@ const chunkOutputSchema = z.object({ chunkIds: z.array(z.string().min(1)) });
 const evidenceOutputSchema = z.object({ evidenceLinkIds: z.array(z.string().min(1)) });
 const relationOutputSchema = z.object({ claimRelationIds: z.array(z.string().min(1)) });
 const reportOutputSchema = z.object({ reportId: z.string().min(1) });
-const MAX_INDEXED_CHUNKS = 1500;
+const EMBEDDING_BATCH_SIZE = 10;
+const DEFAULT_MAX_EMBEDDING_BATCHES = 150;
+const MAX_INDEXED_CHUNKS =
+  EMBEDDING_BATCH_SIZE * DEFAULT_MAX_EMBEDDING_BATCHES;
 const WORKFLOW_STEPS: WorkflowStep[] = [
   "planning",
   "searching",
@@ -86,6 +90,7 @@ const KNOWN_WORKFLOW_ERRORS = new Set([
   "CLAIM_CANDIDATE_NOT_FOUND",
   "CONTENT_LIMIT_EXCEEDED",
   "DEEPSEEK_REQUEST_FAILED",
+  "EMBEDDING_BATCH_LIMIT_EXCEEDED",
   "MANUAL_URL_LIMIT_EXCEEDED",
   "PROJECT_NOT_FOUND",
   "PROVIDER_REQUEST_TIMEOUT",
@@ -138,12 +143,21 @@ const runResearchWorkflowAttempt = async ({
   manualUrls = [],
   providers,
   maxCostUsd = 1,
+  maxEmbeddingBatches = DEFAULT_MAX_EMBEDDING_BATCHES,
   executeProviderCall = executeProviderCallDirectly,
   store,
   now,
 }: RunResearchWorkflowInput): Promise<ResearchWorkflowResult> => {
   if (!Number.isFinite(maxCostUsd) || maxCostUsd <= 0 || maxCostUsd > 1) {
     throw new Error("RUN_COST_LIMIT_INVALID");
+  }
+
+  if (
+    !Number.isInteger(maxEmbeddingBatches) ||
+    maxEmbeddingBatches < 1 ||
+    maxEmbeddingBatches > DEFAULT_MAX_EMBEDDING_BATCHES
+  ) {
+    throw new Error("EMBEDDING_BATCH_LIMIT_INVALID");
   }
 
   let run = store.requireRun({ runId, ownerId });
@@ -465,10 +479,23 @@ const runResearchWorkflowAttempt = async ({
       throw new Error("CONTENT_LIMIT_EXCEEDED");
     }
 
-    for (let batchStart = 0; batchStart < chunks.length; batchStart += 10) {
-      const batchIndex = Math.floor(batchStart / 10);
+    if (
+      Math.ceil(chunks.length / EMBEDDING_BATCH_SIZE) > maxEmbeddingBatches
+    ) {
+      throw new Error("EMBEDDING_BATCH_LIMIT_EXCEEDED");
+    }
+
+    for (
+      let batchStart = 0;
+      batchStart < chunks.length;
+      batchStart += EMBEDDING_BATCH_SIZE
+    ) {
+      const batchIndex = Math.floor(batchStart / EMBEDDING_BATCH_SIZE);
       const batchIdempotencyKey = `${idempotencyKey}:${batchIndex}`;
-      const batch = chunks.slice(batchStart, batchStart + 10);
+      const batch = chunks.slice(
+        batchStart,
+        batchStart + EMBEDDING_BATCH_SIZE,
+      );
       const missingEmbeddings = batch.filter((chunk) => !store.getEmbedding(chunk.id));
 
       if (missingEmbeddings.length === 0) {

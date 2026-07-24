@@ -60,7 +60,14 @@ type ResearchWorkflowProviders = {
 
 type ResearchWorkflowExecutorDependencies = {
   readInput: (event: ResearchRequestedEventData) => Promise<WorkflowInput>;
-  createProviders: () => ResearchWorkflowProviders & { maxCostUsd?: number };
+  createProviders: () => ResearchWorkflowProviders & {
+    maxCostUsd?: number;
+    executionLimits?: {
+      sourceLimit: number;
+      maxContentChars: number;
+      maxEmbeddingBatches: number;
+    };
+  };
   now: () => string;
 };
 
@@ -311,9 +318,24 @@ export const createResearchWorkflowExecutor = ({
     executeProviderCall?: ProviderCallExecutor,
   ) => {
     const input = await readInput(event);
+    const providerRuntime = createProviders();
+    const executionLimits = providerRuntime.executionLimits;
+    const effectiveRun = executionLimits
+      ? {
+          ...input.run,
+          sourceLimit: Math.min(
+            input.run.sourceLimit,
+            executionLimits.sourceLimit,
+          ),
+          maxContentChars: Math.min(
+            input.run.maxContentChars,
+            executionLimits.maxContentChars,
+          ),
+        }
+      : input.run;
     const fixture = createDemoResearchFixture();
     fixture.projects = [input.project];
-    fixture.researchRuns = [input.run];
+    fixture.researchRuns = [effectiveRun];
     fixture.sources = [];
     fixture.chunks = [];
     fixture.claims = [];
@@ -321,7 +343,6 @@ export const createResearchWorkflowExecutor = ({
     fixture.claimRelations = [];
 
     const store = createInMemoryResearchWorkflowStore(fixture);
-    const providerRuntime = createProviders();
     const result = await runResearchWorkflow({
       runId: input.run.id,
       ownerId: input.project.ownerId,
@@ -329,6 +350,7 @@ export const createResearchWorkflowExecutor = ({
       manualUrls: input.manualUrls,
       providers: providerRuntime,
       maxCostUsd: providerRuntime.maxCostUsd ?? 1,
+      maxEmbeddingBatches: executionLimits?.maxEmbeddingBatches,
       executeProviderCall,
       store,
       now,

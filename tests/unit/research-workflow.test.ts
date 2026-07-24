@@ -810,6 +810,46 @@ describe("research workflow", () => {
     ]);
   });
 
+  it("stops before embedding when the execution batch limit is exceeded", async () => {
+    const providers = createFixtureResearchProviders();
+    const fixture = createDemoResearchFixture();
+    fixture.researchRuns[0].sourceLimit = 1;
+    fixture.sources = [];
+    fixture.chunks = [];
+    fixture.claims = [];
+    fixture.evidenceLinks = [];
+    fixture.claimRelations = [];
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [
+        {
+          url: "https://manual.example.com/eleven-chunks",
+          title: "Eleven chunks",
+          body: Array.from(
+            { length: 11 },
+            (_, index) => `Paragraph ${index + 1}`,
+          ).join("\n\n"),
+          sourceType: "article",
+        },
+      ],
+      providers,
+      maxEmbeddingBatches: 1,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+
+    expect(result.run).toMatchObject({
+      status: "failed",
+      errorMessage: "EMBEDDING_BATCH_LIMIT_EXCEEDED",
+    });
+    expect(
+      providers.calls.some((call) => call.operation === "embed"),
+    ).toBe(false);
+  });
+
   it("runs the deterministic workflow to a fully cited report", async () => {
     const providers = createFixtureResearchProviders();
     const fixture = createDemoResearchFixture();

@@ -469,7 +469,11 @@ describe("Provider runtime selection", () => {
     const providers = createResearchProviders({
       environment: { NODE_ENV: "test" },
     });
-    expect(providers).toMatchObject({ mode: "fixture", maxCostUsd: 1 });
+    expect(providers).toMatchObject({
+      mode: "fixture",
+      maxCostUsd: 1,
+      executionLimits: undefined,
+    });
 
     expect(() =>
       createResearchProviders({
@@ -483,7 +487,15 @@ describe("Provider runtime selection", () => {
 
   it("requires all live Provider credentials and selects live mode", () => {
     const providers = createResearchProviders({ environment: liveEnvironment });
-    expect(providers).toMatchObject({ mode: "live", maxCostUsd: 0.15 });
+    expect(providers).toMatchObject({
+      mode: "live",
+      maxCostUsd: 0.15,
+      executionLimits: {
+        sourceLimit: 4,
+        maxContentChars: 40_000,
+        maxEmbeddingBatches: 20,
+      },
+    });
 
     expect(() =>
       createResearchProviders({
@@ -503,7 +515,11 @@ describe("Provider runtime selection", () => {
       },
     });
 
-    expect(providers).toMatchObject({ mode: "live", maxCostUsd: 1 });
+    expect(providers).toMatchObject({
+      mode: "live",
+      maxCostUsd: 1,
+      executionLimits: undefined,
+    });
   });
 
   it.each(["not-a-number", "0", "-0.01", "0.150001"])(
@@ -541,6 +557,11 @@ describe("Provider runtime selection", () => {
     ).toThrow("LOCAL_LIVE_RESEARCH_NOT_CONFIRMED");
     expect(readLocalResearchEnvironment(liveEnvironment)).toEqual({
       costLimitUsd: 0.15,
+      executionLimits: {
+        sourceLimit: 4,
+        maxContentChars: 40_000,
+        maxEmbeddingBatches: 20,
+      },
     });
   });
 });
