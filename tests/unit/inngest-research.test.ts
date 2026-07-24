@@ -471,12 +471,68 @@ describe("Inngest research workflow entry", () => {
     expect(embeddingOperation).toHaveBeenCalledTimes(1);
     const durableResult = memoizedResults.get("provider:run_1:indexing:0");
     expect(durableResult).toMatchObject({
-      encoding: "float32-base64",
+      encoding: "float32-gzip-base64",
       rows: 10,
       columns: 1536,
       usage,
     });
     expect(JSON.stringify(durableResult).length).toBeLessThan(100_000);
+  });
+
+  it("keeps a large live research replay below the durable state headroom", async () => {
+    const vectors = Array.from({ length: 10 }, (_, rowIndex) =>
+      Array.from({ length: 1536 }, (_, columnIndex) =>
+        Math.sin(rowIndex * 1536 + columnIndex),
+      ),
+    );
+    const usage = {
+      estimatedCostUsd: 0.001,
+      searchCount: 0,
+      tokenCount: 1536,
+    };
+    const snapshot = {} as ResearchWorkflowSnapshot;
+    const handler = createRunResearchHandler({
+      authorize: async () => undefined,
+      executeWorkflow: async (_event, executeProviderCall) => {
+        await executeProviderCall("run_1:searching:0", async () => ({
+          data: {
+            results: [
+              {
+                body: "WHO fruit and vegetable guidance. ".repeat(14_000),
+              },
+            ],
+          },
+          usage,
+        }));
+
+        for (let batchIndex = 0; batchIndex < 44; batchIndex += 1) {
+          await executeProviderCall(`run_1:indexing:${batchIndex}`, async () => ({
+            data: vectors,
+            usage,
+          }));
+        }
+
+        return { output: { status: "ready" }, snapshot };
+      },
+      createWriter: async () => ({
+        begin: async () => undefined,
+        persist: async () => undefined,
+        fail: async () => undefined,
+      }),
+    });
+    const { memoizedResults, step } = createMemoizingStep();
+
+    await expect(handler({ event: { data: eventData }, step })).resolves.toEqual({
+      status: "ready",
+    });
+
+    const durableProviderState = Array.from(memoizedResults.entries()).filter(
+      ([id]) => id.startsWith("provider:"),
+    );
+
+    expect(Buffer.byteLength(JSON.stringify(durableProviderState))).toBeLessThan(
+      3_500_000,
+    );
   });
 
   it("rejects malformed durable embedding results with a stable error", async () => {
