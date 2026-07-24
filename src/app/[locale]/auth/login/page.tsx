@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { LockKeyhole, LogIn } from "lucide-react";
+import { LockKeyhole } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
+import { GitHubSignInButton } from "@/components/auth/github-sign-in-button";
 import { signInWithGitHub } from "@/features/auth/actions";
 import { getSafeAppPath } from "@/features/auth/session";
 import type { AppLocale } from "@/i18n/routing";
@@ -38,10 +39,11 @@ export default async function LoginPage({ params, searchParams }: LoginPageProps
         <h1 id="auth-title">{t("title")}</h1>
         <p className={styles.description}>{t("description")}</p>
         <form action={githubAction} className={styles.form}>
-          <button className={styles.button} type="submit" disabled={!configured}>
-            <LogIn aria-hidden="true" size={18} />
-            {t("github")}
-          </button>
+          <GitHubSignInButton
+            configured={configured}
+            label={t("github")}
+            pendingLabel={t("githubPending")}
+          />
         </form>
         {!configured ? (
           <p className={styles.status} role="status">

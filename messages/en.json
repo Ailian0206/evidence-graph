@@ -46,6 +46,7 @@
     "title": "Sign in to Evidence Graph",
     "description": "Continue to the research workspace with GitHub.",
     "github": "Sign in with GitHub",
+    "githubPending": "Redirecting to GitHub...",
     "unconfigured": "Managed sign-in is not configured",
     "error": "Sign-in did not complete. Try again."
   },

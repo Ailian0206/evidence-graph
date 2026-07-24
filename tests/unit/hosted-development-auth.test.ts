@@ -64,6 +64,7 @@ describe("hosted development authentication", () => {
 
     expect(actions).not.toContain("signInAnonymously");
     expect(loginPage).not.toContain("signInForLocalDevelopment");
+    expect(loginPage).toContain("GitHubSignInButton");
     expect(config).toContain("enable_anonymous_sign_ins = false");
     expect(config).toContain(
       'additional_redirect_urls = ["http://127.0.0.1:3218/auth/callback"]',

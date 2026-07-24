@@ -46,6 +46,7 @@
     "title": "登录 Evidence Graph",
     "description": "使用 GitHub 继续到研究工作台。",
     "github": "使用 GitHub 登录",
+    "githubPending": "正在前往 GitHub...",
     "unconfigured": "托管登录尚未配置",
     "error": "登录没有完成，请重新尝试。"
   },
