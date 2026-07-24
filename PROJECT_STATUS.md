@@ -5,8 +5,8 @@
 ## 当前阶段
 
 - 当前里程碑：C1“本地真实研究运行环境”，正在分支 `feat/c1-local-live-research` 实现。
-- 当前进度：C1 实现和内部托管链路验证已完成，已验证实现 head 为 `44971b4`；唯一 Draft PR #18 已创建，最终本地验收环境正在运行，GitHub CI 状态以该 PR 为准。
-- 下一次用户可见结果：用户通过固定本地 URL 一次性验收 GitHub 登录、项目列表、fixture 闭环和低范围中文真实研究。
+- 当前进度：第一次用户验收发现的公共入口和 OAuth callback 同源问题已按 TDD 修复，已验证实现 head 为 `2eb1251`；唯一 Draft PR #18 保持开放，等待 GitHub CI 与用户复验。
+- 下一次用户可见结果：用户从全站“研究工作台”入口重新验证 GitHub 登录，再继续项目列表、fixture 闭环和低范围中文真实研究验收。
 - 当前禁止：不得提前实现 C2-C6，不得更新 `release`，不得执行 Production 迁移、变量修改、Inngest 同步或部署。
 - 路线图：`docs/roadmap.md`。
 
@@ -14,8 +14,8 @@
 
 | 维度 | 当前状态 | 说明 |
 | --- | --- | --- |
-| 代码完成度 | C1 验收候选 | 分支 `feat/c1-local-live-research` 的实现 head `44971b4` 已通过内部托管链路和完整自动化门禁；唯一 Draft PR #18 已创建 |
-| 本地验收度 | 待用户验收 | fixture 与受限 live 工作流已在本地服务连接托管开发库后达到 `ready`；GitHub OAuth 和完整 UI 点击流程仍待 Draft PR 后验收 |
+| 代码完成度 | C1 验收候选 | 分支 `feat/c1-local-live-research` 的实现 head `2eb1251` 已通过内部托管链路和完整自动化门禁；唯一 Draft PR #18 已创建 |
+| 本地验收度 | 待用户复验 | 第一次验收发现的公共入口缺失和 OAuth callback 跨 host 问题已修复；GitHub 登录和后续完整 UI 流程仍待复验 |
 | 产品完成度 | 未完成 | Settings/删除、Evidence Eval、3 个真实案例和 Release Candidate 尚未完成 |
 | Production 状态 | 有可用历史基线，当前冻结 | `release` 是唯一 Production Branch；C6 前不再发布 |
 
@@ -65,7 +65,9 @@
 ## 最近验证基线
 
 - C1 最终聚焦门禁通过：provider 边界检查、7 个测试文件 `180/180` 和全仓 typecheck。
-- `test:managed` 通过：托管 pgTAP `93/93`、Schema lint、全仓 lint/typecheck、单元测试 `325/325`、production build 和 E2E `82/82`；例行门禁未调用付费 Provider。
+- 第一次用户验收发现两个阻塞：公共站点没有受保护工作台入口；OAuth callback 把 `127.0.0.1` 绝对重定向为 `localhost`，导致 host-only 会话 cookie 丢失。`bd3aed3` 增加双语全站入口，`2eb1251` 改为同源相对重定向，两项均先确认 RED 再达到 GREEN。
+- 修复后 `test:managed` 通过：托管 pgTAP `93/93`、Schema lint、全仓 lint/typecheck、单元测试 `328/328`、production build 和 E2E `82/82`；例行门禁未调用付费 Provider。
+- 入口已在 390x844、1024x768 和 1440x1000 三档视口完成截图检查；移动端入口位于折叠菜单，未出现横向溢出、裁切或重叠。开发服务器的 callback 失败响应已确认使用相对 `Location`。
 - fixture 工作流连接托管开发库后达到 `ready`，Provider 外呼和费用均为 0；Chrome 扩展自动化通信不可用，因此浏览器点击部分保留给最终用户验收。
 - 受限 live 工作流达到 `ready`：4 个来源、35,331 个正文字符、35 个 chunks、4 个 embedding 批次、3 次搜索、61,196 tokens、11 条 Claims、7 条 Evidence links 和 7 条完整关联引文。本次记录费用 `0.033056 USD`，连同首次定位失败的运行累计 `0.057096 USD`，低于 `0.15 USD` 上限；未记录来源全文或 Provider 原始响应。
 - 内部验证结束后活动研究 run 为 0，`3218`/`8288` 端口已关闭；本机没有 Evidence Graph Docker 容器，其他项目容器未被修改。
@@ -75,7 +77,7 @@
 
 ## 已知 MVP 缺口
 
-- GitHub OAuth、项目列表、fixture/live 创建流程和结果页的本地用户 UI 验收。
+- 修复后的 GitHub OAuth、项目列表、fixture/live 创建流程和结果页的本地用户 UI 复验。
 - 核心研究闭环的用户验收和 P0/P1 缺陷收敛。
 - `/app/settings`、语言偏好、项目数据删除和账号删除。
 - 10 个固定问题及人工样本的 Evidence Eval。
@@ -86,4 +88,4 @@
 
 ## 下一步
 
-等待 Draft PR #18 的 GitHub CI 和用户一次性完成 GitHub OAuth、项目列表、fixture/live 研究和结果可追溯性验收；验收前不审核、不合并、不进入 C2。
+等待 Draft PR #18 的 GitHub CI，并通过固定本地 URL 由用户先复验全站入口与 GitHub OAuth，再继续项目列表、fixture/live 研究和结果可追溯性验收；验收前不审核、不合并、不进入 C2。

@@ -753,4 +753,10 @@ npm run dev:local:live
 
 用户验收前不运行独立 Claude review、不把 C1 标记为完成、不合并 PR、不开始 C2。若用户发现阻塞问题，在同一分支和同一 PR 按 TDD 修复，重新运行相关门禁并恢复同一验收 URL。
 
+第一次用户验收发现并修复两个阻塞问题：
+
+- `bd3aed3` 在中英文全站主导航开放“研究工作台 / Research workspace”入口，链接受保护的 `/app`；新增组件回归测试，并在 390x844、1024x768、1440x1000 检查无溢出、裁切或重叠。
+- `2eb1251` 修复 OAuth callback 使用内部 `localhost` 生成绝对跳转的问题，改用 Next.js 相对 `redirect()` 保持浏览器当前 host 和会话 cookie；回归测试先收到错误的 `http://localhost:3218/zh/app`，修复后开发服务器返回相对 `Location`。
+- 修复后的 `test:managed` 通过：托管 pgTAP `93/93`、全仓 lint/typecheck、单元测试 `328/328`、production build 和 E2E `82/82`。C1 仍待用户复验，不勾选本步骤。
+
 用户明确通过后，才按 `AGENT.md` 执行独立 Claude review、修复 finding、等待 CI，并使用 merge commit 合并唯一 C1 PR。
