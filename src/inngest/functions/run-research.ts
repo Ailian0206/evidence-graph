@@ -268,8 +268,15 @@ export const createRunResearchHandler = ({
     const parsedEvent = researchRequestedEventSchema.parse(event.data);
     const authorization = await authorize(parsedEvent);
 
-    if (authorization?.status === "ready") {
-      return { status: "ready", completedSteps: [], reportId: null };
+    if (
+      authorization?.status === "ready" ||
+      authorization?.status === "failed"
+    ) {
+      return {
+        status: authorization.status,
+        completedSteps: [],
+        reportId: null,
+      };
     }
 
     const writer = await createWriter();

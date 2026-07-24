@@ -451,6 +451,35 @@ describe("Inngest research workflow entry", () => {
     expect(createWriter).not.toHaveBeenCalled();
   });
 
+  it("short-circuits a failed run when durable execution resumes after the failure write", async () => {
+    const { writer, getStatus } = createStatefulWriter();
+    const executeWorkflow = vi.fn(async () => {
+      throw new Error("WORKFLOW_FAILED");
+    });
+    const handler = createRunResearchHandler({
+      authorize: async () => ({ status: getStatus() }),
+      executeWorkflow,
+      createWriter: async () => writer,
+    });
+    const { step } = createMemoizingStep();
+
+    await expect(
+      handler({ event: { data: eventData }, step, attempt: 2, maxAttempts: 3 }),
+    ).rejects.toThrow("WORKFLOW_FAILED");
+    expect(getStatus()).toBe("failed");
+
+    await expect(
+      handler({ event: { data: eventData }, step, attempt: 0, maxAttempts: 3 }),
+    ).resolves.toEqual({
+      status: "failed",
+      completedSteps: [],
+      reportId: null,
+    });
+    expect(executeWorkflow).toHaveBeenCalledTimes(1);
+    expect(writer.begin).toHaveBeenCalledTimes(1);
+    expect(writer.fail).toHaveBeenCalledTimes(1);
+  });
+
   it("compacts durable embedding results while preserving replayed vectors", async () => {
     const vectors = Array.from({ length: 10 }, (_, rowIndex) =>
       Array.from({ length: 1536 }, (_, columnIndex) =>
