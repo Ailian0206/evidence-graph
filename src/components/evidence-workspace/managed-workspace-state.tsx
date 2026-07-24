@@ -1,12 +1,13 @@
 "use client";
 
-import { LoaderCircle, RefreshCw, TriangleAlert } from "lucide-react";
+import { ArrowLeft, LoaderCircle, RefreshCw, TriangleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 
 import { retryResearchDispatch } from "@/features/projects/actions";
 import type { ManagedWorkspaceResult } from "@/features/research/managed-workspace-store";
+import { Link } from "@/i18n/navigation";
 import type { AppLocale } from "@/i18n/routing";
 
 import styles from "./evidence-workspace.module.css";
@@ -84,7 +85,12 @@ export function ManagedWorkspaceState({
       data-state-shell="stable"
       aria-live={shouldPoll ? "polite" : undefined}
     >
-      <Icon aria-hidden="true" size={28} />
+      <Icon
+        aria-hidden="true"
+        data-loading-indicator={shouldPoll ? "true" : undefined}
+        data-testid={shouldPoll ? "managed-workspace-loading" : undefined}
+        size={28}
+      />
       <h1>{title}</h1>
       <p>{description}</p>
       <p className={styles.stateDetail}>{detail}</p>
@@ -94,6 +100,10 @@ export function ManagedWorkspaceState({
         </code>
       ) : null}
       <div className={styles.stateAction}>
+        <Link className={styles.stateBackLink} href="/app">
+          <ArrowLeft aria-hidden="true" size={16} />
+          {t("back")}
+        </Link>
         {visibleState === "failed" &&
         result.state === "failed" &&
         result.canRetryDispatch ? (

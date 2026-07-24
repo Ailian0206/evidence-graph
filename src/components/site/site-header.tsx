@@ -20,6 +20,7 @@ export function SiteHeader() {
     { href: "/work" as const, label: t("work") },
     { href: "/notes" as const, label: t("notes") },
     { href: "/evidence" as const, label: t("evidence") },
+    { href: "/app" as const, label: t("workspace") },
   ];
   const isCurrent = (href: (typeof navigationItems)[number]["href"]) =>
     href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);

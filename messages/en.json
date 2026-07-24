@@ -3,12 +3,20 @@
     "home": "Home",
     "work": "Work",
     "notes": "Notes",
-    "evidence": "Evidence Graph",
+    "evidence": "Product overview",
+    "workspace": "Open workspace",
     "language": "中文",
     "primary": "Primary navigation",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
     "skip": "Skip to main content"
+  },
+  "AppShell": {
+    "navigationLabel": "Workspace navigation",
+    "projects": "Research projects",
+    "reports": "Research reports",
+    "accountFallback": "Signed-in account",
+    "signOut": "Sign out"
   },
   "Portfolio": {
     "eyebrow": "AI product engineering",
@@ -45,6 +53,7 @@
     "title": "Sign in to Evidence Graph",
     "description": "Continue to the research workspace with GitHub.",
     "github": "Sign in with GitHub",
+    "githubPending": "Redirecting to GitHub...",
     "unconfigured": "Managed sign-in is not configured",
     "error": "Sign-in did not complete. Try again."
   },
@@ -100,9 +109,35 @@
       }
     }
   },
+  "Reports": {
+    "eyebrow": "Report library",
+    "title": "Research reports",
+    "description": "Review generated report versions and publication status across your research.",
+    "newResearch": "New research",
+    "listLabel": "Research reports",
+    "version": "Version {version}",
+    "publishedAt": "Published {date}",
+    "createdAt": "Created {date}",
+    "openResearch": "Open research",
+    "openPublic": "Open public report",
+    "status": {
+      "draft": "Draft",
+      "published": "Published",
+      "revoked": "Revoked"
+    },
+    "language": {
+      "zh": "Chinese",
+      "en": "English"
+    },
+    "empty": {
+      "title": "No research reports yet",
+      "description": "Generated report versions will appear here after a research run completes."
+    }
+  },
   "Workspace": {
     "eyebrow": "Research run / Evidence review",
     "backToPreview": "Back to product entry",
+    "backToProjects": "Back to projects",
     "runSummary": "Research run summary",
     "claims": "Claims",
     "sources": "Sources",
@@ -254,7 +289,8 @@
       "retry": "Retry research dispatch",
       "retrying": "Retrying dispatch...",
       "retrySentDescription": "The original research run was dispatched again and is waiting to start.",
-      "retryError": "Dispatch retry failed. Try again later."
+      "retryError": "Dispatch retry failed. Try again later.",
+      "back": "Back to projects"
     }
   },
   "Footer": {

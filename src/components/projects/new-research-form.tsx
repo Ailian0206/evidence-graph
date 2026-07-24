@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, X } from "lucide-react";
+import { ArrowLeft, LoaderCircle, Plus, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useActionState, useState } from "react";
 
@@ -41,7 +41,11 @@ export function NewResearchForm({ locale }: { locale: AppLocale }) {
   return (
     <div className={styles.page}>
       <div className={styles.formShell}>
-        <header className={styles.formHeader}>
+        <header className={styles.formHeader} data-testid="research-form-header">
+          <Link className={styles.backLink} href="/app">
+            <ArrowLeft aria-hidden="true" size={16} />
+            {t("form.back")}
+          </Link>
           <p className={styles.eyebrow}>{t("form.eyebrow")}</p>
           <h1>{t("form.title")}</h1>
           <p className={styles.description}>{t("form.description")}</p>
@@ -177,10 +181,16 @@ export function NewResearchForm({ locale }: { locale: AppLocale }) {
             data-testid="research-form-actions"
             aria-live="polite"
           >
-            <Link className={styles.backLink} href="/app">
-              {t("form.back")}
-            </Link>
             <button className={styles.submitButton} type="submit" disabled={pending}>
+              {pending ? (
+                <LoaderCircle
+                  aria-hidden="true"
+                  className={styles.spinner}
+                  data-loading-indicator="true"
+                  data-testid="research-create-loading"
+                  size={17}
+                />
+              ) : null}
               {pending ? t("form.submitting") : t("form.submit")}
             </button>
           </div>

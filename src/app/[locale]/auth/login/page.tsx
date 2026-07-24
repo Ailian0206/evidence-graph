@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { LockKeyhole, LogIn } from "lucide-react";
+import { LockKeyhole } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
+import { GitHubSignInButton } from "@/components/auth/github-sign-in-button";
 import { signInWithGitHub } from "@/features/auth/actions";
 import { getSafeAppPath } from "@/features/auth/session";
 import type { AppLocale } from "@/i18n/routing";
@@ -28,7 +29,7 @@ export default async function LoginPage({ params, searchParams }: LoginPageProps
   const t = await getTranslations("Auth");
   const configured = isSupabasePublicConfigured();
   const nextPath = getSafeAppPath(locale, next);
-  const action = signInWithGitHub.bind(null, locale, nextPath);
+  const githubAction = signInWithGitHub.bind(null, locale, nextPath);
 
   return (
     <div className={styles.page}>
@@ -37,11 +38,12 @@ export default async function LoginPage({ params, searchParams }: LoginPageProps
         <LockKeyhole aria-hidden="true" className={styles.icon} size={28} />
         <h1 id="auth-title">{t("title")}</h1>
         <p className={styles.description}>{t("description")}</p>
-        <form action={action} className={styles.form}>
-          <button className={styles.button} type="submit" disabled={!configured}>
-            <LogIn aria-hidden="true" size={18} />
-            {t("github")}
-          </button>
+        <form action={githubAction} className={styles.form}>
+          <GitHubSignInButton
+            configured={configured}
+            label={t("github")}
+            pendingLabel={t("githubPending")}
+          />
         </form>
         {!configured ? (
           <p className={styles.status} role="status">

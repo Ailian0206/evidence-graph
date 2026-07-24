@@ -68,6 +68,22 @@
   cursor: not-allowed;
 }
 
+.spinner {
+  animation: login-spin 900ms linear infinite;
+}
+
+@keyframes login-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}
+
 .status,
 .error {
   margin: 16px 0 0;

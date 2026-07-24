@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ArrowLeft,
   Check,
   CircleDot,
   FileText,
@@ -23,6 +24,7 @@ import {
   type EvidenceWorkspaceData,
 } from "@/features/research/evidence-workspace";
 import type { ReportCitation } from "@/features/research/workflow-types";
+import { Link } from "@/i18n/navigation";
 
 import styles from "./evidence-workspace.module.css";
 import { WorkspaceClaimList } from "./workspace-claim-list";
@@ -276,6 +278,10 @@ function EvidenceWorkspaceReady({
     >
       <header className={styles.projectBar}>
         <div className={styles.projectIdentity}>
+          <Link className={styles.workspaceBackLink} href="/app">
+            <ArrowLeft aria-hidden="true" size={16} />
+            {t("backToProjects")}
+          </Link>
           <span className={styles.runIndicator}>
             <CircleDot aria-hidden="true" size={15} />
             {t("run.ready")}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { NewResearchForm } from "@/components/projects/new-research-form";
+import { ManagedAppShell } from "@/components/projects/managed-app-shell";
 import { requireManagedUser } from "@/features/auth/server-session";
 import type { AppLocale } from "@/i18n/routing";
 
@@ -20,10 +21,18 @@ export async function generateMetadata({
 export default async function NewResearchPage({ params }: NewResearchPageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-  await requireManagedUser({
+  const user = await requireManagedUser({
     locale,
     nextPath: `/${locale}/app/research/new`,
   });
 
-  return <NewResearchForm locale={locale} />;
+  return (
+    <ManagedAppShell
+      active="projects"
+      locale={locale}
+      user={{ displayName: user.displayName, email: user.email }}
+    >
+      <NewResearchForm locale={locale} />
+    </ManagedAppShell>
+  );
 }

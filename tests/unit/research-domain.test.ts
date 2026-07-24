@@ -163,6 +163,28 @@ describe("source utilities", () => {
     expect(chunks[1].embeddingModel).toBe("text-embedding-v4");
   });
 
+  it("coalesces adjacent short paragraphs into bounded embedding chunks", () => {
+    const text = Array.from(
+      { length: 240 },
+      (_, index) => `Paragraph ${index}: ${"A".repeat(80)}`,
+    ).join("\n\n");
+    const chunks = chunkSourceText({
+      sourceId: "source_short_paragraphs",
+      projectId: "project_demo",
+      text,
+    });
+
+    expect(chunks.length).toBeLessThan(240);
+    expect(chunks.length).toBeLessThanOrEqual(20);
+    expect(
+      chunks.every(
+        (chunk) =>
+          Array.from(text).slice(chunk.startChar, chunk.endChar).join("") ===
+          chunk.text,
+      ),
+    ).toBe(true);
+  });
+
   it.each([
     [1200, [1200]],
     [1201, [1201]],

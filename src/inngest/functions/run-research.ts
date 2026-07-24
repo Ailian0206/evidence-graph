@@ -1,4 +1,5 @@
 import { createDemoResearchFixture } from "@/features/research/fixtures";
+import { gzipSync, gunzipSync } from "node:zlib";
 import type { ResearchRun } from "@/features/research/domain";
 import {
   runResearchWorkflow,
@@ -59,7 +60,14 @@ type ResearchWorkflowProviders = {
 
 type ResearchWorkflowExecutorDependencies = {
   readInput: (event: ResearchRequestedEventData) => Promise<WorkflowInput>;
-  createProviders: () => ResearchWorkflowProviders;
+  createProviders: () => ResearchWorkflowProviders & {
+    maxCostUsd?: number;
+    executionLimits?: {
+      sourceLimit: number;
+      maxContentChars: number;
+      maxEmbeddingBatches: number;
+    };
+  };
   now: () => string;
 };
 
@@ -68,24 +76,57 @@ const DEFAULT_MAX_ATTEMPTS = DEFAULT_RETRY_COUNT + 1;
 const FLOAT32_BYTES = 4;
 const EMBEDDING_DIMENSIONS = 1536;
 const MAX_EMBEDDING_BATCH_SIZE = 10;
+const DURABLE_COMPRESSION_THRESHOLD_BYTES = 32 * 1024;
+const MAX_DURABLE_RESULT_BYTES = 2 * 1024 * 1024;
 
 type CompactEmbeddingResult = {
-  encoding: "float32-base64";
+  encoding: "float32-base64" | "float32-gzip-base64";
   rows: number;
   columns: number;
   data: string;
   usage: ProviderUsage;
 };
 
+type CompressedJsonResult = {
+  encoding: "gzip-json-base64";
+  data: string;
+};
+
 const isEmbeddingCall = (idempotencyKey: string) =>
   /:indexing:\d+$/.test(idempotencyKey);
+
+const compressJsonResult = <T>(result: ProviderResult<T>) => {
+  let serialized;
+
+  try {
+    serialized = JSON.stringify(result);
+  } catch {
+    throw new Error("DURABLE_PROVIDER_RESULT_INVALID");
+  }
+
+  if (
+    typeof serialized !== "string" ||
+    Buffer.byteLength(serialized) > MAX_DURABLE_RESULT_BYTES
+  ) {
+    throw new Error("DURABLE_PROVIDER_RESULT_INVALID");
+  }
+
+  if (Buffer.byteLength(serialized) < DURABLE_COMPRESSION_THRESHOLD_BYTES) {
+    return result;
+  }
+
+  return {
+    encoding: "gzip-json-base64",
+    data: gzipSync(serialized).toString("base64"),
+  } satisfies CompressedJsonResult;
+};
 
 const compactProviderResult = <T>(
   idempotencyKey: string,
   result: ProviderResult<T>,
-): ProviderResult<T> | CompactEmbeddingResult => {
+): ProviderResult<T> | CompactEmbeddingResult | CompressedJsonResult => {
   if (!isEmbeddingCall(idempotencyKey) || !Array.isArray(result.data)) {
-    return result;
+    return compressJsonResult(result);
   }
 
   const matrix = result.data as unknown[];
@@ -102,7 +143,7 @@ const compactProviderResult = <T>(
         row.every((value) => typeof value === "number" && Number.isFinite(value)),
     )
   ) {
-    return result;
+    return compressJsonResult(result);
   }
 
   const buffer = Buffer.allocUnsafe(rows * columns * FLOAT32_BYTES);
@@ -116,20 +157,43 @@ const compactProviderResult = <T>(
   }
 
   return {
-    encoding: "float32-base64",
+    encoding: "float32-gzip-base64",
     rows,
     columns,
-    data: buffer.toString("base64"),
+    data: gzipSync(buffer).toString("base64"),
     usage: result.usage,
   };
 };
 
 const restoreProviderResult = <T>(result: unknown): ProviderResult<T> => {
   if (
+    typeof result === "object" &&
+    result !== null &&
+    "encoding" in result &&
+    result.encoding === "gzip-json-base64"
+  ) {
+    const compressed = result as CompressedJsonResult;
+
+    try {
+      if (typeof compressed.data !== "string") {
+        throw new Error("DURABLE_PROVIDER_RESULT_INVALID");
+      }
+
+      const decompressed = gunzipSync(Buffer.from(compressed.data, "base64"), {
+        maxOutputLength: MAX_DURABLE_RESULT_BYTES,
+      });
+      return JSON.parse(decompressed.toString("utf8")) as ProviderResult<T>;
+    } catch {
+      throw new Error("DURABLE_PROVIDER_RESULT_INVALID");
+    }
+  }
+
+  if (
     typeof result !== "object" ||
     result === null ||
     !("encoding" in result) ||
-    result.encoding !== "float32-base64"
+    (result.encoding !== "float32-base64" &&
+      result.encoding !== "float32-gzip-base64")
   ) {
     return result as ProviderResult<T>;
   }
@@ -148,7 +212,17 @@ const restoreProviderResult = <T>(result: unknown): ProviderResult<T> => {
     throw new Error("DURABLE_PROVIDER_RESULT_INVALID");
   }
 
-  const buffer = Buffer.from(compact.data, "base64");
+  let buffer;
+
+  try {
+    const encoded = Buffer.from(compact.data, "base64");
+    buffer =
+      compact.encoding === "float32-gzip-base64"
+        ? gunzipSync(encoded, { maxOutputLength: MAX_DURABLE_RESULT_BYTES })
+        : encoded;
+  } catch {
+    throw new Error("DURABLE_PROVIDER_RESULT_INVALID");
+  }
   const expectedBytes = compact.rows * compact.columns * FLOAT32_BYTES;
 
   if (
@@ -194,8 +268,15 @@ export const createRunResearchHandler = ({
     const parsedEvent = researchRequestedEventSchema.parse(event.data);
     const authorization = await authorize(parsedEvent);
 
-    if (authorization?.status === "ready") {
-      return { status: "ready", completedSteps: [], reportId: null };
+    if (
+      authorization?.status === "ready" ||
+      authorization?.status === "failed"
+    ) {
+      return {
+        status: authorization.status,
+        completedSteps: [],
+        reportId: null,
+      };
     }
 
     const writer = await createWriter();
@@ -244,9 +325,24 @@ export const createResearchWorkflowExecutor = ({
     executeProviderCall?: ProviderCallExecutor,
   ) => {
     const input = await readInput(event);
+    const providerRuntime = createProviders();
+    const executionLimits = providerRuntime.executionLimits;
+    const effectiveRun = executionLimits
+      ? {
+          ...input.run,
+          sourceLimit: Math.min(
+            input.run.sourceLimit,
+            executionLimits.sourceLimit,
+          ),
+          maxContentChars: Math.min(
+            input.run.maxContentChars,
+            executionLimits.maxContentChars,
+          ),
+        }
+      : input.run;
     const fixture = createDemoResearchFixture();
     fixture.projects = [input.project];
-    fixture.researchRuns = [input.run];
+    fixture.researchRuns = [effectiveRun];
     fixture.sources = [];
     fixture.chunks = [];
     fixture.claims = [];
@@ -259,7 +355,9 @@ export const createResearchWorkflowExecutor = ({
       ownerId: input.project.ownerId,
       manualSources: [],
       manualUrls: input.manualUrls,
-      providers: createProviders(),
+      providers: providerRuntime,
+      maxCostUsd: providerRuntime.maxCostUsd ?? 1,
+      maxEmbeddingBatches: executionLimits?.maxEmbeddingBatches,
       executeProviderCall,
       store,
       now,

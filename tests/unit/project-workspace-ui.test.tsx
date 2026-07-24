@@ -115,6 +115,23 @@ describe("managed project workspace UI", () => {
       "aria-live",
       "polite",
     );
+    expect(
+      within(screen.getByTestId("research-form-header")).getByRole("link", {
+        name: "返回项目列表",
+      }),
+    ).toHaveAttribute("href", "/zh/app");
+  });
+
+  it("uses one focus boundary and lets the source action wrap", async () => {
+    const css = await readFile(
+      join(process.cwd(), "src/components/projects/project-workspace.module.css"),
+      "utf8",
+    );
+
+    expect(css).toContain("outline: none");
+    expect(css).not.toContain("outline: 1px solid var(--teal)");
+    expect(css).toMatch(/\.urlHeader\s*{[\s\S]*?flex-wrap:\s*wrap/);
+    expect(css).toMatch(/\.secondaryButton\s*{[\s\S]*?white-space:\s*normal/);
   });
 
   it("adds no more than five manual URL fields", async () => {
@@ -162,3 +179,5 @@ describe("managed project workspace UI", () => {
     expect(deleteProject).not.toHaveBeenCalled();
   });
 });
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";

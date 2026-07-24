@@ -43,6 +43,18 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: navigationMocks.refresh }),
 }));
 
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({
+    href,
+    children,
+    ...props
+  }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { href: string }) => (
+    <a href={`/zh${href}`} {...props}>
+      {children}
+    </a>
+  ),
+}));
+
 vi.mock("@/features/projects/actions", () => projectActionMocks);
 vi.mock("@/features/research/actions", () => researchActionMocks);
 vi.mock("@/features/reports/actions", () => reportActionMocks);
@@ -387,10 +399,38 @@ describe("evidence workspace states", () => {
         "stable",
       );
       expect(screen.queryByRole("button", { name: "重新投递研究" })).toBeNull();
+      expect(screen.getByTestId("managed-workspace-loading")).toHaveAttribute(
+        "data-loading-indicator",
+        "true",
+      );
+      expect(screen.getByRole("link", { name: "返回项目列表" })).toHaveAttribute(
+        "href",
+        "/zh/app",
+      );
       act(() => vi.advanceTimersByTime(3000));
       expect(navigationMocks.refresh).toHaveBeenCalledTimes(1);
     },
   );
+
+  it("provides a project-list return path from a completed workspace", () => {
+    renderWorkspace("managed");
+
+    expect(screen.getByRole("link", { name: "返回项目列表" })).toHaveAttribute(
+      "href",
+      "/zh/app",
+    );
+  });
+
+  it("animates active managed runs and respects reduced motion", async () => {
+    const css = await readFile(
+      join(process.cwd(), "src/components/evidence-workspace/evidence-workspace.module.css"),
+      "utf8",
+    );
+
+    expect(css).toContain('.workspaceState[data-workspace-state="queued"] > svg');
+    expect(css).toContain('.workspaceState[data-workspace-state="running"] > svg');
+    expect(css).toContain("@media (prefers-reduced-motion: reduce)");
+  });
 
   it("retries only the original dispatch-failed run", async () => {
     render(
@@ -419,3 +459,5 @@ describe("evidence workspace states", () => {
     );
   });
 });
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";

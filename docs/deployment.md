@@ -4,9 +4,9 @@
 
 ## 1. 部署边界
 
-- 日常测试只使用 fixture providers，不调用 Tavily、DeepSeek 或阿里云百炼。
+- 自动化回归只使用 fixture providers，不调用 Tavily、DeepSeek 或阿里云百炼。
 - 不把 `.env.local`、Service Role、Signing Key、Sentry Auth Token、Provider 响应或包含私人来源正文的报告提交到 Git。
-- 本地开发使用本地 Supabase 和确定性 fixtures；Vercel 只配置 Production，不维护 Preview 环境变量或预发布服务。
+- `npm run dev:local` 使用 fixture Provider，`npm run dev:local:live` 使用受控真实 Provider；两者都只编排本地 Next.js 与 Inngest，并连接托管开发 Supabase。Vercel 只配置 Production，不维护 Preview 环境变量或预发布服务。
 - Vercel 已关闭 Preview 自动部署；`main` 只承担日常集成，只有 `release` 更新才自动部署 Production。
 - 默认生产冒烟不创建项目、不运行研究、不调用付费 Provider。
 - 真实 Provider 冒烟必须同时设置 `RESEARCH_PROVIDER_MODE=live`、`ALLOW_PAID_PROVIDER_SMOKE=I_CONFIRM_PAID_PROVIDER_CALLS` 和不高于 `0.10 USD` 的显式成本上限；未取得当次授权时不得执行。
@@ -19,11 +19,25 @@
 nvm use
 npm ci
 npm run check:provider-boundary
-npm run test:db
 npm run test:ci
+npm run test:managed
 ```
 
-`test:db` 只连接本地 Supabase。CI 使用独立 database job 启动本地 Postgres，并在成功或失败后删除本地测试数据卷。
+`test:managed` 先通过 `test:db:hosted` 核对 CLI link 与允许的 Project Ref，再对托管开发数据库运行事务内 pgTAP 和 Schema lint；测试文件以 `rollback` 结束，不保留 fixture 行，也不执行远端 reset、迁移或 seed。CI 的独立 database job 使用 `test:db:ci` 在 GitHub runner 重建 migration 链，并在成功或失败后删除测试数据卷。本机不启动 Supabase Docker。
+
+### 2.1 本地真实研究
+
+`npm run dev:local` 使用 fixture Provider，不需要 Provider 凭据。`npm run dev:local:live` 要求 `.env.local` 包含四项 Provider 凭据，并设置以下门禁：
+
+```bash
+RESEARCH_PROVIDER_MODE=live
+ALLOW_LOCAL_LIVE_RESEARCH=I_CONFIRM_LOCAL_PAID_RESEARCH
+LOCAL_LIVE_RESEARCH_COST_LIMIT_USD=0.15
+```
+
+脚本只接受 Node.js 22，使用固定的 `127.0.0.1:3218` 启动 Next.js，在 `127.0.0.1:8288` 启动 5 worker、持久化的 Inngest。Inngest CLI `1.38.1` 的队列扫描要求至少 5 个空闲 worker，低于该值会让已调度函数停在队列中。脚本只校验托管 Supabase URL、Project Ref allow-list 和 `.env.local` 权限，不改写环境文件。完整 live UI 研究使用真实 Tavily、DeepSeek 和阿里云百炼，并限制为 4 个来源、40,000 个正文字符、20 个 embedding 批次和 `0.15 USD`。
+
+`npm run test:unit`、`npm run test:e2e` 和 `npm run test:ci` 不执行付费 Provider 外呼。`test:managed` 额外连接托管开发数据库运行事务测试，但 Provider 仍保持 fixture 语义。
 
 ## 3. 资源创建顺序
 
@@ -31,9 +45,9 @@ npm run test:ci
 
 | 服务 | 环境或标识 | 状态 |
 | --- | --- | --- |
-| Supabase | Production `dibngceljmdkcgrzxubx`，东京 | 四条仓库迁移已应用；现代 API Key、GitHub Provider 和 Redirect 已配置 |
-| GitHub OAuth | Production App `3734035` | Production Provider 与站点回调已配置 |
-| Inngest | Production | 应用 `evidence-graph` 和函数 `run-managed-research` 已同步 |
+| Supabase | 当前托管开发数据库，东京 | C1-C6 复用；四条仓库迁移已应用，GitHub Provider 和 Redirect 已配置 |
+| GitHub OAuth | 当前托管开发 App | 本地和历史 Production 回调已配置 |
+| Inngest | Production 冻结 | 历史应用 `evidence-graph` 已同步；本地使用 Dev Server |
 | Sentry | EU 组织 `ailian0206`，项目 `evidence-graph` | DSN 已配置；Source Map Token 保持可选未配置 |
 | Vercel | `https://evidence-graph-pi.vercel.app` | Hobby Production 已 Ready；Production Branch 为 `release`，Preview 自动部署已关闭 |
 
@@ -43,25 +57,24 @@ npm run test:ci
 
 ### 3.1 Supabase
 
-1. 本地使用 Supabase CLI 启动完整开发栈；线上只维护一个 Production 项目，并保持 Postgres 主版本与 `supabase/config.toml` 一致。
-2. 在本地通过官方 CLI 登录并链接 Production 项目；项目引用只保存在 CLI 本地状态中。
-3. 先检查再应用迁移：
+1. C1-C6 期间当前托管项目作为开发数据库；仓库 migration 链继续是 Schema 事实来源。
+2. 本地通过官方 CLI 登录并链接该开发项目，同时在 `.env.local` 的 `LOCAL_DEVELOPMENT_SUPABASE_PROJECT_REF` 中显式允许同一个 ref。
+3. 日常门禁只运行：
 
 ```bash
-npx supabase link --project-ref <production-project-ref>
-npx supabase db push --linked --dry-run
-npx supabase db push --linked
+npm run test:db:hosted
 ```
 
-4. 先在本地重建数据库并验证跨租户 RLS、级联删除、精确引用和公开报告只读函数，再把同一迁移前向应用到 Production。
-5. 从项目设置取得 URL、Publishable Key 和现代 Secret Key。Secret Key 只能配置在 Vercel 服务端环境变量中；环境变量名继续使用既有的 `SUPABASE_SERVICE_ROLE_KEY`。
+4. GitHub Actions 的 database job 才使用本地 Postgres 重建 migration 链并运行 pgTAP。不得对托管开发项目执行 `supabase config push`、远端 reset、seed 或日常 migration push。
+5. Production 数据库迁移冻结到 C6 通过且用户明确授权的 R1；届时只前向应用已在开发库与 CI 验证的迁移。
+6. Service Role 只用于本地服务端和受控维护脚本，不进入客户端、Git、日志或 PR。
 
 ### 3.2 GitHub OAuth
 
 1. 创建 GitHub OAuth App。Authorization callback URL 使用 Supabase 提供的 `https://<project-ref>.supabase.co/auth/v1/callback`。
 2. 在 Supabase Auth Providers 中启用 GitHub，并写入 OAuth Client ID 与 Client Secret。
 3. Supabase Site URL 设置为当前环境的站点 URL。
-4. Redirect URL allow list 只加入本地开发地址和 Production 的 `/auth/callback` 地址，不加入 Vercel 临时 Preview URL。
+4. Redirect URL allow list 保留 Production 地址，并精确加入 `http://127.0.0.1:3218/auth/callback`；不加入 Vercel 临时 Preview URL。
 5. 验证登录回调只返回 `/<locale>/app` 及其子路径，不能跳转到站外地址。
 
 ### 3.3 Inngest
@@ -70,7 +83,7 @@ npx supabase db push --linked
 2. 将 Production 同步地址配置为 `https://<production-host>/api/inngest`。
 3. 取得 Production Event Key 与 Signing Key，并只写入 Vercel Production 变量。
 4. 同步后确认函数 `run-managed-research` 的 owner 并发为 1、重试次数为 3、幂等键为 `runId`。
-5. Production 执行器强制使用 Tavily、DeepSeek 和阿里云百炼，不会静默回退 fixtures；本地和 CI 默认仍使用确定性 fixtures。
+5. Production 执行器强制使用 Tavily、DeepSeek 和阿里云百炼，不会静默回退 fixtures；本地 `dev:local` 使用 fixtures，`dev:local:live` 使用受控 live。
 
 ### 3.4 Sentry
 
@@ -91,9 +104,10 @@ npx supabase db push --linked
 
 | 变量                                   | 本地开发               | Production       | 客户端可见 | 说明                   |
 | -------------------------------------- | ---------------------- | ---------------- | ---------- | ---------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`             | 本地 Supabase URL       | Production 值    | 是         | Supabase 项目 URL      |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | 本地公开 Key            | Production 值    | 是         | 公开 Publishable Key   |
-| `SUPABASE_SERVICE_ROLE_KEY`            | 本地 CLI 生成值         | Production 值    | 否         | 仅用于服务端所有权复核 |
+| `NEXT_PUBLIC_SUPABASE_URL`             | 托管开发项目 URL        | Production 值    | 是         | Supabase 项目 URL      |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | 托管开发公开 Key        | Production 值    | 是         | 公开 Publishable Key   |
+| `SUPABASE_SERVICE_ROLE_KEY`            | 托管开发 Service Role   | Production 值    | 否         | 仅用于本地服务端       |
+| `LOCAL_DEVELOPMENT_SUPABASE_PROJECT_REF` | 托管开发项目 ref      | 不配置           | 否         | 本地 link allow-list   |
 | `INNGEST_EVENT_KEY`                    | 默认不配置              | Production 值    | 否         | Inngest 事件发送       |
 | `INNGEST_SIGNING_KEY`                  | 默认不配置              | Production 值    | 否         | Inngest webhook 验签   |
 | `NEXT_PUBLIC_SENTRY_DSN`               | 默认不配置              | Production 值    | 是         | Sentry 运行时上报      |
@@ -102,22 +116,23 @@ npx supabase db push --linked
 | `SENTRY_PROJECT`                       | 不配置                  | 可选             | 否         | Sentry 项目名          |
 | `PRODUCTION_BASE_URL`                  | 不配置                  | 冒烟终端临时设置 | 否         | 生产站点 HTTPS Origin  |
 | `ALLOW_PRODUCTION_SMOKE`               | 不配置                  | 冒烟终端临时设置 | 否         | 防止误触发生产请求     |
-| `TAVILY_API_KEY`                       | 默认不配置              | Production 值    | 否         | Tavily Search/Extract  |
-| `DEEPSEEK_API_KEY`                     | 默认不配置              | Production 值    | 否         | DeepSeek 结构化生成    |
-| `BAILIAN_API_KEY`                      | 默认不配置              | Production 值    | 否         | 百炼 Embedding         |
-| `BAILIAN_WORKSPACE_ID`                 | 默认不配置              | Production 值    | 否         | 百炼北京地域工作空间   |
-| `RESEARCH_PROVIDER_MODE`               | 默认不配置              | 无需配置         | 否         | Production 强制 live；本地 live 仍需付费门禁 |
+| `TAVILY_API_KEY`                       | `dev:local:live` 必需    | Production 值    | 否         | Tavily Search/Extract  |
+| `DEEPSEEK_API_KEY`                     | `dev:local:live` 必需    | Production 值    | 否         | DeepSeek 结构化生成    |
+| `BAILIAN_API_KEY`                      | `dev:local:live` 必需    | Production 值    | 否         | 百炼 Embedding         |
+| `BAILIAN_WORKSPACE_ID`                 | `dev:local:live` 必需    | Production 值    | 否         | 百炼北京地域工作空间   |
+| `RESEARCH_PROVIDER_MODE`               | live profile 设为 live  | 无需配置         | 否         | fixture profile 启动时覆盖 |
+| `ALLOW_LOCAL_LIVE_RESEARCH`            | `dev:local:live` 必需    | 不配置           | 否         | 本地完整研究确认令牌   |
+| `LOCAL_LIVE_RESEARCH_COST_LIMIT_USD`   | `dev:local:live` 必需    | 不配置           | 否         | 本地完整研究上限，至多 0.15 |
 | `ALLOW_PAID_PROVIDER_SMOKE`            | 默认不配置              | 不持久配置       | 否         | 专用冒烟精确确认令牌   |
 | `PAID_PROVIDER_SMOKE_COST_LIMIT_USD`   | 默认不配置              | 不持久配置       | 否         | 专用冒烟上限，至多 0.10 |
 
-Vercel 变量配置完成后，通过官方 CLI 拉取当前环境到已被 Git 忽略的 `.env.local`，再在不打印变量值的前提下检查：
+`.env.local` 必须保持 Git 忽略并设为 `0600`。本地启动前可在不打印变量值的前提下检查：
 
 ```bash
-npx vercel env pull .env.local --environment=production
-npm run verify:managed-env
+node --env-file-if-exists=.env.local scripts/local-development.mjs --profile=fixture --check
 ```
 
-检查结束后删除本地 `.env.local`，不要上传或提交。Vercel Preview 环境保持无托管变量。
+不要上传或提交 `.env.local`。Vercel Preview 环境保持无托管变量，Production 变量在 C6 前不修改。
 
 ## 5. 生产冒烟
 
@@ -155,7 +170,7 @@ npm run test:providers:live
 
 1. 小型维护验证后可以直接推送 `main`；该操作只更新集成分支，不触发 Vercel。
 2. 准备发版时确认 `main` 的完整门禁通过，再把 `main` 快进或合并到 `release`；推送 `release` 后由 Vercel 自动部署 Production。
-3. 有数据库迁移时先通过本地数据库门禁，再前向应用同一迁移；不对 Production 做盲目逆向迁移。
+3. 有数据库迁移时先通过托管开发数据库 pgTAP/lint 和 CI migration 重建；只有 R1 获得明确授权后才前向应用到 Production。
 4. 部署完成后运行一次默认生产冒烟。没有真实故障时不做例行回滚演练。
 5. 真实发布故障时，把上一个已验证 Deployment 提升为 Production，并重新运行默认冒烟。
 

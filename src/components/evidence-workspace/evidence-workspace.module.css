@@ -22,7 +22,9 @@
   color: var(--vermilion-dark);
 }
 
-.workspaceState[data-workspace-state="loading"] > svg {
+.workspaceState[data-workspace-state="loading"] > svg,
+.workspaceState[data-workspace-state="queued"] > svg,
+.workspaceState[data-workspace-state="running"] > svg {
   color: var(--teal);
   animation: workspace-spin 900ms linear infinite;
 }
@@ -53,7 +55,20 @@
   min-height: 44px;
   align-items: center;
   justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
   margin-top: 4px;
+}
+
+.stateBackLink,
+.workspaceBackLink {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 7px;
+  color: var(--teal-dark);
+  font-size: 13px;
+  font-weight: 750;
 }
 
 .stateCode {
@@ -74,6 +89,14 @@
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .workspaceState[data-workspace-state="loading"] > svg,
+  .workspaceState[data-workspace-state="queued"] > svg,
+  .workspaceState[data-workspace-state="running"] > svg {
+    animation: none;
+  }
+}
+
 .projectBar {
   display: flex;
   min-height: 110px;
@@ -90,6 +113,12 @@
   min-width: 0;
   align-items: flex-start;
   gap: 18px;
+}
+
+.workspaceBackLink {
+  flex: 0 0 auto;
+  padding-top: 2px;
+  white-space: nowrap;
 }
 
 .projectIdentity > div {
@@ -1128,7 +1157,12 @@
   }
 
   .projectIdentity {
+    flex-wrap: wrap;
     gap: 10px;
+  }
+
+  .workspaceBackLink {
+    width: 100%;
   }
 
   .runIndicator {
