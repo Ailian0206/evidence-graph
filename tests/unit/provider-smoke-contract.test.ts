@@ -24,15 +24,26 @@ describe("paid Provider smoke command contract", () => {
     );
   });
 
-  it("forces fixture mode for the E2E build and Playwright server", async () => {
+  it("isolates Supabase and forces fixture mode for E2E", async () => {
     const packageJson = JSON.parse(await readWorkspaceFile("package.json")) as {
       scripts: Record<string, string>;
     };
     const playwrightConfig = await readWorkspaceFile("playwright.config.ts");
+    const e2eCommand = packageJson.scripts["test:e2e"];
 
-    expect(packageJson.scripts["test:e2e"]).toBe(
-      "RESEARCH_PROVIDER_MODE=fixture npm run build && playwright test",
-    );
+    for (const name of [
+      "NEXT_PUBLIC_SUPABASE_URL",
+      "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+      "SUPABASE_SERVICE_ROLE_KEY",
+    ]) {
+      expect(e2eCommand.match(new RegExp(`${name}=`, "g")) ?? []).toHaveLength(
+        2,
+      );
+      expect(playwrightConfig).toContain(`${name}: ""`);
+    }
+
+    expect(e2eCommand).toContain("RESEARCH_PROVIDER_MODE=fixture npm run build");
+    expect(e2eCommand).toContain("RESEARCH_PROVIDER_MODE=fixture playwright test");
     expect(playwrightConfig).toContain('RESEARCH_PROVIDER_MODE: "fixture"');
   });
 

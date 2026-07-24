@@ -32,7 +32,10 @@ export default defineConfig({
     env: {
       INNGEST_DEV: "1",
       NEXT_TELEMETRY_DISABLED: "1",
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "",
+      NEXT_PUBLIC_SUPABASE_URL: "",
       RESEARCH_PROVIDER_MODE: "fixture",
+      SUPABASE_SERVICE_ROLE_KEY: "",
     },
   },
 });
