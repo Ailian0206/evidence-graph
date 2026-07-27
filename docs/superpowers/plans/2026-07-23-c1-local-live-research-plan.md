@@ -749,7 +749,7 @@ npm run dev:local:live
 
 实际结果：live profile 已启动，登录页返回 HTTP 200；Next 与 Inngest 分别监听 `3218`/`8288`，没有启动 Evidence Graph Docker。服务保持运行供用户继续测试。
 
-- [ ] **Step 6: 执行独立审核、CI 和合并闭环**
+- [x] **Step 6: 执行独立审核、CI 和合并闭环**
 
 自动化和 Agent 本地验收通过后直接运行独立 Claude review；成立的问题在同一分支和同一 PR 按 TDD 修复并重新审核。当前 head 的 Claude 结果为 `pass` 且 GitHub CI 通过后，以 merge commit 合并。用户反馈异步接收，不作为审核、合并或下一里程碑的前置条件。
 
@@ -760,3 +760,5 @@ npm run dev:local:live
 - 修复后的 `test:managed` 通过：托管 pgTAP `93/93`、全仓 lint/typecheck、单元测试 `328/328`、production build 和 E2E `82/82`。旧流程当时记录为等待用户复验；2026-07-27 流程变更后，该状态不再阻塞本步骤。
 
 2026-07-27 用户明确取消“等待用户本地验收后再审核”的门禁；按 `AGENT.md` 立即执行独立 Claude review、修复 finding、等待 CI，并使用 merge commit 合并唯一 C1 PR。
+
+实际结果：独立 Claude 对 head `f50e598` 返回 `pass`，GitHub 代码门禁和 Supabase Schema/RLS/lint 两项 CI 通过；PR #18 以 merge commit `ea06616` 合并到 `main`，远端模块分支已删除。
