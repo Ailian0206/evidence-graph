@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { ProjectDashboard } from "@/components/projects/project-dashboard";
+import { ManagedAppShell } from "@/components/projects/managed-app-shell";
 import { requireManagedUser } from "@/features/auth/server-session";
 import {
   createSupabaseProjectQueryAdapter,
@@ -34,5 +35,13 @@ export default async function ProjectDashboardPage({
   });
   const projects = await store.listProjects({ ownerId: user.id });
 
-  return <ProjectDashboard locale={locale} projects={projects} />;
+  return (
+    <ManagedAppShell
+      active="projects"
+      locale={locale}
+      user={{ displayName: user.displayName, email: user.email }}
+    >
+      <ProjectDashboard locale={locale} projects={projects} />
+    </ManagedAppShell>
+  );
 }

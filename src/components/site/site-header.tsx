@@ -20,6 +20,7 @@ export function SiteHeader() {
     { href: "/work" as const, label: t("work") },
     { href: "/notes" as const, label: t("notes") },
     { href: "/evidence" as const, label: t("evidence") },
+    { href: "/app" as const, label: t("workspace") },
   ];
   const isCurrent = (href: (typeof navigationItems)[number]["href"]) =>
     href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
@@ -46,7 +47,7 @@ export function SiteHeader() {
     <header className="site-header">
       <Link className="brand-link" href="/" aria-label={`${profile.brand} home`}>
         <span className="brand-mark" aria-hidden="true">
-          A/
+          A
         </span>
         <span>{profile.brand}</span>
       </Link>

@@ -206,6 +206,10 @@
   border-bottom: 1px solid var(--line-strong);
 }
 
+.formHeader .backLink {
+  margin-bottom: 18px;
+}
+
 .form {
   display: grid;
   gap: 20px;
@@ -274,7 +278,8 @@
 .field select:focus,
 .urlRow input:focus {
   border-color: var(--teal);
-  outline: 1px solid var(--teal);
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--teal);
 }
 
 .fieldError,
@@ -307,6 +312,7 @@
 .urlHeader {
   justify-content: space-between;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
 .secondaryButton {
@@ -321,6 +327,8 @@
   cursor: pointer;
   font-size: 12px;
   font-weight: 700;
+  text-align: left;
+  white-space: normal;
 }
 
 .urlRow {
@@ -329,15 +337,36 @@
 
 .formActions {
   min-height: 44px;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 20px;
   padding-top: 6px;
 }
 
 .backLink {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 32px;
+  align-items: center;
+  gap: 7px;
   color: var(--muted);
   font-size: 13px;
   font-weight: 700;
+}
+
+.spinner {
+  animation: form-spin 900ms linear infinite;
+}
+
+@keyframes form-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
 }
 
 @media (max-width: 720px) {
@@ -377,11 +406,6 @@
 
   .projectActions {
     align-self: start;
-  }
-
-  .formActions {
-    align-items: stretch;
-    flex-direction: column-reverse;
   }
 
   .submitButton {

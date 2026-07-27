@@ -3,12 +3,20 @@
     "home": "首页",
     "work": "作品",
     "notes": "笔记",
-    "evidence": "Evidence Graph",
+    "evidence": "产品介绍",
+    "workspace": "进入工作台",
     "language": "English",
     "primary": "主导航",
     "openMenu": "打开菜单",
     "closeMenu": "关闭菜单",
     "skip": "跳到主要内容"
+  },
+  "AppShell": {
+    "navigationLabel": "工作台导航",
+    "projects": "研究项目",
+    "reports": "报告库",
+    "accountFallback": "已登录账户",
+    "signOut": "退出登录"
   },
   "Portfolio": {
     "eyebrow": "AI 产品工程",
@@ -45,6 +53,7 @@
     "title": "登录 Evidence Graph",
     "description": "使用 GitHub 继续到研究工作台。",
     "github": "使用 GitHub 登录",
+    "githubPending": "正在前往 GitHub...",
     "unconfigured": "托管登录尚未配置",
     "error": "登录没有完成，请重新尝试。"
   },
@@ -100,9 +109,37 @@
       }
     }
   },
+  "Reports": {
+    "eyebrow": "版本产物",
+    "title": "报告库",
+    "description": "按研究项目查看每个报告版本和公开状态。",
+    "projectListLabel": "报告项目",
+    "versionListLabel": "{title}的报告版本",
+    "version": "版本 {version}",
+    "publishedAt": "发布于 {date}",
+    "createdAt": "创建于 {date}",
+    "openReport": "查看报告",
+    "backToResearch": "返回研究",
+    "backToProjects": "返回研究项目",
+    "openPublic": "打开公开报告",
+    "status": {
+      "draft": "草稿",
+      "published": "已发布",
+      "revoked": "已撤销"
+    },
+    "language": {
+      "zh": "中文",
+      "en": "英文"
+    },
+    "empty": {
+      "title": "还没有研究报告",
+      "description": "研究运行完成后，生成的报告版本会显示在这里。"
+    }
+  },
   "Workspace": {
     "eyebrow": "研究运行 / 证据审核",
     "backToPreview": "返回产品入口",
+    "backToProjects": "返回项目列表",
     "runSummary": "研究运行摘要",
     "claims": "主张",
     "sources": "来源",
@@ -112,7 +149,6 @@
     "claimCount": "{count} 条主张",
     "evidenceCount": "{count} 条证据",
     "reviewFilter": "按人工审核状态筛选",
-    "currentStatus": "当前审核状态",
     "relationFilter": "按证据关系筛选",
     "mobileTabsLabel": "工作台视图",
     "graphTitle": "主张与证据关系",
@@ -219,6 +255,12 @@
       "reject": "拒绝主张",
       "reset": "恢复待审核"
     },
+    "reviewSaving": "正在保存审核状态...",
+    "reviewResultLabel": "审核操作结果",
+    "reviewAccepted": "上一条主张已接受",
+    "reviewRejected": "上一条主张已拒绝",
+    "reviewUndo": "撤销上一条审核",
+    "reviewComplete": "待审核主张已全部处理",
     "reviewError": "审核状态保存失败，请重试。",
     "sourceMeta": {
       "title": "来源标题",
@@ -254,7 +296,8 @@
       "retry": "重新投递研究",
       "retrying": "正在重新投递...",
       "retrySentDescription": "原研究运行已重新投递，正在等待执行。",
-      "retryError": "重新投递失败，请稍后再试。"
+      "retryError": "重新投递失败，请稍后再试。",
+      "back": "返回项目列表"
     }
   },
   "Footer": {

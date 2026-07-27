@@ -296,6 +296,55 @@ describe("Inngest research workflow entry", () => {
     ]);
   });
 
+  it("passes the Provider runtime cost limit into the workflow", async () => {
+    const providers = createFixtureResearchProviders();
+    const executor = createResearchWorkflowExecutor({
+      readInput: async () => createWorkflowInput(),
+      createProviders: () => ({ ...providers, maxCostUsd: 0.02 }),
+      now: () => "2026-07-22T09:00:00.000Z",
+    });
+
+    await expect(executor(eventData)).rejects.toThrow("RUN_COST_LIMIT_EXCEEDED");
+    expect(
+      providers.calls.filter((call) => call.operation === "search"),
+    ).toHaveLength(1);
+    expect(providers.calls.some((call) => call.operation === "embed")).toBe(false);
+  });
+
+  it("narrows local execution limits without mutating the persisted run", async () => {
+    const providers = createFixtureResearchProviders();
+    const persistedInput = createWorkflowInput();
+    persistedInput.run.sourceLimit = 12;
+    persistedInput.run.maxContentChars = 200_000;
+    const executor = createResearchWorkflowExecutor({
+      readInput: async () => persistedInput,
+      createProviders: () => ({
+        ...providers,
+        maxCostUsd: 0.15,
+        executionLimits: {
+          sourceLimit: 4,
+          maxContentChars: 40_000,
+          maxEmbeddingBatches: 20,
+        },
+      }),
+      now: () => "2026-07-22T09:00:00.000Z",
+    });
+
+    const result = await executor(eventData);
+
+    expect(result.snapshot.runs).toEqual([
+      expect.objectContaining({
+        id: "run_1",
+        sourceLimit: 4,
+        maxContentChars: 40_000,
+      }),
+    ]);
+    expect(persistedInput.run).toMatchObject({
+      sourceLimit: 12,
+      maxContentChars: 200_000,
+    });
+  });
+
   it.each([
     { id: "run_other", ownerId: "owner_1", projectId: "project_1" },
     { id: "run_1", ownerId: "owner_other", projectId: "project_1" },
@@ -402,6 +451,35 @@ describe("Inngest research workflow entry", () => {
     expect(createWriter).not.toHaveBeenCalled();
   });
 
+  it("short-circuits a failed run when durable execution resumes after the failure write", async () => {
+    const { writer, getStatus } = createStatefulWriter();
+    const executeWorkflow = vi.fn(async () => {
+      throw new Error("WORKFLOW_FAILED");
+    });
+    const handler = createRunResearchHandler({
+      authorize: async () => ({ status: getStatus() }),
+      executeWorkflow,
+      createWriter: async () => writer,
+    });
+    const { step } = createMemoizingStep();
+
+    await expect(
+      handler({ event: { data: eventData }, step, attempt: 2, maxAttempts: 3 }),
+    ).rejects.toThrow("WORKFLOW_FAILED");
+    expect(getStatus()).toBe("failed");
+
+    await expect(
+      handler({ event: { data: eventData }, step, attempt: 0, maxAttempts: 3 }),
+    ).resolves.toEqual({
+      status: "failed",
+      completedSteps: [],
+      reportId: null,
+    });
+    expect(executeWorkflow).toHaveBeenCalledTimes(1);
+    expect(writer.begin).toHaveBeenCalledTimes(1);
+    expect(writer.fail).toHaveBeenCalledTimes(1);
+  });
+
   it("compacts durable embedding results while preserving replayed vectors", async () => {
     const vectors = Array.from({ length: 10 }, (_, rowIndex) =>
       Array.from({ length: 1536 }, (_, columnIndex) =>
@@ -456,12 +534,68 @@ describe("Inngest research workflow entry", () => {
     expect(embeddingOperation).toHaveBeenCalledTimes(1);
     const durableResult = memoizedResults.get("provider:run_1:indexing:0");
     expect(durableResult).toMatchObject({
-      encoding: "float32-base64",
+      encoding: "float32-gzip-base64",
       rows: 10,
       columns: 1536,
       usage,
     });
     expect(JSON.stringify(durableResult).length).toBeLessThan(100_000);
+  });
+
+  it("keeps a large live research replay below the durable state headroom", async () => {
+    const vectors = Array.from({ length: 10 }, (_, rowIndex) =>
+      Array.from({ length: 1536 }, (_, columnIndex) =>
+        Math.sin(rowIndex * 1536 + columnIndex),
+      ),
+    );
+    const usage = {
+      estimatedCostUsd: 0.001,
+      searchCount: 0,
+      tokenCount: 1536,
+    };
+    const snapshot = {} as ResearchWorkflowSnapshot;
+    const handler = createRunResearchHandler({
+      authorize: async () => undefined,
+      executeWorkflow: async (_event, executeProviderCall) => {
+        await executeProviderCall("run_1:searching:0", async () => ({
+          data: {
+            results: [
+              {
+                body: "WHO fruit and vegetable guidance. ".repeat(14_000),
+              },
+            ],
+          },
+          usage,
+        }));
+
+        for (let batchIndex = 0; batchIndex < 44; batchIndex += 1) {
+          await executeProviderCall(`run_1:indexing:${batchIndex}`, async () => ({
+            data: vectors,
+            usage,
+          }));
+        }
+
+        return { output: { status: "ready" }, snapshot };
+      },
+      createWriter: async () => ({
+        begin: async () => undefined,
+        persist: async () => undefined,
+        fail: async () => undefined,
+      }),
+    });
+    const { memoizedResults, step } = createMemoizingStep();
+
+    await expect(handler({ event: { data: eventData }, step })).resolves.toEqual({
+      status: "ready",
+    });
+
+    const durableProviderState = Array.from(memoizedResults.entries()).filter(
+      ([id]) => id.startsWith("provider:"),
+    );
+
+    expect(Buffer.byteLength(JSON.stringify(durableProviderState))).toBeLessThan(
+      3_500_000,
+    );
   });
 
   it("rejects malformed durable embedding results with a stable error", async () => {

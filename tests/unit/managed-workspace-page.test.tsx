@@ -3,7 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   createSupabaseServerClient: vi.fn(async () => ({ client: true })),
   load: vi.fn(async () => ({ state: "queued" as const, runId: "run_1" })),
-  requireManagedUser: vi.fn(async () => ({ id: "owner_1" })),
+  requireManagedUser: vi.fn(async () => ({
+    id: "owner_1",
+    email: "user@example.com",
+    displayName: "ailian",
+  })),
 }));
 
 vi.mock("next-intl/server", () => ({ setRequestLocale: vi.fn() }));
@@ -14,6 +18,9 @@ vi.mock("@/components/evidence-workspace/evidence-workspace", () => ({
 }));
 vi.mock("@/components/evidence-workspace/managed-workspace-state", () => ({
   ManagedWorkspaceState: () => null,
+}));
+vi.mock("@/components/projects/managed-app-shell", () => ({
+  ManagedAppShell: () => null,
 }));
 vi.mock("@/features/auth/server-session", () => ({
   requireManagedUser: mocks.requireManagedUser,
@@ -30,6 +37,7 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 import WorkspacePage, * as workspacePageModule from "@/app/[locale]/app/research/[id]/page";
+import { ManagedAppShell } from "@/components/projects/managed-app-shell";
 
 describe("managed workspace page", () => {
   beforeEach(() => {
@@ -41,8 +49,9 @@ describe("managed workspace page", () => {
   });
 
   it("loads the managed user session for a real project", async () => {
-    await WorkspacePage({
+    const page = await WorkspacePage({
       params: Promise.resolve({ locale: "zh", id: "project_1" }),
+      searchParams: Promise.resolve({}),
     });
 
     expect(mocks.requireManagedUser).toHaveBeenCalledOnce();
@@ -51,5 +60,43 @@ describe("managed workspace page", () => {
       projectId: "project_1",
       locale: "zh",
     });
+    expect(page.type).toBe(ManagedAppShell);
+    expect(page.props).toMatchObject({
+      active: "projects",
+      locale: "zh",
+      user: { displayName: "ailian", email: "user@example.com" },
+    });
+  });
+
+  it("opens a ready managed workspace in report mode from a report link", async () => {
+    const data = { project: { id: "project_1" } };
+    mocks.load.mockResolvedValueOnce({ state: "ready", data } as never);
+
+    const page = await WorkspacePage({
+      params: Promise.resolve({ locale: "zh", id: "project_1" }),
+      searchParams: Promise.resolve({ view: "report" }),
+    });
+
+    expect(page.props.children.props).toMatchObject({
+      initialData: data,
+      initialMode: "report",
+      persistence: "managed",
+    });
+    expect(mocks.requireManagedUser).toHaveBeenCalledWith({
+      locale: "zh",
+      nextPath: "/zh/app/research/project_1?view=report",
+    });
+  });
+
+  it("falls back to graph mode for an unknown workspace view", async () => {
+    const data = { project: { id: "project_1" } };
+    mocks.load.mockResolvedValueOnce({ state: "ready", data } as never);
+
+    const page = await WorkspacePage({
+      params: Promise.resolve({ locale: "zh", id: "project_1" }),
+      searchParams: Promise.resolve({ view: "unknown" }),
+    });
+
+    expect(page.props.children.props.initialMode).toBe("graph");
   });
 });

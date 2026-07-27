@@ -1,5 +1,5 @@
 import { hasLocale } from "next-intl";
-import { NextResponse } from "next/server";
+import { redirect } from "next/navigation";
 
 import { getSafeAppPath } from "@/features/auth/session";
 import { routing, type AppLocale } from "@/i18n/routing";
@@ -13,22 +13,22 @@ export async function GET(request: Request) {
     : routing.defaultLocale;
   const nextPath = getSafeAppPath(locale, url.searchParams.get("next") ?? undefined);
   const code = url.searchParams.get("code");
+  let signedIn = false;
 
   if (code) {
     try {
       const supabase = await createSupabaseServerClient();
       const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-      if (!error) {
-        return NextResponse.redirect(new URL(nextPath, url.origin));
-      }
+      signedIn = !error;
     } catch {
       // The localized login page owns the configuration and retry state.
     }
   }
 
-  const loginUrl = new URL(`/${locale}/auth/login`, url.origin);
-  loginUrl.searchParams.set("next", nextPath);
-  loginUrl.searchParams.set("error", "oauth");
-  return NextResponse.redirect(loginUrl);
+  if (signedIn) {
+    redirect(nextPath);
+  }
+
+  const searchParams = new URLSearchParams({ next: nextPath, error: "oauth" });
+  redirect(`/${locale}/auth/login?${searchParams.toString()}`);
 }

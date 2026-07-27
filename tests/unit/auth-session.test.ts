@@ -6,16 +6,43 @@ import {
 } from "@/features/auth/session";
 
 describe("managed authentication session", () => {
-  it("returns the minimum authenticated user shape", async () => {
+  it("returns a minimum account summary with the GitHub username", async () => {
     await expect(
       requireUser({
         locale: "zh",
+        getUser: async () => ({
+          id: "user_1",
+          email: "user@example.com",
+          user_metadata: {
+            user_name: "ailian",
+            private_value: "must-not-leak",
+          },
+        }),
+        redirectTo: () => {
+          throw new Error("UNEXPECTED_REDIRECT");
+        },
+      }),
+    ).resolves.toEqual({
+      id: "user_1",
+      email: "user@example.com",
+      displayName: "ailian",
+    });
+  });
+
+  it("falls back to the account email when provider metadata has no name", async () => {
+    await expect(
+      requireUser({
+        locale: "en",
         getUser: async () => ({ id: "user_1", email: "user@example.com" }),
         redirectTo: () => {
           throw new Error("UNEXPECTED_REDIRECT");
         },
       }),
-    ).resolves.toEqual({ id: "user_1", email: "user@example.com" });
+    ).resolves.toEqual({
+      id: "user_1",
+      email: "user@example.com",
+      displayName: "user@example.com",
+    });
   });
 
   it("redirects anonymous users to the localized login page", async () => {

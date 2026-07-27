@@ -3,6 +3,7 @@ import type { AppLocale } from "@/i18n/routing";
 type AuthenticatedUser = {
   id: string;
   email?: string | null;
+  user_metadata?: Record<string, unknown>;
 };
 
 type RequireUserInput = {
@@ -10,6 +11,23 @@ type RequireUserInput = {
   nextPath?: string;
   getUser: () => Promise<AuthenticatedUser | null>;
   redirectTo: (path: string) => never;
+};
+
+const getDisplayName = (user: AuthenticatedUser) => {
+  const candidates = [
+    user.user_metadata?.user_name,
+    user.user_metadata?.preferred_username,
+    user.user_metadata?.full_name,
+    user.email,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+
+  return null;
 };
 
 export const getSafeAppPath = (locale: AppLocale, nextPath?: string) => {
@@ -48,5 +66,6 @@ export const requireUser = async ({
   return {
     id: user.id,
     email: user.email ?? null,
+    displayName: getDisplayName(user),
   };
 };

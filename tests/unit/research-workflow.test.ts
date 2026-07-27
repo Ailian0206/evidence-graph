@@ -754,7 +754,10 @@ describe("research workflow", () => {
   });
 
   it("embeds ordered chunks in stable durable batches of at most ten", async () => {
-    const paragraphs = Array.from({ length: 11 }, (_, index) => `Paragraph ${index + 1}`);
+    const paragraphs = Array.from(
+      { length: 11 },
+      (_, index) => `${String(index + 1).padStart(2, "0")}${"A".repeat(798)}`,
+    );
     const providers = createFixtureResearchProviders();
     const originalEmbed = providers.embedding.embed;
     const batches: string[][] = [];
@@ -808,6 +811,46 @@ describe("research workflow", () => {
         usage: expect.objectContaining({ tokenCount: paragraphs[10].length }),
       }),
     ]);
+  });
+
+  it("stops before embedding when the execution batch limit is exceeded", async () => {
+    const providers = createFixtureResearchProviders();
+    const fixture = createDemoResearchFixture();
+    fixture.researchRuns[0].sourceLimit = 1;
+    fixture.sources = [];
+    fixture.chunks = [];
+    fixture.claims = [];
+    fixture.evidenceLinks = [];
+    fixture.claimRelations = [];
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [
+        {
+          url: "https://manual.example.com/eleven-chunks",
+          title: "Eleven chunks",
+          body: Array.from(
+            { length: 11 },
+            (_, index) => `${String(index + 1).padStart(2, "0")}${"A".repeat(798)}`,
+          ).join("\n\n"),
+          sourceType: "article",
+        },
+      ],
+      providers,
+      maxEmbeddingBatches: 1,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+
+    expect(result.run).toMatchObject({
+      status: "failed",
+      errorMessage: "EMBEDDING_BATCH_LIMIT_EXCEEDED",
+    });
+    expect(
+      providers.calls.some((call) => call.operation === "embed"),
+    ).toBe(false);
   });
 
   it("runs the deterministic workflow to a fully cited report", async () => {
@@ -1381,6 +1424,30 @@ describe("research workflow", () => {
     expect(providers.calls.some((call) => call.operation === "search")).toBe(false);
   });
 
+  it("uses an injected local cost limit and stops before the next provider call", async () => {
+    const providers = createFixtureResearchProviders();
+    const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      maxCostUsd: 0.05,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+
+    expect(result.run).toMatchObject({
+      status: "failed",
+      errorMessage: "RUN_COST_LIMIT_EXCEEDED",
+      estimatedCostUsd: 0.051,
+    });
+    expect(providers.calls.some((call) => call.operation === "link_evidence")).toBe(
+      false,
+    );
+  });
+
   it("rejects manual sources above the run limit before provider calls", async () => {
     const providers = createFixtureResearchProviders();
     const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
@@ -1443,7 +1510,7 @@ describe("research workflow", () => {
     expect(store.getSnapshot().sources).toEqual([]);
   });
 
-  it("rejects more than 1500 chunks before embedding", async () => {
+  it("coalesces more than 1500 short paragraphs before embedding", async () => {
     const fixture = createDemoResearchFixture();
     fixture.researchRuns[0].sourceLimit = 1;
     fixture.sources = [];
@@ -1452,9 +1519,7 @@ describe("research workflow", () => {
     fixture.evidenceLinks = [];
     fixture.claimRelations = [];
     const providers = createFixtureResearchProviders();
-    const embed = vi.fn(async () => {
-      throw new Error("EMBEDDING_CALLED");
-    });
+    const embed = vi.fn(providers.embedding.embed);
     providers.embedding.embed = embed;
     const store = createInMemoryResearchWorkflowStore(fixture);
 
@@ -1474,11 +1539,8 @@ describe("research workflow", () => {
       now: () => "2026-07-15T01:00:00.000Z",
     });
 
-    expect(result.run).toMatchObject({
-      status: "failed",
-      errorMessage: "CONTENT_LIMIT_EXCEEDED",
-    });
-    expect(embed).not.toHaveBeenCalled();
+    expect(result.run.errorMessage).not.toBe("CONTENT_LIMIT_EXCEEDED");
+    expect(embed).toHaveBeenCalledTimes(1);
   });
 
   it("skips later sources that exceed the Unicode content budget", async () => {

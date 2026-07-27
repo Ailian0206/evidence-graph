@@ -43,6 +43,18 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: navigationMocks.refresh }),
 }));
 
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({
+    href,
+    children,
+    ...props
+  }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { href: string }) => (
+    <a href={`/zh${href}`} {...props}>
+      {children}
+    </a>
+  ),
+}));
+
 vi.mock("@/features/projects/actions", () => projectActionMocks);
 vi.mock("@/features/research/actions", () => researchActionMocks);
 vi.mock("@/features/reports/actions", () => reportActionMocks);
@@ -64,6 +76,23 @@ afterEach(() => {
 });
 
 describe("evidence workspace claim review", () => {
+  it("renders review actions inside only the selected claim card", () => {
+    const workspace = createEvidenceWorkspaceFixture("zh");
+    renderWorkspace();
+
+    const selectedCard = screen.getByRole("article", {
+      name: workspace.claims[0].statement,
+    });
+    const otherCard = screen.getByRole("article", {
+      name: workspace.claims[1].statement,
+    });
+
+    expect(within(selectedCard).getByRole("button", { name: "接受主张" })).toBeVisible();
+    expect(within(selectedCard).getByRole("button", { name: "拒绝主张" })).toBeVisible();
+    expect(within(otherCard).queryByRole("button", { name: "接受主张" })).toBeNull();
+    expect(screen.queryByTestId("selected-claim")).toBeNull();
+  });
+
   it("filters the claim list by human review status", async () => {
     const user = userEvent.setup();
     const workspace = createEvidenceWorkspaceFixture("zh");
@@ -81,27 +110,113 @@ describe("evidence workspace claim review", () => {
     expect(screen.queryByRole("button", { name: pendingClaim?.statement })).toBeNull();
   });
 
-  it("accepts and rejects a claim without changing the model statement", async () => {
+  it("accepts a claim and advances to the next pending claim", async () => {
+    const user = userEvent.setup();
+    const workspace = createEvidenceWorkspaceFixture("zh");
+    const targetClaim = workspace.claims[0];
+    const nextClaim = workspace.claims[1];
+    renderWorkspace();
+
+    const targetCard = screen.getByRole("article", { name: targetClaim.statement });
+    await user.click(within(targetCard).getByRole("button", { name: "接受主张" }));
+
+    expect(screen.getByRole("button", { name: nextClaim.statement })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(within(targetCard).getByText("已接受")).toBeVisible();
+    expect(screen.getByRole("status", { name: "审核操作结果" })).toHaveTextContent(
+      "上一条主张已接受",
+    );
+    expect(screen.getByRole("button", { name: "撤销上一条审核" })).toBeVisible();
+  });
+
+  it("rejects the last pending claim and wraps to the first pending claim", async () => {
+    const user = userEvent.setup();
+    const workspace = createEvidenceWorkspaceFixture("zh");
+    const firstClaim = workspace.claims[0];
+    const lastPendingClaim = workspace.claims[1];
+    renderWorkspace();
+
+    await user.click(screen.getByRole("button", { name: lastPendingClaim.statement }));
+    const lastPendingCard = screen.getByRole("article", {
+      name: lastPendingClaim.statement,
+    });
+    await user.click(within(lastPendingCard).getByRole("button", { name: "拒绝主张" }));
+
+    expect(screen.getByRole("button", { name: firstClaim.statement })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(within(lastPendingCard).getByText("已拒绝")).toBeVisible();
+  });
+
+  it("stays on the reviewed claim when all pending claims are processed", async () => {
+    const user = userEvent.setup();
+    const workspace = createEvidenceWorkspaceFixture("zh");
+    const targetClaim = workspace.claims[0];
+    const claims = workspace.claims.map((claim, index) => ({
+      ...claim,
+      reviewStatus: index === 0 ? ("pending" as const) : ("accepted" as const),
+    }));
+    renderWorkspace("demo", { ...workspace, claims });
+
+    const targetCard = screen.getByRole("article", { name: targetClaim.statement });
+    await user.click(within(targetCard).getByRole("button", { name: "接受主张" }));
+
+    expect(screen.getByRole("button", { name: targetClaim.statement })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByText("待审核主张已全部处理")).toBeVisible();
+  });
+
+  it("restores an accepted claim to pending from its selected card", async () => {
+    const user = userEvent.setup();
+    const workspace = createEvidenceWorkspaceFixture("zh");
+    const acceptedClaim = workspace.claims[2];
+    renderWorkspace();
+
+    await user.click(screen.getByRole("button", { name: acceptedClaim.statement }));
+    const acceptedCard = screen.getByRole("article", { name: acceptedClaim.statement });
+    await user.click(
+      within(acceptedCard).getByRole("button", { name: "恢复待审核" }),
+    );
+
+    expect(within(acceptedCard).getByText("待审核")).toBeVisible();
+    expect(within(acceptedCard).getByRole("button", { name: "接受主张" })).toBeVisible();
+  });
+
+  it("expires the undo action after six seconds", async () => {
+    vi.useFakeTimers();
+    const workspace = createEvidenceWorkspaceFixture("zh");
+    renderWorkspace();
+
+    const targetCard = screen.getByRole("article", {
+      name: workspace.claims[0].statement,
+    });
+    fireEvent.click(within(targetCard).getByRole("button", { name: "接受主张" }));
+
+    expect(screen.getByRole("button", { name: "撤销上一条审核" })).toBeVisible();
+    act(() => vi.advanceTimersByTime(6000));
+    expect(screen.queryByRole("button", { name: "撤销上一条审核" })).toBeNull();
+  });
+
+  it("undoes the previous review and returns to that claim", async () => {
     const user = userEvent.setup();
     const workspace = createEvidenceWorkspaceFixture("zh");
     const targetClaim = workspace.claims[0];
     renderWorkspace();
 
-    await user.click(screen.getByRole("button", { name: targetClaim.statement }));
-    await user.click(screen.getByRole("button", { name: "接受主张" }));
+    const targetCard = screen.getByRole("article", { name: targetClaim.statement });
+    await user.click(within(targetCard).getByRole("button", { name: "接受主张" }));
+    await user.click(screen.getByRole("button", { name: "撤销上一条审核" }));
 
-    const selectedClaim = screen.getByTestId("selected-claim");
-    expect(within(selectedClaim).getByText(targetClaim.statement)).toBeVisible();
-    expect(
-      within(selectedClaim).getByRole("status", { name: "当前审核状态" }),
-    ).toHaveTextContent("已接受");
-
-    await user.click(screen.getByRole("button", { name: "拒绝主张" }));
-
-    expect(within(selectedClaim).getByText(targetClaim.statement)).toBeVisible();
-    expect(
-      within(selectedClaim).getByRole("status", { name: "当前审核状态" }),
-    ).toHaveTextContent("已拒绝");
+    expect(screen.getByRole("button", { name: targetClaim.statement })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(within(targetCard).getByText("待审核")).toBeVisible();
     expect(researchActionMocks.reviewClaim).not.toHaveBeenCalled();
   });
 
@@ -123,30 +238,48 @@ describe("evidence workspace claim review", () => {
       ),
     );
     expect(
-      within(screen.getByTestId("selected-claim")).getByRole("status", {
-        name: "当前审核状态",
-      }),
-    ).toHaveTextContent("已接受");
+      within(screen.getByRole("article", { name: targetClaim.statement })).getByText(
+        "已接受",
+      ),
+    ).toBeVisible();
   });
 
   it("rolls back a managed review when persistence fails", async () => {
-    researchActionMocks.reviewClaim.mockRejectedValueOnce(new Error("DATABASE_UNAVAILABLE"));
+    let rejectReview: ((error: Error) => void) | undefined;
+    researchActionMocks.reviewClaim.mockImplementationOnce(
+      () =>
+        new Promise((_, reject) => {
+          rejectReview = reject;
+        }),
+    );
     const user = userEvent.setup();
     const workspace = createEvidenceWorkspaceFixture("zh");
     const targetClaim = workspace.claims[0];
+    const nextClaim = workspace.claims[1];
     renderWorkspace("managed");
 
-    await user.click(screen.getByRole("button", { name: targetClaim.statement }));
-    await user.click(screen.getByRole("button", { name: "拒绝主张" }));
+    const targetCard = screen.getByRole("article", { name: targetClaim.statement });
+    await user.click(within(targetCard).getByRole("button", { name: "拒绝主张" }));
+
+    expect(screen.getByRole("button", { name: nextClaim.statement })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    await act(async () => {
+      rejectReview?.(new Error("DATABASE_UNAVAILABLE"));
+    });
 
     await waitFor(() =>
-      expect(
-        within(screen.getByTestId("selected-claim")).getByRole("status", {
-          name: "当前审核状态",
-        }),
-      ).toHaveTextContent("待审核"),
+      expect(screen.getByRole("button", { name: targetClaim.statement })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      ),
     );
-    expect(screen.getByRole("alert")).toHaveTextContent("审核状态保存失败，请重试。");
+    expect(within(targetCard).getByText("待审核")).toBeVisible();
+    expect(within(targetCard).getByRole("alert")).toHaveTextContent(
+      "审核状态保存失败，请重试。",
+    );
   });
 
   it("hides claims when their only evidence relation is disabled", async () => {
@@ -387,10 +520,38 @@ describe("evidence workspace states", () => {
         "stable",
       );
       expect(screen.queryByRole("button", { name: "重新投递研究" })).toBeNull();
+      expect(screen.getByTestId("managed-workspace-loading")).toHaveAttribute(
+        "data-loading-indicator",
+        "true",
+      );
+      expect(screen.getByRole("link", { name: "返回项目列表" })).toHaveAttribute(
+        "href",
+        "/zh/app",
+      );
       act(() => vi.advanceTimersByTime(3000));
       expect(navigationMocks.refresh).toHaveBeenCalledTimes(1);
     },
   );
+
+  it("provides a project-list return path from a completed workspace", () => {
+    renderWorkspace("managed");
+
+    expect(screen.getByRole("link", { name: "返回项目列表" })).toHaveAttribute(
+      "href",
+      "/zh/app",
+    );
+  });
+
+  it("animates active managed runs and respects reduced motion", async () => {
+    const css = await readFile(
+      join(process.cwd(), "src/components/evidence-workspace/evidence-workspace.module.css"),
+      "utf8",
+    );
+
+    expect(css).toContain('.workspaceState[data-workspace-state="queued"] > svg');
+    expect(css).toContain('.workspaceState[data-workspace-state="running"] > svg');
+    expect(css).toContain("@media (prefers-reduced-motion: reduce)");
+  });
 
   it("retries only the original dispatch-failed run", async () => {
     render(
@@ -419,3 +580,5 @@ describe("evidence workspace states", () => {
     );
   });
 });
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";

@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { createBailianEmbeddingProvider } from "@/providers/live/bailian-embedding-provider";
 import { createDeepSeekLanguageModel } from "@/providers/live/deepseek-language-model";
+import { readLocalResearchEnvironment } from "@/providers/live/local-research-gate";
 import { modelSystemPrompt } from "@/providers/live/model-prompts";
 import {
   createPaidProviderSmokeBudget,
@@ -456,8 +457,8 @@ describe("Provider runtime selection", () => {
   const liveEnvironment = {
     NODE_ENV: "test",
     RESEARCH_PROVIDER_MODE: "live",
-    ALLOW_PAID_PROVIDER_SMOKE: "I_CONFIRM_PAID_PROVIDER_CALLS",
-    PAID_PROVIDER_SMOKE_COST_LIMIT_USD: "0.10",
+    ALLOW_LOCAL_LIVE_RESEARCH: "I_CONFIRM_LOCAL_PAID_RESEARCH",
+    LOCAL_LIVE_RESEARCH_COST_LIMIT_USD: "0.15",
     TAVILY_API_KEY: "tavily-secret",
     DEEPSEEK_API_KEY: "deepseek-secret",
     BAILIAN_API_KEY: "bailian-secret",
@@ -468,21 +469,33 @@ describe("Provider runtime selection", () => {
     const providers = createResearchProviders({
       environment: { NODE_ENV: "test" },
     });
-    expect(providers.mode).toBe("fixture");
+    expect(providers).toMatchObject({
+      mode: "fixture",
+      maxCostUsd: 1,
+      executionLimits: undefined,
+    });
 
     expect(() =>
       createResearchProviders({
         environment: {
           ...liveEnvironment,
-          ALLOW_PAID_PROVIDER_SMOKE: "wrong",
+          ALLOW_LOCAL_LIVE_RESEARCH: "wrong",
         },
       }),
-    ).toThrow("PAID_PROVIDER_SMOKE_NOT_CONFIRMED");
+    ).toThrow("LOCAL_LIVE_RESEARCH_NOT_CONFIRMED");
   });
 
   it("requires all live Provider credentials and selects live mode", () => {
     const providers = createResearchProviders({ environment: liveEnvironment });
-    expect(providers.mode).toBe("live");
+    expect(providers).toMatchObject({
+      mode: "live",
+      maxCostUsd: 0.15,
+      executionLimits: {
+        sourceLimit: 4,
+        maxContentChars: 40_000,
+        maxEmbeddingBatches: 20,
+      },
+    });
 
     expect(() =>
       createResearchProviders({
@@ -497,23 +510,59 @@ describe("Provider runtime selection", () => {
         ...liveEnvironment,
         NODE_ENV: "production",
         RESEARCH_PROVIDER_MODE: "fixture",
-        ALLOW_PAID_PROVIDER_SMOKE: undefined,
-        PAID_PROVIDER_SMOKE_COST_LIMIT_USD: undefined,
+        ALLOW_LOCAL_LIVE_RESEARCH: undefined,
+        LOCAL_LIVE_RESEARCH_COST_LIMIT_USD: undefined,
       },
     });
 
-    expect(providers.mode).toBe("live");
+    expect(providers).toMatchObject({
+      mode: "live",
+      maxCostUsd: 1,
+      executionLimits: undefined,
+    });
   });
 
-  it("rejects a local live cost limit above ten cents", () => {
-    expect(() =>
-      createResearchProviders({
-        environment: {
+  it.each(["not-a-number", "0", "-0.01", "0.150001"])(
+    "rejects invalid local live cost limit %s",
+    (costLimit) => {
+      expect(() =>
+        createResearchProviders({
+          environment: {
+            ...liveEnvironment,
+            LOCAL_LIVE_RESEARCH_COST_LIMIT_USD: costLimit,
+          },
+        }),
+      ).toThrow("LOCAL_LIVE_RESEARCH_COST_LIMIT_INVALID");
+    },
+  );
+
+  it.each([undefined, "fixture"])(
+    "rejects local research mode %s when the live gate is evaluated",
+    (mode) => {
+      expect(() =>
+        readLocalResearchEnvironment({
           ...liveEnvironment,
-          PAID_PROVIDER_SMOKE_COST_LIMIT_USD: "0.11",
-        },
+          RESEARCH_PROVIDER_MODE: mode,
+        }),
+      ).toThrow("LOCAL_LIVE_RESEARCH_LIVE_MODE_REQUIRED");
+    },
+  );
+
+  it("reads the exact local confirmation and fifteen-cent ceiling", () => {
+    expect(() =>
+      readLocalResearchEnvironment({
+        ...liveEnvironment,
+        ALLOW_LOCAL_LIVE_RESEARCH: "wrong",
       }),
-    ).toThrow("PAID_PROVIDER_SMOKE_COST_LIMIT_INVALID");
+    ).toThrow("LOCAL_LIVE_RESEARCH_NOT_CONFIRMED");
+    expect(readLocalResearchEnvironment(liveEnvironment)).toEqual({
+      costLimitUsd: 0.15,
+      executionLimits: {
+        sourceLimit: 4,
+        maxContentChars: 40_000,
+        maxEmbeddingBatches: 20,
+      },
+    });
   });
 });
 

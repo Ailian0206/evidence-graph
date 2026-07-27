@@ -22,7 +22,7 @@ const visualRoutes = [
 
 const leftRuleSelectors = [
   ".project-proof",
-  "[data-testid='selected-claim']",
+  "[data-selected='true']",
   "[data-testid='workspace-source'] blockquote",
   "[data-testid='workspace-report'] q",
   "[data-run-log-entry]",

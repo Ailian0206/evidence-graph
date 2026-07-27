@@ -3,12 +3,20 @@
     "home": "Home",
     "work": "Work",
     "notes": "Notes",
-    "evidence": "Evidence Graph",
+    "evidence": "Product overview",
+    "workspace": "Open workspace",
     "language": "中文",
     "primary": "Primary navigation",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
     "skip": "Skip to main content"
+  },
+  "AppShell": {
+    "navigationLabel": "Workspace navigation",
+    "projects": "Research projects",
+    "reports": "Report library",
+    "accountFallback": "Signed-in account",
+    "signOut": "Sign out"
   },
   "Portfolio": {
     "eyebrow": "AI product engineering",
@@ -45,6 +53,7 @@
     "title": "Sign in to Evidence Graph",
     "description": "Continue to the research workspace with GitHub.",
     "github": "Sign in with GitHub",
+    "githubPending": "Redirecting to GitHub...",
     "unconfigured": "Managed sign-in is not configured",
     "error": "Sign-in did not complete. Try again."
   },
@@ -100,9 +109,37 @@
       }
     }
   },
+  "Reports": {
+    "eyebrow": "Versioned outputs",
+    "title": "Report library",
+    "description": "Review report versions and publication status by research project.",
+    "projectListLabel": "Projects with reports",
+    "versionListLabel": "Report versions for {title}",
+    "version": "Version {version}",
+    "publishedAt": "Published {date}",
+    "createdAt": "Created {date}",
+    "openReport": "View report",
+    "backToResearch": "Back to research",
+    "backToProjects": "Back to research projects",
+    "openPublic": "Open public report",
+    "status": {
+      "draft": "Draft",
+      "published": "Published",
+      "revoked": "Revoked"
+    },
+    "language": {
+      "zh": "Chinese",
+      "en": "English"
+    },
+    "empty": {
+      "title": "No research reports yet",
+      "description": "Generated report versions will appear here after a research run completes."
+    }
+  },
   "Workspace": {
     "eyebrow": "Research run / Evidence review",
     "backToPreview": "Back to product entry",
+    "backToProjects": "Back to projects",
     "runSummary": "Research run summary",
     "claims": "Claims",
     "sources": "Sources",
@@ -112,7 +149,6 @@
     "claimCount": "{count} claims",
     "evidenceCount": "{count} evidence links",
     "reviewFilter": "Filter by human review status",
-    "currentStatus": "Current review status",
     "relationFilter": "Filter by evidence relation",
     "mobileTabsLabel": "Workspace views",
     "graphTitle": "Claim and evidence relations",
@@ -219,6 +255,12 @@
       "reject": "Reject claim",
       "reset": "Reset to pending"
     },
+    "reviewSaving": "Saving review status...",
+    "reviewResultLabel": "Review action result",
+    "reviewAccepted": "Previous claim accepted",
+    "reviewRejected": "Previous claim rejected",
+    "reviewUndo": "Undo previous review",
+    "reviewComplete": "All pending claims have been reviewed",
     "reviewError": "Failed to save the review status. Try again.",
     "sourceMeta": {
       "title": "Source title",
@@ -254,7 +296,8 @@
       "retry": "Retry research dispatch",
       "retrying": "Retrying dispatch...",
       "retrySentDescription": "The original research run was dispatched again and is waiting to start.",
-      "retryError": "Dispatch retry failed. Try again later."
+      "retryError": "Dispatch retry failed. Try again later.",
+      "back": "Back to projects"
     }
   },
   "Footer": {

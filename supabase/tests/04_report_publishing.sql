@@ -1,6 +1,8 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
+set local role postgres;
+set local search_path = public, extensions;
 
 select plan(35);
 
@@ -250,7 +252,7 @@ select is(
   'idempotent publication does not duplicate audit events'
 );
 
-reset role;
+set local role postgres;
 set local role anon;
 select set_config('request.jwt.claim.sub', '', true);
 select set_config('request.jwt.claims', '{"role":"anon"}', true);
@@ -266,7 +268,7 @@ select is(
   'anonymous users can read the current published version'
 );
 
-reset role;
+set local role postgres;
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-000000000031', true);
 select set_config(
@@ -434,7 +436,7 @@ select is(
   'idempotent revocation does not duplicate audit events'
 );
 
-reset role;
+set local role postgres;
 set local role anon;
 select set_config('request.jwt.claim.sub', '', true);
 select set_config('request.jwt.claims', '{"role":"anon"}', true);

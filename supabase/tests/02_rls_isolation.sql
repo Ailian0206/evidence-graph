@@ -1,6 +1,8 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
+set local role postgres;
+set local search_path = public, extensions;
 
 select plan(15);
 
@@ -332,7 +334,7 @@ select is(
   'owner A cannot delete owner B project'
 );
 
-reset role;
+set local role postgres;
 set local role anon;
 
 select throws_ok(
@@ -367,7 +369,7 @@ select is(
   'the public function returns the immutable report snapshot'
 );
 
-reset role;
+set local role postgres;
 update public.reports
 set status = 'revoked'
 where id = 'rls_report_public';

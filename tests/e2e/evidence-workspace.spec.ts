@@ -124,6 +124,24 @@ test.describe("evidence workspace graph", () => {
 });
 
 test.describe("evidence workspace report", () => {
+  test("opens a report deep link in the mobile report panel", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/zh/app/research/demo?view=report");
+
+    await expect(
+      page
+        .getByRole("tablist", { name: "工作台视图" })
+        .getByRole("tab", { name: "图谱", exact: true }),
+    ).toHaveAttribute("aria-selected", "true");
+    await expect(
+      page
+        .getByRole("tablist", { name: "图谱内容" })
+        .getByRole("tab", { name: "报告", exact: true }),
+    ).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("tabpanel", { name: "图谱", exact: true })).toBeVisible();
+    await expect(page.getByTestId("workspace-report")).toBeVisible();
+  });
+
   test("opens a deterministic report and follows a citation back to its evidence", async ({
     page,
   }) => {
@@ -146,6 +164,40 @@ test.describe("evidence workspace report", () => {
     await expect(page.getByTestId("workspace-source")).toContainText(
       "只保留页面级链接不足以证明事实段落",
     );
+  });
+});
+
+test.describe("evidence workspace claim review", () => {
+  test("keeps review actions with the selected claim and supports undo", async ({
+    page,
+  }) => {
+    await page.goto("/zh/app/research/demo");
+
+    const firstClaim = page.getByRole("article", {
+      name: "精确原文让审核者可以逐条核查 AI 研究主张。",
+    });
+    const nextClaim = page.getByRole("article", {
+      name: "只有页面级链接也足以证明报告中的事实段落。",
+    });
+
+    await expect(firstClaim).toHaveAttribute("data-selected", "true");
+    await expect(firstClaim.getByRole("button", { name: "接受主张" })).toBeVisible();
+    await expect(nextClaim.getByRole("button", { name: "接受主张" })).toHaveCount(0);
+
+    await firstClaim.getByRole("button", { name: "接受主张" }).click();
+
+    await expect(firstClaim).toHaveAttribute("data-selected", "false");
+    await expect(firstClaim.getByText("已接受", { exact: true })).toBeVisible();
+    await expect(nextClaim).toHaveAttribute("data-selected", "true");
+    await expect(
+      nextClaim.getByRole("button", { name: "撤销上一条审核" }),
+    ).toBeVisible();
+
+    await nextClaim.getByRole("button", { name: "撤销上一条审核" }).click();
+
+    await expect(firstClaim).toHaveAttribute("data-selected", "true");
+    await expect(firstClaim.getByText("待审核", { exact: true })).toBeVisible();
+    await expect(firstClaim.getByRole("button", { name: "接受主张" })).toBeVisible();
   });
 });
 

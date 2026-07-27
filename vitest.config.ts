@@ -13,6 +13,9 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
+    env: {
+      RESEARCH_PROVIDER_MODE: "fixture",
+    },
     setupFiles: ["./vitest.setup.ts"],
     include: ["tests/unit/**/*.test.ts", "tests/unit/**/*.test.tsx"],
     coverage: {
