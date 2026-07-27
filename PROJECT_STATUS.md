@@ -66,7 +66,7 @@
 
 - 2026-07-27 第三轮验收明确产品职责：一个研究项目可持续产生多个报告版本；“研究项目”保留过程入口，“报告库”按项目聚合版本产物，查看报告统一进入 `?view=report`。
 - 主张审核操作已移入当前选中主张卡片；接受或拒绝后自动移动到下一条待审核主张并支持 6 秒撤销，不再使用脱离上下文的底部固定操作栏。全站品牌标记已由 `A/` 简化为 `A`。
-- 本轮全仓 lint、typecheck、单元测试 `359/359`、production build 和 E2E `85/85` 通过；新增报告移动端深链和主张审核自动推进/撤销 E2E。`test:managed` 的 Provider 边界通过，但本机 Docker 未运行，托管 pgTAP runner 在连接 `/var/run/docker.sock` 时停止，数据库门禁交由本次 PR 的 GitHub CI 复验；例行门禁未调用付费 Provider。
+- 本轮全仓 lint、typecheck、单元测试 `359/359`、production build 和 E2E `85/85` 通过；新增报告移动端深链和主张审核自动推进/撤销 E2E。`test:managed` 的 Provider 边界通过，但本机 Docker 未运行，托管 pgTAP runner 在连接 `/var/run/docker.sock` 时停止；Draft PR #18 的 GitHub CI 已通过代码门禁与 Supabase Schema/RLS/lint 两项复验，例行门禁未调用付费 Provider。
 - 已在用户 Chrome 登录态对 `/zh/app`、`/zh/app/reports` 和 20 条主张的完成态工作台完成 390x844、1024x768、1440x1000 三档验收：账号摘要和 `A` 标记可见，5 个报告版本链接均带 `?view=report`，移动端报告深链默认显示“图谱 / 报告”，审核控件保持在选中主张卡片内；各页面没有横向溢出、裁切或控件脱离。
 - Chrome 快速切页期间出现过一次 Supabase Auth `fetch failed`，直接连通性检查正常且刷新后恢复，随后三档验收均完成；该现象未稳定复现，未用错误重定向或静默吞错掩盖外部认证失败。
 - 2026-07-27 用户复验发现报告列表使用了 Schema 中不存在的 `reports -> projects` 直接关系，托管 PostgREST 返回 `PGRST200`。`3107107` 改为已有外键链 `reports -> research_runs -> projects`；回归测试先确认 `2` 项 RED，再达到 `4/4` GREEN。
