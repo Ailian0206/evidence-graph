@@ -1,11 +1,11 @@
 # Evidence Graph 项目状态
 
-更新时间：2026-07-24
+更新时间：2026-07-27
 
 ## 当前阶段
 
 - 当前里程碑：C1“本地真实研究运行环境”，正在分支 `feat/c1-local-live-research` 实现。
-- 当前进度：第二轮用户验收提出的登录反馈、账号信息、工作台导航、报告列表、研究进度、表单样式和返回入口已按 TDD 修复，功能实现 head 为 `f10479b`；唯一 Draft PR #18 保持开放，等待用户复验。
+- 当前进度：第二轮用户验收提出的登录反馈、账号信息、工作台导航、报告列表、研究进度、表单样式和返回入口已按 TDD 修复；报告列表的托管数据库关联查询也已在功能实现 head `3107107` 修复，唯一 Draft PR #18 保持开放，等待用户复验。
 - 下一次用户可见结果：用户从全站“进入工作台”入口验证 GitHub 登录、账号摘要和“研究项目 / 研究报告”导航，再继续 fixture 闭环和低范围中文真实研究验收。
 - 当前禁止：不得提前实现 C2-C6，不得更新 `release`，不得执行 Production 迁移、变量修改、Inngest 同步或部署。
 - 路线图：`docs/roadmap.md`。
@@ -14,8 +14,8 @@
 
 | 维度 | 当前状态 | 说明 |
 | --- | --- | --- |
-| 代码完成度 | C1 验收候选 | 分支 `feat/c1-local-live-research` 的功能实现 head `f10479b` 已通过内部托管链路和完整自动化门禁；唯一 Draft PR #18 已创建 |
-| 本地验收度 | 待用户复验 | OAuth 已确认会整页跳转到 GitHub；登录后的账号摘要、项目/报告列表、创建进度和返回路径仍需在用户 Chrome 登录态中复验 |
+| 代码完成度 | C1 验收候选 | 分支 `feat/c1-local-live-research` 的功能实现 head `3107107` 已通过完整代码门禁和真实登录态报告列表验证；唯一 Draft PR #18 已创建 |
+| 本地验收度 | 待用户复验 | OAuth、账号摘要和项目/报告列表已在用户 Chrome 登录态验证；创建进度、表单交互和返回路径仍需继续复验 |
 | 产品完成度 | 未完成 | Settings/删除、Evidence Eval、3 个真实案例和 Release Candidate 尚未完成 |
 | Production 状态 | 有可用历史基线，当前冻结 | `release` 是唯一 Production Branch；C6 前不再发布 |
 
@@ -64,6 +64,9 @@
 
 ## 最近验证基线
 
+- 2026-07-27 用户复验发现报告列表使用了 Schema 中不存在的 `reports -> projects` 直接关系，托管 PostgREST 返回 `PGRST200`。`3107107` 改为已有外键链 `reports -> research_runs -> projects`；回归测试先确认 `2` 项 RED，再达到 `4/4` GREEN。
+- 修复后已在用户 Chrome 登录态刷新 `/zh/app/reports`：页面返回 `200`，正确显示 `5` 条报告，浏览器控制台无错误，文档宽度与 1536px 视口一致；服务端不再出现 `REPORT_LIST_QUERY_FAILED`。
+- 当前修复通过全仓 lint/typecheck、单元测试 `347/347`、production build 和 E2E `83/83`。本机 Docker 未运行，`test:managed` 的 Provider 边界通过后在 pgTAP 容器启动前停止；当前提交的数据库门禁由同一 PR 的 GitHub CI 复验。
 - 第二轮验收修复明确区分公共 `/evidence`“产品介绍”和受保护 `/app`“进入工作台”，登录后统一显示“研究项目 / 研究报告”、最小 GitHub 账号摘要和退出入口，并新增 `/app/reports` 报告列表。
 - GitHub 登录按钮增加提交中状态并阻止重复提交；实际本地服务在 390x844 视口点击后已整页跳转到 GitHub 授权登录页，回调保持 `127.0.0.1:3218` 同源。OAuth 设计不是弹窗，已经授权过应用时 GitHub 也可能直接回调而不重复展示授权确认页。
 - 创建研究和 queued/running 状态增加 loading 动画并遵守 reduced motion；新建表单移除双重 focus 边框、允许来源链接动作换行；创建页、运行状态和完成工作台均提供可见返回入口。
