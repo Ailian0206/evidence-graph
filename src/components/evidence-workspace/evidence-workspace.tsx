@@ -47,23 +47,33 @@ type WorkspaceMode = (typeof workspaceModes)[number];
 
 export function EvidenceWorkspace({
   initialData,
+  initialMode = "graph",
   persistence = "demo",
 }: {
   initialData: EvidenceWorkspaceData;
+  initialMode?: WorkspaceMode;
   persistence?: "demo" | "managed";
 }) {
   if (initialData.claims.length === 0) {
     return <WorkspaceState state="empty" />;
   }
 
-  return <EvidenceWorkspaceReady initialData={initialData} persistence={persistence} />;
+  return (
+    <EvidenceWorkspaceReady
+      initialData={initialData}
+      initialMode={initialMode}
+      persistence={persistence}
+    />
+  );
 }
 
 function EvidenceWorkspaceReady({
   initialData,
+  initialMode,
   persistence,
 }: {
   initialData: EvidenceWorkspaceData;
+  initialMode: WorkspaceMode;
   persistence: "demo" | "managed";
 }) {
   const t = useTranslations("Workspace");
@@ -76,8 +86,11 @@ function EvidenceWorkspaceReady({
   const [selectedEvidenceLinkId, setSelectedEvidenceLinkId] = useState(
     initialData.evidenceLinks[0]?.id ?? "",
   );
-  const [activeMobileTab, setActiveMobileTab] = useState<MobileTab>("claims");
-  const [activeWorkspaceMode, setActiveWorkspaceMode] = useState<WorkspaceMode>("graph");
+  const [activeMobileTab, setActiveMobileTab] = useState<MobileTab>(
+    initialMode === "report" ? "graph" : "claims",
+  );
+  const [activeWorkspaceMode, setActiveWorkspaceMode] =
+    useState<WorkspaceMode>(initialMode);
   const [reviewError, setReviewError] = useState(false);
   const [reviewPending, startReview] = useTransition();
   const workspace = useMemo(() => ({ ...initialData, claims }), [claims, initialData]);

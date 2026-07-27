@@ -51,6 +51,7 @@ describe("managed workspace page", () => {
   it("loads the managed user session for a real project", async () => {
     const page = await WorkspacePage({
       params: Promise.resolve({ locale: "zh", id: "project_1" }),
+      searchParams: Promise.resolve({}),
     });
 
     expect(mocks.requireManagedUser).toHaveBeenCalledOnce();
@@ -65,5 +66,37 @@ describe("managed workspace page", () => {
       locale: "zh",
       user: { displayName: "ailian", email: "user@example.com" },
     });
+  });
+
+  it("opens a ready managed workspace in report mode from a report link", async () => {
+    const data = { project: { id: "project_1" } };
+    mocks.load.mockResolvedValueOnce({ state: "ready", data } as never);
+
+    const page = await WorkspacePage({
+      params: Promise.resolve({ locale: "zh", id: "project_1" }),
+      searchParams: Promise.resolve({ view: "report" }),
+    });
+
+    expect(page.props.children.props).toMatchObject({
+      initialData: data,
+      initialMode: "report",
+      persistence: "managed",
+    });
+    expect(mocks.requireManagedUser).toHaveBeenCalledWith({
+      locale: "zh",
+      nextPath: "/zh/app/research/project_1?view=report",
+    });
+  });
+
+  it("falls back to graph mode for an unknown workspace view", async () => {
+    const data = { project: { id: "project_1" } };
+    mocks.load.mockResolvedValueOnce({ state: "ready", data } as never);
+
+    const page = await WorkspacePage({
+      params: Promise.resolve({ locale: "zh", id: "project_1" }),
+      searchParams: Promise.resolve({ view: "unknown" }),
+    });
+
+    expect(page.props.children.props.initialMode).toBe("graph");
   });
 });

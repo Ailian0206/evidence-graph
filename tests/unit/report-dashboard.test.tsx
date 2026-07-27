@@ -31,25 +31,51 @@ const publishedReport: ManagedReportSummary = {
   createdAt: "2026-07-17T09:00:00.000Z",
 };
 
+const draftReport: ManagedReportSummary = {
+  ...publishedReport,
+  id: "report_1",
+  version: 1,
+  status: "draft",
+  slug: undefined,
+  publishedAt: undefined,
+  createdAt: "2026-07-16T09:00:00.000Z",
+};
+
 afterEach(cleanup);
 
 describe("report dashboard", () => {
-  it("links each report to its research and published output", () => {
+  it("groups report versions under their research project", () => {
     render(
       <NextIntlClientProvider locale="zh" messages={messages}>
-        <ReportDashboard locale="zh" reports={[publishedReport]} />
+        <ReportDashboard locale="zh" reports={[draftReport, publishedReport]} />
       </NextIntlClientProvider>,
     );
 
-    const row = screen.getByRole("listitem");
-    expect(within(row).getByRole("heading", { name: "可核查的 AI 研究" })).toBeVisible();
-    expect(within(row).getByText("版本 2")).toBeVisible();
-    expect(within(row).getByText("已发布")).toBeVisible();
-    expect(within(row).getByRole("link", { name: "打开研究" })).toHaveAttribute(
+    expect(screen.getByRole("heading", { name: "报告库" })).toBeVisible();
+    expect(screen.queryByRole("link", { name: "新建研究" })).toBeNull();
+    expect(screen.getByRole("heading", { name: "可核查的 AI 研究" })).toBeVisible();
+
+    const versions = screen.getByRole("list", {
+      name: "可核查的 AI 研究的报告版本",
+    });
+    expect(within(versions).getAllByRole("listitem")).toHaveLength(2);
+    expect(within(versions).getAllByText(/版本 \d/).map((item) => item.textContent)).toEqual([
+      "版本 2",
+      "版本 1",
+    ]);
+    const reportLinks = within(versions).getAllByRole("link", { name: "查看报告" });
+    expect(reportLinks).toHaveLength(2);
+    for (const link of reportLinks) {
+      expect(link).toHaveAttribute(
+        "href",
+        "/zh/app/research/project_1?view=report",
+      );
+    }
+    expect(screen.getByRole("link", { name: "返回研究" })).toHaveAttribute(
       "href",
       "/zh/app/research/project_1",
     );
-    expect(within(row).getByRole("link", { name: "打开公开报告" })).toHaveAttribute(
+    expect(within(versions).getByRole("link", { name: "打开公开报告" })).toHaveAttribute(
       "href",
       "/r/research-project-1",
     );
@@ -62,11 +88,7 @@ describe("report dashboard", () => {
           locale="zh"
           reports={[
             {
-              ...publishedReport,
-              id: "report_1",
-              status: "draft",
-              slug: undefined,
-              publishedAt: undefined,
+              ...draftReport,
             },
           ]}
         />
@@ -77,7 +99,7 @@ describe("report dashboard", () => {
     expect(screen.queryByRole("link", { name: "打开公开报告" })).toBeNull();
   });
 
-  it("renders an empty state with a new research entry", () => {
+  it("renders an empty state that returns to research projects", () => {
     render(
       <NextIntlClientProvider locale="zh" messages={messages}>
         <ReportDashboard locale="zh" reports={[]} />
@@ -85,9 +107,10 @@ describe("report dashboard", () => {
     );
 
     expect(screen.getByRole("heading", { name: "还没有研究报告" })).toBeVisible();
-    expect(screen.getByRole("link", { name: "新建研究" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "返回研究项目" })).toHaveAttribute(
       "href",
-      "/zh/app/research/new",
+      "/zh/app",
     );
+    expect(screen.queryByRole("link", { name: "新建研究" })).toBeNull();
   });
 });

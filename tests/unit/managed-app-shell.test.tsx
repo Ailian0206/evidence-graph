@@ -42,7 +42,7 @@ describe("managed app shell", () => {
       "href",
       "/zh/app",
     );
-    expect(within(navigation).getByRole("link", { name: "研究报告" })).toHaveAttribute(
+    expect(within(navigation).getByRole("link", { name: "报告库" })).toHaveAttribute(
       "href",
       "/zh/app/reports",
     );
@@ -70,7 +70,7 @@ describe("managed app shell", () => {
     );
 
     expect(screen.getByText("已登录账户")).toBeVisible();
-    expect(screen.getByRole("link", { name: "研究报告" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "报告库" })).toHaveAttribute(
       "aria-current",
       "page",
     );

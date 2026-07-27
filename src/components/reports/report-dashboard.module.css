@@ -10,10 +10,6 @@
 }
 
 .header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  gap: 32px;
   padding-bottom: 24px;
   border-bottom: 1px solid var(--line-strong);
 }
@@ -38,7 +34,8 @@
   color: #505853;
 }
 
-.primaryAction,
+.emptyAction,
+.projectHeader > a,
 .actions a {
   display: inline-flex;
   min-height: 40px;
@@ -48,14 +45,6 @@
   border-radius: var(--radius);
   font-size: 13px;
   font-weight: 750;
-}
-
-.primaryAction {
-  min-height: 44px;
-  padding: 0 18px;
-  border: 1px solid var(--teal);
-  background: var(--teal);
-  color: #fff;
 }
 
 .empty {
@@ -83,25 +72,60 @@
   color: var(--muted);
 }
 
+.emptyAction,
+.projectHeader > a,
 .actions a {
   padding: 0 12px;
   border: 1px solid var(--line);
   background: var(--paper-strong);
 }
 
-.list {
+.emptyAction {
+  margin-top: 8px;
+}
+
+.projectList,
+.versionList {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.row {
+.projectGroup {
+  padding: 30px 0;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.projectHeader,
+.versionRow {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 24px;
-  padding: 24px 0;
+}
+
+.projectHeader {
+  margin-bottom: 18px;
+}
+
+.projectHeader h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 21px;
+  line-height: 1.25;
+}
+
+.versionList {
+  border-top: 1px solid var(--line);
+}
+
+.versionRow {
+  padding: 18px 0;
   border-bottom: 1px solid var(--line);
+}
+
+.versionRow:last-child {
+  border-bottom: 0;
 }
 
 .titleLine,
@@ -116,10 +140,10 @@
   gap: 10px;
 }
 
-.titleLine h2 {
+.titleLine h3 {
   margin: 0;
   overflow-wrap: anywhere;
-  font-size: 21px;
+  font-size: 16px;
   line-height: 1.25;
 }
 
@@ -144,7 +168,7 @@
 
 .question {
   max-width: 720px;
-  margin: 9px 0 14px;
+  margin: 7px 0 0;
   color: #454b46;
   overflow-wrap: anywhere;
 }
@@ -162,6 +186,10 @@
   gap: 8px;
 }
 
+.emptyAction:hover,
+.emptyAction:focus-visible,
+.projectHeader > a:hover,
+.projectHeader > a:focus-visible,
 .actions a:hover,
 .actions a:focus-visible {
   border-color: var(--ink);
@@ -172,8 +200,8 @@
     padding-top: 40px;
   }
 
-  .header,
-  .row {
+  .projectHeader,
+  .versionRow {
     grid-template-columns: 1fr;
   }
 
@@ -181,18 +209,17 @@
     font-size: 26px;
   }
 
-  .primaryAction {
-    width: 100%;
-  }
-
-  .row {
+  .projectHeader,
+  .versionRow {
     gap: 18px;
   }
 
+  .projectHeader > a,
   .actions {
     justify-content: flex-start;
   }
 
+  .projectHeader > a,
   .actions a {
     flex: 1;
   }

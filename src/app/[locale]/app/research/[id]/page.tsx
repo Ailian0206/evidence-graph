@@ -16,6 +16,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type WorkspacePageProps = {
   params: Promise<{ locale: AppLocale; id: string }>;
+  searchParams?: Promise<{ view?: string | string[] }>;
 };
 
 export async function generateMetadata({
@@ -32,14 +33,16 @@ export async function generateMetadata({
   };
 }
 
-export default async function WorkspacePage({ params }: WorkspacePageProps) {
+export default async function WorkspacePage({ params, searchParams }: WorkspacePageProps) {
   const { locale, id } = await params;
+  const { view } = (await searchParams) ?? {};
+  const initialMode = view === "report" ? "report" : "graph";
   setRequestLocale(locale);
 
   if (id !== "demo") {
     const user = await requireManagedUser({
       locale,
-      nextPath: `/${locale}/app/research/${id}`,
+      nextPath: `/${locale}/app/research/${id}${initialMode === "report" ? "?view=report" : ""}`,
     });
     const client = await createSupabaseServerClient();
     const store = createManagedWorkspaceStore(
@@ -53,7 +56,11 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
 
     const workspace =
       result.state === "ready" ? (
-        <EvidenceWorkspace initialData={result.data} persistence="managed" />
+        <EvidenceWorkspace
+          initialData={result.data}
+          initialMode={initialMode}
+          persistence="managed"
+        />
       ) : (
         <ManagedWorkspaceState locale={locale} projectId={id} result={result} />
       );
@@ -71,5 +78,5 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
 
   const workspace = createEvidenceWorkspaceFixture(locale);
 
-  return <EvidenceWorkspace initialData={workspace} />;
+  return <EvidenceWorkspace initialData={workspace} initialMode={initialMode} />;
 }

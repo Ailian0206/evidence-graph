@@ -14,7 +14,7 @@
   "AppShell": {
     "navigationLabel": "Workspace navigation",
     "projects": "Research projects",
-    "reports": "Research reports",
+    "reports": "Report library",
     "accountFallback": "Signed-in account",
     "signOut": "Sign out"
   },
@@ -110,15 +110,17 @@
     }
   },
   "Reports": {
-    "eyebrow": "Report library",
-    "title": "Research reports",
-    "description": "Review generated report versions and publication status across your research.",
-    "newResearch": "New research",
-    "listLabel": "Research reports",
+    "eyebrow": "Versioned outputs",
+    "title": "Report library",
+    "description": "Review report versions and publication status by research project.",
+    "projectListLabel": "Projects with reports",
+    "versionListLabel": "Report versions for {title}",
     "version": "Version {version}",
     "publishedAt": "Published {date}",
     "createdAt": "Created {date}",
-    "openResearch": "Open research",
+    "openReport": "View report",
+    "backToResearch": "Back to research",
+    "backToProjects": "Back to research projects",
     "openPublic": "Open public report",
     "status": {
       "draft": "Draft",
