@@ -69,7 +69,7 @@ GitHub OAuth 保持整页重定向，不实现弹窗协议。GitHub 已授权过
 - 不实现 OAuth popup 或强制 GitHub 每次重复授权。
 - 不修改数据库 Schema、RLS、Provider、Production 或部署配置。
 - 不实现报告搜索、筛选、导出、分页或跨用户公开报告目录。
-- 不开始 C2-C6，不合并 Draft PR #18，直到用户重新验收并完成独立 Claude Code 审核。
+- 不在修复范围内开始 C2-C6；自动化和 Agent 本地验收通过后，Draft PR #18 直接进入独立 Claude Code 审核和合并，用户反馈异步处理。
 
 ## 9. 完成标准
 

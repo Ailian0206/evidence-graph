@@ -160,10 +160,10 @@ npm run test:managed
 
 `test:managed` may use the hosted development database but must not invoke real Providers. If local Docker is unavailable after the Provider boundary phase, record the exact limitation and rely on the existing PR database CI for that phase only.
 
-- [ ] **Step 3: Verify real browser layouts**
+- [x] **Step 3: Verify real browser layouts**
 
 Use the logged-in local Chrome session for `/zh/app`, `/zh/app/reports`, and a long completed workspace. Check 390x844, 1024x768, and 1440x1000 for no horizontal overflow, clipping, overlap, or controls detached from the selected claim. Verify report links open the report view and the mark reads `A`.
 
-- [ ] **Step 4: Update status, commit, push, and update Draft PR #18**
+- [x] **Step 4: Update status, commit, push, and update Draft PR #18**
 
-Record the new acceptance fixes, test counts, browser verification, remaining user acceptance, and unchanged Production freeze in `PROJECT_STATUS.md`. Commit as `docs(status): 记录工作台交互修复`, push `feat/c1-local-live-research`, and confirm GitHub CI for the pushed head. Do not run paid Providers, independent Claude review, merge, or deployment before user acceptance.
+Record the new acceptance fixes, test counts, browser verification, asynchronous user feedback status, and unchanged Production freeze in `PROJECT_STATUS.md`. Commit as `docs(status): 记录工作台交互修复`, push `feat/c1-local-live-research`, and confirm GitHub CI for the pushed head. Do not run paid Providers or deployment; after the verified push, proceed directly to independent Claude review and merge according to `AGENT.md`.

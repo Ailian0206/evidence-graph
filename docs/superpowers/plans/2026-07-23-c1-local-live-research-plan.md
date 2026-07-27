@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 不启动本地 Supabase Docker，让本地 Next.js 和最小可调度的 5 worker Inngest 连接当前托管开发 Supabase，并从 GitHub 登录开始完成 fixture 与受限真实研究闭环，最后用一个 Draft PR 交付用户一次性验收。
+**Goal:** 不启动本地 Supabase Docker，让本地 Next.js 和最小可调度的 5 worker Inngest 连接当前托管开发 Supabase，并从 GitHub 登录开始完成 fixture 与受限真实研究闭环，最后用一个 Draft PR 完成 Agent 本地验收、独立审核和合并。
 
 **Architecture:** `.env.local` 显式允许一个托管 Supabase Project Ref，本地启动器只校验环境并编排 Next.js 与 Inngest，不创建或修改数据库容器。fixture 与 live 使用同一持久化工作流；live runtime 额外注入来源、正文、embedding 批次和费用上限。托管数据库运行事务内 pgTAP 与 lint，本地不运行 Docker；迁移链重建继续由 GitHub Actions 的独立数据库 job 在云端完成。
 
@@ -681,7 +681,7 @@ Expected: 运行期间只有 Next 与 Inngest 端口；没有 Evidence Graph Doc
 
 实际修复：`e535f6e` 合并短段落，使同一真实输入从 570 chunks/57 batches 降为 35 chunks/4 batches；`44971b4` 让已失败任务在 durable resume 时直接返回终态，避免空转重试。两项均按 RED -> GREEN 提交。
 
-### Task 8: 完整收口、唯一 Draft PR 和用户一次性验收
+### Task 8: 完整收口、唯一 Draft PR 和独立审核
 
 **Files:**
 - Modify: `PROJECT_STATUS.md`
@@ -705,7 +705,7 @@ Expected: 全部门禁 PASS；只列出 `.env.example`；没有未提交实现�
 
 - [x] **Step 2: 更新计划与状态**
 
-勾选实际完成项。`PROJECT_STATUS.md` 记录：分支、最终 commit SHA、自动化数量、fixture 结果、真实研究脱敏汇总、无 Docker 证据和下一步为 Draft PR 用户验收。不得把 C1 标记为已完成。
+勾选实际完成项。`PROJECT_STATUS.md` 记录：分支、最终 commit SHA、自动化数量、fixture 结果、真实研究脱敏汇总、无 Docker 证据和下一步为 Draft PR 的 Agent 本地验收与独立审核。PR 收口前不得把 C1 标记为已完成。
 
 Commit:
 
@@ -745,18 +745,18 @@ Run:
 npm run dev:local:live
 ```
 
-向用户提供 `http://127.0.0.1:3218/zh/auth/login` 和一份完整清单，一次性验收 GitHub 登录、项目列表、研究创建、状态推进、来源、Claim、Evidence、运行日志和带引文报告。服务保持运行到用户完成测试；不启动 Docker。
+向用户提供 `http://127.0.0.1:3218/zh/auth/login` 和完整体验清单；Agent 验证 GitHub 登录、项目列表、研究创建、状态推进、来源、Claim、Evidence、运行日志和带引文报告。服务保持运行供用户继续测试；不启动 Docker。
 
-实际结果：live profile 已启动，登录页返回 HTTP 200；Next 与 Inngest 分别监听 `3218`/`8288`，没有启动 Evidence Graph Docker。服务保持运行等待用户验收。
+实际结果：live profile 已启动，登录页返回 HTTP 200；Next 与 Inngest 分别监听 `3218`/`8288`，没有启动 Evidence Graph Docker。服务保持运行供用户继续测试。
 
-- [ ] **Step 6: 等待用户结论，不提前审核或合并**
+- [ ] **Step 6: 执行独立审核、CI 和合并闭环**
 
-用户验收前不运行独立 Claude review、不把 C1 标记为完成、不合并 PR、不开始 C2。若用户发现阻塞问题，在同一分支和同一 PR 按 TDD 修复，重新运行相关门禁并恢复同一验收 URL。
+自动化和 Agent 本地验收通过后直接运行独立 Claude review；成立的问题在同一分支和同一 PR 按 TDD 修复并重新审核。当前 head 的 Claude 结果为 `pass` 且 GitHub CI 通过后，以 merge commit 合并。用户反馈异步接收，不作为审核、合并或下一里程碑的前置条件。
 
 第一次用户验收发现并修复两个阻塞问题：
 
 - `bd3aed3` 在中英文全站主导航开放“研究工作台 / Research workspace”入口，链接受保护的 `/app`；新增组件回归测试，并在 390x844、1024x768、1440x1000 检查无溢出、裁切或重叠。
 - `2eb1251` 修复 OAuth callback 使用内部 `localhost` 生成绝对跳转的问题，改用 Next.js 相对 `redirect()` 保持浏览器当前 host 和会话 cookie；回归测试先收到错误的 `http://localhost:3218/zh/app`，修复后开发服务器返回相对 `Location`。
-- 修复后的 `test:managed` 通过：托管 pgTAP `93/93`、全仓 lint/typecheck、单元测试 `328/328`、production build 和 E2E `82/82`。C1 仍待用户复验，不勾选本步骤。
+- 修复后的 `test:managed` 通过：托管 pgTAP `93/93`、全仓 lint/typecheck、单元测试 `328/328`、production build 和 E2E `82/82`。旧流程当时记录为等待用户复验；2026-07-27 流程变更后，该状态不再阻塞本步骤。
 
-用户明确通过后，才按 `AGENT.md` 执行独立 Claude review、修复 finding、等待 CI，并使用 merge commit 合并唯一 C1 PR。
+2026-07-27 用户明确取消“等待用户本地验收后再审核”的门禁；按 `AGENT.md` 立即执行独立 Claude review、修复 finding、等待 CI，并使用 merge commit 合并唯一 C1 PR。
