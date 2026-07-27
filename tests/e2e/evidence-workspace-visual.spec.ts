@@ -98,7 +98,7 @@ for (const viewport of viewports) {
       };
     });
     const audit = await inspectVisibleUi(page, [
-      "[data-testid='selected-claim']",
+      "[data-selected='true']",
       "[data-testid='workspace-source'] blockquote",
       "[data-testid='workspace-report'] q",
       "[data-run-log-entry]",
