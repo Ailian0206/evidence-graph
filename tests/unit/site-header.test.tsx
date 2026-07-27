@@ -29,6 +29,18 @@ vi.mock("@/i18n/navigation", () => ({
 afterEach(cleanup);
 
 describe("site header", () => {
+  it("renders the Ailian mark without a slash", () => {
+    render(
+      <NextIntlClientProvider locale="zh" messages={zhMessages}>
+        <SiteHeader />
+      </NextIntlClientProvider>,
+    );
+
+    const homeLink = screen.getByRole("link", { name: "Ailian home" });
+    expect(homeLink.querySelector(".brand-mark")).toHaveTextContent(/^A$/);
+    expect(screen.queryByText("A/")).toBeNull();
+  });
+
   it.each([
     {
       locale: "zh",

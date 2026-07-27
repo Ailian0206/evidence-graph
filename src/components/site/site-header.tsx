@@ -47,7 +47,7 @@ export function SiteHeader() {
     <header className="site-header">
       <Link className="brand-link" href="/" aria-label={`${profile.brand} home`}>
         <span className="brand-mark" aria-hidden="true">
-          A/
+          A
         </span>
         <span>{profile.brand}</span>
       </Link>
