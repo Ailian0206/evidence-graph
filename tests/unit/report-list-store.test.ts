@@ -16,10 +16,12 @@ const publishedRow: ReportListRow = {
   status: "published",
   published_at: "2026-07-17T18:00:00+08:00",
   created_at: "2026-07-17T09:00:00.000Z",
-  projects: {
-    title: "Traceable research",
-    question: "How should exact citations be reviewed?",
-    language: "en",
+  research_runs: {
+    projects: {
+      title: "Traceable research",
+      question: "How should exact citations be reviewed?",
+      language: "en",
+    },
   },
 };
 
@@ -66,7 +68,12 @@ describe("managed report list store", () => {
   it("rejects malformed joined project data", async () => {
     const store = createManagedReportListStore({
       listOwnedReports: vi.fn(async () => [
-        { ...publishedRow, projects: { ...publishedRow.projects, title: "" } },
+        {
+          ...publishedRow,
+          research_runs: {
+            projects: { ...publishedRow.research_runs.projects, title: "" },
+          },
+        },
       ]),
     });
 
@@ -90,10 +97,10 @@ describe("Supabase managed report list adapter", () => {
 
     expect(from).toHaveBeenCalledWith("reports");
     expect(select).toHaveBeenCalledWith(
-      "id,project_id,slug,version,status,published_at,created_at,projects!inner(title,question,language,status,owner_id)",
+      "id,project_id,slug,version,status,published_at,created_at,research_runs!inner(projects!inner(title,question,language,status,owner_id))",
     );
-    expect(eq).toHaveBeenCalledWith("projects.owner_id", "owner_1");
-    expect(neq).toHaveBeenCalledWith("projects.status", "deleted");
+    expect(eq).toHaveBeenCalledWith("research_runs.projects.owner_id", "owner_1");
+    expect(neq).toHaveBeenCalledWith("research_runs.projects.status", "deleted");
     expect(order).toHaveBeenCalledWith("created_at", { ascending: false });
   });
 

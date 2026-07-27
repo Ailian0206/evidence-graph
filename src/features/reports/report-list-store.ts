@@ -11,10 +11,12 @@ export type ReportListRow = {
   status: "draft" | "published" | "revoked";
   published_at: string | null;
   created_at: string;
-  projects: {
-    title: string;
-    question: string;
-    language: AppLocale;
+  research_runs: {
+    projects: {
+      title: string;
+      question: string;
+      language: AppLocale;
+    };
   };
 };
 
@@ -43,15 +45,17 @@ const reportListRowSchema = z.object({
   status: z.enum(["draft", "published", "revoked"]),
   published_at: z.string().nullable(),
   created_at: z.string().min(1),
-  projects: z.object({
-    title: z.string().min(1),
-    question: z.string().min(1),
-    language: z.enum(["zh", "en"]),
+  research_runs: z.object({
+    projects: z.object({
+      title: z.string().min(1),
+      question: z.string().min(1),
+      language: z.enum(["zh", "en"]),
+    }),
   }),
 });
 
 const reportListColumns =
-  "id,project_id,slug,version,status,published_at,created_at,projects!inner(title,question,language,status,owner_id)";
+  "id,project_id,slug,version,status,published_at,created_at,research_runs!inner(projects!inner(title,question,language,status,owner_id))";
 
 const normalizeTimestamp = (value: string) => {
   const timestamp = Date.parse(value);
@@ -65,8 +69,8 @@ export const createSupabaseReportListQueryAdapter = (
     const { data, error } = await client
       .from("reports")
       .select(reportListColumns)
-      .eq("projects.owner_id", ownerId)
-      .neq("projects.status", "deleted")
+      .eq("research_runs.projects.owner_id", ownerId)
+      .neq("research_runs.projects.status", "deleted")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -83,9 +87,9 @@ const mapReportListRow = (input: ReportListRow): ManagedReportSummary => {
   return {
     id: row.id,
     projectId: row.project_id,
-    projectTitle: row.projects.title,
-    question: row.projects.question,
-    language: row.projects.language,
+    projectTitle: row.research_runs.projects.title,
+    question: row.research_runs.projects.question,
+    language: row.research_runs.projects.language,
     version: row.version,
     status: row.status,
     slug: row.slug ?? undefined,
