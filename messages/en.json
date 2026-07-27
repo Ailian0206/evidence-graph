@@ -149,7 +149,6 @@
     "claimCount": "{count} claims",
     "evidenceCount": "{count} evidence links",
     "reviewFilter": "Filter by human review status",
-    "currentStatus": "Current review status",
     "relationFilter": "Filter by evidence relation",
     "mobileTabsLabel": "Workspace views",
     "graphTitle": "Claim and evidence relations",
@@ -256,6 +255,12 @@
       "reject": "Reject claim",
       "reset": "Reset to pending"
     },
+    "reviewSaving": "Saving review status...",
+    "reviewResultLabel": "Review action result",
+    "reviewAccepted": "Previous claim accepted",
+    "reviewRejected": "Previous claim rejected",
+    "reviewUndo": "Undo previous review",
+    "reviewComplete": "All pending claims have been reviewed",
     "reviewError": "Failed to save the review status. Try again.",
     "sourceMeta": {
       "title": "Source title",

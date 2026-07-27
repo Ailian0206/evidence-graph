@@ -269,7 +269,7 @@
 
 .claimPanel {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto minmax(0, 1fr);
 }
 
 .claimList {
@@ -282,6 +282,15 @@
 
 .claimList li + li {
   border-top: 1px solid #d7dad3;
+}
+
+.claimCard {
+  min-width: 0;
+}
+
+.claimCard[data-selected="true"] {
+  background: var(--paper-muted);
+  box-shadow: inset 0 0 0 1px var(--teal);
 }
 
 .claimRow {
@@ -304,10 +313,6 @@
 .claimRow:hover,
 .claimRow[aria-pressed="true"] {
   background: var(--paper-muted);
-}
-
-.claimRow[aria-pressed="true"] {
-  box-shadow: inset 0 0 0 1px var(--teal);
 }
 
 .claimRowMeta,
@@ -333,13 +338,11 @@
   gap: 4px;
 }
 
-.claimRowMeta [data-status="accepted"],
-.currentStatus[data-status="accepted"] {
+.claimRowMeta [data-status="accepted"] {
   color: #17796d;
 }
 
-.claimRowMeta [data-status="rejected"],
-.currentStatus[data-status="rejected"] {
+.claimRowMeta [data-status="rejected"] {
   color: #a4382d;
 }
 
@@ -398,33 +401,23 @@
   font-size: 12px;
 }
 
-.reviewDock {
-  padding: 14px 16px 16px;
-  border-top: 1px solid #bfc4bc;
-  background: #f0f1ec;
-}
-
-.reviewDock p {
-  margin: 5px 0 12px;
-  overflow-wrap: anywhere;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.currentStatus {
-  font-size: 12px;
-  font-weight: 800;
-  text-transform: none;
+.claimReview {
+  display: grid;
+  padding: 0 17px 16px;
+  gap: 9px;
 }
 
 .reviewActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
 }
 
 .reviewActions button,
-.iconButton {
+.reviewNotice button {
   display: inline-flex;
-  height: 40px;
+  min-width: 0;
+  min-height: 44px;
   align-items: center;
   justify-content: center;
   gap: 5px;
@@ -441,20 +434,58 @@
   border-color: #2f362f;
 }
 
-.reviewActions button:disabled {
+.reviewActions button:disabled,
+.reviewNotice button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
 
-.reviewActions .iconButton {
-  width: 40px;
-  padding: 0;
+.reviewActions button:only-child {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.reviewNotice {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid #cbd2cc;
+  color: #176a60;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.reviewNotice > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.reviewNotice button {
+  min-height: 36px;
+  flex: 0 0 auto;
+}
+
+.reviewComplete,
+.reviewSaving {
+  margin: 0;
+  color: #52605a;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.reviewComplete {
+  color: #176a60;
+  font-weight: 750;
 }
 
 .reviewError {
-  margin: 10px 0 0 !important;
+  margin: 0;
   color: #8f2f26;
-  font-size: 12px !important;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .graphPanel {

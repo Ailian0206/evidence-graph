@@ -149,7 +149,6 @@
     "claimCount": "{count} 条主张",
     "evidenceCount": "{count} 条证据",
     "reviewFilter": "按人工审核状态筛选",
-    "currentStatus": "当前审核状态",
     "relationFilter": "按证据关系筛选",
     "mobileTabsLabel": "工作台视图",
     "graphTitle": "主张与证据关系",
@@ -256,6 +255,12 @@
       "reject": "拒绝主张",
       "reset": "恢复待审核"
     },
+    "reviewSaving": "正在保存审核状态...",
+    "reviewResultLabel": "审核操作结果",
+    "reviewAccepted": "上一条主张已接受",
+    "reviewRejected": "上一条主张已拒绝",
+    "reviewUndo": "撤销上一条审核",
+    "reviewComplete": "待审核主张已全部处理",
     "reviewError": "审核状态保存失败，请重试。",
     "sourceMeta": {
       "title": "来源标题",

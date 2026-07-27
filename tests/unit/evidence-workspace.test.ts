@@ -4,6 +4,7 @@ import {
   createEvidenceGraphElements,
   createWorkspaceClaimSummaries,
   filterWorkspaceClaims,
+  findNextPendingClaimId,
   reviewWorkspaceClaim,
 } from "@/features/research/evidence-workspace";
 import { createEvidenceWorkspaceFixture } from "@/features/research/evidence-workspace-fixture";
@@ -84,6 +85,50 @@ describe("evidence workspace claim summaries", () => {
         reviewStatus: "rejected",
       }),
     ).toThrow("CLAIM_NOT_FOUND");
+  });
+
+  it("finds the next pending claim and wraps once", () => {
+    const workspace = createEvidenceWorkspaceFixture("zh");
+    const summaries = createWorkspaceClaimSummaries(workspace);
+
+    expect(
+      findNextPendingClaimId({
+        claims: summaries,
+        currentClaimId: workspace.claims[0].id,
+      }),
+    ).toBe(workspace.claims[1].id);
+    expect(
+      findNextPendingClaimId({
+        claims: summaries,
+        currentClaimId: workspace.claims[1].id,
+      }),
+    ).toBe(workspace.claims[0].id);
+  });
+
+  it("returns no next claim when the current claim is the only pending item", () => {
+    const workspace = createEvidenceWorkspaceFixture("zh");
+    const claims = workspace.claims.map((claim, index) => ({
+      ...claim,
+      reviewStatus: index === 0 ? ("pending" as const) : ("accepted" as const),
+    }));
+
+    expect(
+      findNextPendingClaimId({
+        claims: createWorkspaceClaimSummaries({ ...workspace, claims }),
+        currentClaimId: claims[0].id,
+      }),
+    ).toBeUndefined();
+  });
+
+  it("uses the first pending claim when the current claim is not eligible", () => {
+    const workspace = createEvidenceWorkspaceFixture("zh");
+
+    expect(
+      findNextPendingClaimId({
+        claims: createWorkspaceClaimSummaries(workspace),
+        currentClaimId: "claim_not_visible",
+      }),
+    ).toBe(workspace.claims[0].id);
   });
 });
 

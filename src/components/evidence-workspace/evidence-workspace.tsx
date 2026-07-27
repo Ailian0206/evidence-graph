@@ -2,21 +2,19 @@
 
 import {
   ArrowLeft,
-  Check,
   CircleDot,
   FileText,
   Network,
-  RotateCcw,
-  X,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 
 import { reviewClaim } from "@/features/research/actions";
 import {
   createEvidenceGraphElements,
   createWorkspaceClaimSummaries,
   filterWorkspaceClaims,
+  findNextPendingClaimId,
   reviewWorkspaceClaim,
   workspaceEvidenceRelations,
   type ClaimReviewFilter,
@@ -44,6 +42,10 @@ const mobileTabs = ["claims", "graph", "source", "log"] as const;
 const workspaceModes = ["graph", "report"] as const;
 type MobileTab = (typeof mobileTabs)[number];
 type WorkspaceMode = (typeof workspaceModes)[number];
+type ReviewNotice = {
+  claimId: string;
+  reviewStatus: "accepted" | "rejected";
+};
 
 export function EvidenceWorkspace({
   initialData,
@@ -91,7 +93,9 @@ function EvidenceWorkspaceReady({
   );
   const [activeWorkspaceMode, setActiveWorkspaceMode] =
     useState<WorkspaceMode>(initialMode);
-  const [reviewError, setReviewError] = useState(false);
+  const [reviewErrorClaimId, setReviewErrorClaimId] = useState<string | null>(null);
+  const [reviewNotice, setReviewNotice] = useState<ReviewNotice | null>(null);
+  const [reviewComplete, setReviewComplete] = useState(false);
   const [reviewPending, startReview] = useTransition();
   const workspace = useMemo(() => ({ ...initialData, claims }), [claims, initialData]);
   const claimSummaries = useMemo(
@@ -109,6 +113,17 @@ function EvidenceWorkspaceReady({
       }),
     [activeRelations, claimSummaries, reviewFilter],
   );
+  const reviewCandidates = useMemo(
+    () =>
+      filterWorkspaceClaims({
+        claims: claimSummaries,
+        reviewStatus: "all",
+        relations: workspaceEvidenceRelations.filter((relation) =>
+          activeRelations.has(relation),
+        ),
+      }),
+    [activeRelations, claimSummaries],
+  );
   const graphElements = useMemo(
     () =>
       createEvidenceGraphElements({
@@ -120,7 +135,8 @@ function EvidenceWorkspaceReady({
     [activeRelations, workspace],
   );
   const selectedSummary =
-    claimSummaries.find(({ claim }) => claim.id === selectedClaimId) ?? claimSummaries[0];
+    visibleClaims.find(({ claim }) => claim.id === selectedClaimId) ?? visibleClaims[0];
+  const visibleSelectedClaimId = selectedSummary?.claim.id ?? "";
   const selectedClaim = selectedSummary?.claim;
   const selectedEvidence =
     selectedSummary?.evidenceLinks.find(
@@ -137,14 +153,42 @@ function EvidenceWorkspaceReady({
     accepted: t("status.accepted"),
     rejected: t("status.rejected"),
   };
-  const handleReview = (reviewStatus: "pending" | "accepted" | "rejected") => {
-    if (!selectedClaim) {
+  useEffect(() => {
+    const selectedRow = document.getElementById(
+      `workspace-claim-${visibleSelectedClaimId}`,
+    );
+
+    if (typeof selectedRow?.scrollIntoView === "function") {
+      selectedRow.scrollIntoView({ block: "nearest" });
+    }
+  }, [visibleSelectedClaimId]);
+  useEffect(() => {
+    if (!reviewNotice) {
       return;
     }
 
-    const claimId = selectedClaim.id;
-    const previousStatus = selectedClaim.reviewStatus;
-    setReviewError(false);
+    const timeout = window.setTimeout(() => setReviewNotice(null), 6000);
+    return () => window.clearTimeout(timeout);
+  }, [reviewNotice]);
+  const handleReview = (
+    claimId: string,
+    reviewStatus: "pending" | "accepted" | "rejected",
+  ) => {
+    const targetClaim = claims.find((claim) => claim.id === claimId);
+
+    if (!targetClaim) {
+      return;
+    }
+
+    const previousStatus = targetClaim.reviewStatus;
+    const nextPendingClaimId =
+      previousStatus === "pending" && reviewStatus !== "pending"
+        ? findNextPendingClaimId({
+            claims: reviewCandidates,
+            currentClaimId: claimId,
+          })
+        : undefined;
+    setReviewErrorClaimId(null);
     setClaims((currentClaims) =>
       reviewWorkspaceClaim({
         claims: currentClaims,
@@ -152,6 +196,15 @@ function EvidenceWorkspaceReady({
         reviewStatus,
       }),
     );
+    if (reviewStatus === "pending") {
+      setReviewNotice(null);
+      setReviewComplete(false);
+      setSelectedClaimId(claimId);
+    } else {
+      setReviewNotice({ claimId, reviewStatus });
+      setReviewComplete(!nextPendingClaimId);
+      setSelectedClaimId(nextPendingClaimId ?? claimId);
+    }
 
     if (persistence === "demo") {
       return;
@@ -173,9 +226,17 @@ function EvidenceWorkspaceReady({
             reviewStatus: previousStatus,
           }),
         );
-        setReviewError(true);
+        setReviewNotice(null);
+        setReviewComplete(false);
+        setSelectedClaimId(claimId);
+        setReviewErrorClaimId(claimId);
       }
     });
+  };
+  const handleUndoReview = () => {
+    if (reviewNotice) {
+      handleReview(reviewNotice.claimId, "pending");
+    }
   };
   const handleSelectClaim = (claimId: string) => {
     setSelectedClaimId(claimId);
@@ -379,56 +440,26 @@ function EvidenceWorkspaceReady({
             statusLabels={statusLabels}
             evidenceLabel={(count) => t("evidenceCount", { count })}
             emptyLabel={t("emptyClaims")}
+            reviewComplete={reviewComplete}
+            reviewErrorClaimId={reviewErrorClaimId}
+            reviewLabels={{
+              accept: t("actions.accept"),
+              reject: t("actions.reject"),
+              reset: t("actions.reset"),
+              saving: t("reviewSaving"),
+              resultLabel: t("reviewResultLabel"),
+              accepted: t("reviewAccepted"),
+              rejected: t("reviewRejected"),
+              undo: t("reviewUndo"),
+              complete: t("reviewComplete"),
+              error: t("reviewError"),
+            }}
+            reviewNotice={reviewNotice}
+            reviewPending={reviewPending}
             onSelect={handleSelectClaim}
+            onReview={handleReview}
+            onUndo={handleUndoReview}
           />
-          {selectedClaim && (
-            <div className={styles.reviewDock} data-testid="selected-claim">
-              <div>
-                <span
-                  className={styles.currentStatus}
-                  role="status"
-                  aria-label={t("currentStatus")}
-                  data-status={selectedClaim.reviewStatus}
-                >
-                  {statusLabels[selectedClaim.reviewStatus]}
-                </span>
-                <p>{selectedClaim.statement}</p>
-              </div>
-              <div className={styles.reviewActions}>
-                <button
-                  type="button"
-                  onClick={() => handleReview("accepted")}
-                  disabled={reviewPending}
-                >
-                  <Check aria-hidden="true" size={16} />
-                  {t("actions.accept")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleReview("rejected")}
-                  disabled={reviewPending}
-                >
-                  <X aria-hidden="true" size={16} />
-                  {t("actions.reject")}
-                </button>
-                <button
-                  className={styles.iconButton}
-                  type="button"
-                  aria-label={t("actions.reset")}
-                  title={t("actions.reset")}
-                  onClick={() => handleReview("pending")}
-                  disabled={reviewPending}
-                >
-                  <RotateCcw aria-hidden="true" size={15} />
-                </button>
-              </div>
-              {reviewError ? (
-                <p className={styles.reviewError} role="alert">
-                  {t("reviewError")}
-                </p>
-              ) : null}
-            </div>
-          )}
         </section>
 
         <section

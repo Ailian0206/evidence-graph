@@ -109,6 +109,26 @@ export const filterWorkspaceClaims = ({
   );
 };
 
+export const findNextPendingClaimId = ({
+  claims,
+  currentClaimId,
+}: {
+  claims: WorkspaceClaimSummary[];
+  currentClaimId: string;
+}) => {
+  const currentIndex = claims.findIndex(({ claim }) => claim.id === currentClaimId);
+
+  for (let offset = 1; offset <= claims.length; offset += 1) {
+    const candidate = claims[(currentIndex + offset) % claims.length]?.claim;
+
+    if (candidate?.id !== currentClaimId && candidate?.reviewStatus === "pending") {
+      return candidate.id;
+    }
+  }
+
+  return undefined;
+};
+
 export const reviewWorkspaceClaim = ({
   claims,
   claimId,
