@@ -4,17 +4,17 @@
 
 ## 当前阶段
 
-- 当前里程碑：C2“核心研究闭环与缺陷收敛”正在 Draft PR #19 收口。
-- 当前进度：4 个 P1 已完成实现、自动化和托管开发环境核心流程验收；PR #19 等待独立 Claude 审核和 GitHub CI。
-- 下一次用户可见结果：PR #19 通过当前 head 审核和 CI 后直接以 merge commit 合并，不等待用户本地验收。
-- 当前禁止：不得提前实现 C3-C6，不得更新 `release`，不得执行 Production 迁移、变量修改、Inngest 同步或部署。
+- 当前里程碑：C2“核心研究闭环与缺陷收敛”已完成，当前没有进行中的里程碑。
+- 当前进度：4 个 P1 已关闭；PR #19 已通过独立 Claude 审核和 GitHub CI，并以 merge commit `de567b0` 合并。
+- 下一次用户可见结果：后续按独立范围启动 C3“Settings 与账号/数据生命周期”，不在 C2 后静默扩展。
+- 当前禁止：不得直接开始 C3-C6，不得更新 `release`，不得执行 Production 迁移、变量修改、Inngest 同步或部署。
 - 路线图：`docs/roadmap.md`。
 
 ## 真实完成度
 
 | 维度 | 当前状态 | 说明 |
 | --- | --- | --- |
-| 代码完成度 | C2 实现完成 | 4 个 P1 已关闭，完整模块门禁通过，Draft PR #19 等待审核与 CI |
+| 代码完成度 | C2 已合并 | 4 个 P1 已关闭，PR #19 已通过完整门禁、独立审核和 CI |
 | Agent 本地验收度 | C2 核心流程通过 | 已完成创建、fixture 运行、Claim 审核、报告发布、报告库和公开页走查 |
 | 用户反馈状态 | 异步接收 | 用户可继续体验并提交问题；反馈不回溯阻断已通过门禁的开发流程 |
 | 产品完成度 | 未完成 | Settings/删除、Evidence Eval、3 个真实案例和 Release Candidate 尚未完成 |
@@ -40,7 +40,7 @@
 | --- | --- | --- |
 | C0 规划重置与真实进度基线 | 已完成 | Roadmap、执行流程、状态口径和流程复盘一致，文档验证通过 |
 | C1 本地真实研究运行环境 | 已完成 | PR #18 已通过自动化、Agent 本地验收、独立审核和 CI，并以 merge commit 合并 |
-| C2 核心研究闭环与缺陷收敛 | 进行中 | 已确认的 P0/P1 清单关闭并完成模块门禁 |
+| C2 核心研究闭环与缺陷收敛 | 已完成 | PR #19 已通过自动化、Agent 本地验收、独立审核和 CI，并以 merge commit 合并 |
 | C3 Settings 与账号/数据生命周期 | 尚未开始 | 本地语言、项目删除和测试账号删除通过 Agent 验收与模块门禁 |
 | C4 Evidence Eval | 尚未开始 | 10 题评测达到产品计划门槛并经 Agent 人工样本抽查 |
 | C5 真实案例与作品集回填 | 尚未开始 | 3 个真实案例和作品集页面通过 Agent 验收与模块门禁 |
@@ -61,12 +61,13 @@
 | 全局 UI 体验优化 | 已合并 | PR #16 |
 | Tavily、DeepSeek、百炼真实 Provider | 已合并 | PR #17 |
 | C1 本地真实研究运行环境 | 已合并 | PR #18 |
+| C2 核心研究闭环与缺陷收敛 | 已合并 | PR #19 |
 
 这些记录只证明技术模块通过当时门禁，不等于当前产品已经完成全部 MVP 范围；用户反馈继续异步进入后续修复。
 
 ## 最近验证基线
 
-- 2026-07-28 C2 Draft PR #19 已创建。完整门禁通过 lint、typecheck、单元测试 `384/384`、build、E2E `87/87`、托管 pgTAP `98/98`、public Schema lint 和 Provider 边界；最新验收差异的聚焦 lint 与 E2E `17/17` 复验通过。Agent 在用户 Chrome 登录态完成一条 fixture 研究，确认 GitHub 用户信息、生成 Loading、Claim 接受/拒绝、审核约束发布、报告库和公开报告均可用；未调用付费 Provider，Production 保持冻结。
+- 2026-07-28 C2 PR #19 的独立 Claude 审核对 head `6758dde` 返回 `pass`，两项 GitHub CI 均通过，随后以 merge commit `de567b0` 合并到 `main`。完整门禁通过 lint、typecheck、单元测试 `384/384`、build、E2E `87/87`、托管 pgTAP `98/98`、public Schema lint 和 Provider 边界；最新验收差异的聚焦 lint 与 E2E `17/17` 复验通过。Agent 在用户 Chrome 登录态完成一条 fixture 研究，确认 GitHub 用户信息、生成 Loading、Claim 接受/拒绝、审核约束发布、报告库和公开报告均可用；未调用付费 Provider，Production 保持冻结。
 - 2026-07-28 C2 worktree 基线通过 lint、typecheck 和单元测试 `359/359`。用户 Chrome 登录态走查确认：20 条 Claim 中只有 11 条 Evidence-linked Claim 出现在审核列表；rejected Claim 仍保留在草稿且发布按钮可用；月额度错误会清空新建表单；完成研究的 active 项目仍显示“进行中”。四项均列为 C2 P1。
 - 2026-07-27 PR #18 的独立 Claude 审核对 head `f50e598` 返回 `pass`，未发现可复现的正确性、安全性、数据隔离或测试可信度问题；GitHub 代码门禁和 Supabase Schema/RLS/lint 两项 CI 均通过，随后以 merge commit `ea06616` 合并到 `main` 并删除远端模块分支。
 - 2026-07-27 用户明确取消“等待用户本地验收后再审核”的流程门禁。此后自动化和 Agent 本地验收通过即直接完成独立 Claude 审核、CI 和 merge commit；用户后续发现的问题继续提交和修复，不阻塞 PR 或下一里程碑。Production 发布仍保留单独的用户明确授权门禁。
@@ -97,7 +98,6 @@
 
 ## 已知 MVP 缺口
 
-- 核心研究闭环的 P0/P1 缺陷收敛。
 - `/app/settings`、语言偏好、项目数据删除和账号删除。
 - 10 个固定问题及人工样本的 Evidence Eval。
 - 3 个真实公开案例、案例文章、决策图和作品集回填。
@@ -107,4 +107,4 @@
 
 ## 下一步
 
-对 Draft PR #19 立即运行独立 Claude 审核并等待 GitHub CI；仅修复阻塞项。当前 head 审核通过且 CI 全绿后以 merge commit 合并。用户反馈继续异步接收，Production 继续冻结。
+C2 到此结束，不自动开始下一阶段。下一候选里程碑为 C3“Settings 与账号/数据生命周期”；开始前单独冻结有限范围和验收条件。用户反馈继续异步接收，Production 继续冻结。
