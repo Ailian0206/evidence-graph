@@ -1,11 +1,13 @@
 "use client";
 
-import { Copy, ExternalLink, EyeOff, Upload } from "lucide-react";
+import { ArrowRight, Copy, ExternalLink, EyeOff, Upload } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 
 import { publishReport, revokeReport } from "@/features/reports/actions";
+import { createReportReviewReadiness } from "@/features/reports/reviewed-report";
 import type { PublishableReport } from "@/features/reports/report-store";
+import type { Claim } from "@/features/research/domain";
 import type { ReportCitation } from "@/features/research/workflow-types";
 import type { AppLocale } from "@/i18n/routing";
 
@@ -15,8 +17,10 @@ type WorkspaceReportProps = {
   locale: AppLocale;
   projectId: string;
   reports: PublishableReport[];
+  claims: Claim[];
   persistence: "demo" | "managed";
   onSelectCitation: (citation: ReportCitation) => void;
+  onReviewClaim: (claimId: string) => void;
 };
 
 const renderSectionText = (markdown: string, citationIds: string[]) =>
@@ -26,8 +30,10 @@ export function WorkspaceReport({
   locale,
   projectId,
   reports: initialReports,
+  claims,
   persistence,
   onSelectCitation,
+  onReviewClaim,
 }: WorkspaceReportProps) {
   const t = useTranslations("Workspace.report");
   const [reports, setReports] = useState(initialReports);
@@ -36,7 +42,9 @@ export function WorkspaceReport({
       initialReports[0]?.id ??
       "",
   );
-  const [actionError, setActionError] = useState<"publish" | "revoke" | null>(null);
+  const [actionError, setActionError] = useState<
+    "publish" | "revoke" | "reviewIncomplete" | "noAcceptedContent" | null
+  >(null);
   const [copyState, setCopyState] = useState<"idle" | "success" | "error">("idle");
   const [isPending, startTransition] = useTransition();
   const selectedReport =
@@ -51,6 +59,9 @@ export function WorkspaceReport({
   }
 
   const publicPath = selectedReport.slug ? `/r/${selectedReport.slug}` : undefined;
+  const reviewReadiness = createReportReviewReadiness({ report: selectedReport, claims });
+  const showReviewReadiness =
+    persistence === "managed" && selectedReport.status !== "published";
   const citationsById = new Map(
     selectedReport.citations.map((citation) => [citation.evidenceLinkId, citation]),
   );
@@ -61,28 +72,27 @@ export function WorkspaceReport({
       try {
         const result = await publishReport(locale, projectId, selectedReport.id);
         if (!result.ok) {
-          setActionError("publish");
+          setActionError(
+            result.code === "REPORT_REVIEW_INCOMPLETE"
+              ? "reviewIncomplete"
+              : result.code === "REPORT_NO_ACCEPTED_CONTENT"
+                ? "noAcceptedContent"
+                : "publish",
+          );
           return;
         }
 
-        setReports((currentReports) =>
-          currentReports.map((report) => {
-            if (report.id === selectedReport.id) {
-              return {
-                ...report,
-                slug: result.slug,
-                status: "published",
-                publishedAt: result.publishedAt,
-              };
-            }
-
-            if (report.status === "published") {
-              return { ...report, slug: undefined, status: "revoked" };
-            }
-
-            return report;
-          }),
-        );
+        setReports((currentReports) => [
+          result.report,
+          ...currentReports
+            .filter((report) => report.id !== result.report.id)
+            .map((report) =>
+              report.status === "published"
+                ? { ...report, slug: undefined, status: "revoked" as const }
+                : report,
+            ),
+        ]);
+        setSelectedReportId(result.report.id);
       } catch {
         setActionError("publish");
       }
@@ -153,7 +163,11 @@ export function WorkspaceReport({
         </span>
         <div className={styles.reportActions}>
           {persistence === "managed" && selectedReport.status !== "published" ? (
-            <button type="button" onClick={handlePublish} disabled={isPending}>
+            <button
+              type="button"
+              onClick={handlePublish}
+              disabled={isPending || reviewReadiness.status === "incomplete"}
+            >
               <Upload aria-hidden="true" size={15} />
               {isPending ? t("publishing") : t("publish")}
             </button>
@@ -190,6 +204,31 @@ export function WorkspaceReport({
         </div>
       </div>
 
+      {showReviewReadiness ? (
+        <div
+          className={styles.reportReadiness}
+          data-state={reviewReadiness.status}
+          role="status"
+        >
+          <p>
+            {reviewReadiness.status === "incomplete"
+              ? t("reviewPending", { count: reviewReadiness.pendingClaimIds.length })
+              : reviewReadiness.rejectedClaimIds.length > 0
+                ? t("reviewRejected", { count: reviewReadiness.rejectedClaimIds.length })
+                : t("reviewReady")}
+          </p>
+          {reviewReadiness.status === "incomplete" ? (
+            <button
+              type="button"
+              onClick={() => onReviewClaim(reviewReadiness.pendingClaimIds[0])}
+            >
+              {t("reviewNext")}
+              <ArrowRight aria-hidden="true" size={14} />
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
       {publicPath ? <code className={styles.reportPublicPath}>{publicPath}</code> : null}
       {copyState !== "idle" ? (
         <p className={styles.reportNotice} data-state={copyState} role="status">
@@ -198,7 +237,15 @@ export function WorkspaceReport({
       ) : null}
       {actionError ? (
         <p className={styles.reportError} role="alert">
-          {t(actionError === "publish" ? "publishError" : "revokeError")}
+          {t(
+            actionError === "reviewIncomplete"
+              ? "reviewIncompleteError"
+              : actionError === "noAcceptedContent"
+                ? "noAcceptedContentError"
+                : actionError === "publish"
+                  ? "publishError"
+                  : "revokeError",
+          )}
         </p>
       ) : null}
 

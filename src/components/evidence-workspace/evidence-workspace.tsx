@@ -551,8 +551,13 @@ function EvidenceWorkspaceReady({
                 locale={workspace.locale}
                 projectId={workspace.project.id}
                 reports={workspace.reports}
+                claims={claims}
                 persistence={persistence}
                 onSelectCitation={handleSelectReportCitation}
+                onReviewClaim={(claimId) => {
+                  setSelectedClaimId(claimId);
+                  setActiveMobileTab("claims");
+                }}
               />
             </div>
           )}

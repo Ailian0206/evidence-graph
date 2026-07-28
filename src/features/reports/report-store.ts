@@ -2,10 +2,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
 import { findPublicReportFixture } from "@/features/reports/report-fixture";
+import { createReviewedReportSnapshot } from "@/features/reports/reviewed-report";
 import {
   reportCitationSchema,
   reportSectionSchema,
   researchReportSchema,
+  type ReportCitation,
+  type ReportSection,
 } from "@/features/research/workflow-types";
 import { isSupabasePublicConfigured } from "@/lib/supabase/config";
 
@@ -52,12 +55,10 @@ export type ReportRow = {
   created_at: string;
 };
 
-type PublishReportRow = {
-  report_id: string;
-  project_slug: string;
-  report_version: number;
-  report_status: "published";
-  report_published_at: string;
+export type ReportClaimRow = {
+  id: string;
+  project_id: string;
+  review_status: "pending" | "accepted" | "rejected";
 };
 
 type RevokeReportRow = {
@@ -80,10 +81,14 @@ export type PublicReportRow = {
 
 export type ReportQueryAdapter = {
   listVersions: (input: { projectId: string }) => Promise<ReportRow[]>;
-  publish: (input: {
+  listClaims: (input: { projectId: string }) => Promise<ReportClaimRow[]>;
+  publishReviewed: (input: {
     projectId: string;
-    reportId: string;
-  }) => Promise<PublishReportRow[]>;
+    baseReportId: string;
+    markdown: string;
+    sections: ReportSection[];
+    citations: ReportCitation[];
+  }) => Promise<ReportRow[]>;
   revoke: (input: { projectId: string }) => Promise<RevokeReportRow[]>;
   getPublicReport: (input: { slug: string }) => Promise<PublicReportRow[]>;
 };
@@ -100,6 +105,8 @@ const stableReportErrorCodes = [
   "REPORT_NOT_FOUND",
   "REPORT_NOT_PUBLISHABLE",
   "PROJECT_NOT_PUBLISHABLE",
+  "REPORT_REVIEW_INCOMPLETE",
+  "REPORT_NO_ACCEPTED_CONTENT",
 ] as const;
 
 const throwQueryError = (error: { message: string } | null) => {
@@ -123,13 +130,31 @@ export const createSupabaseReportQueryAdapter = (
     throwQueryError(error);
     return (data ?? []) as ReportRow[];
   },
-  publish: async ({ projectId, reportId }) => {
-    const { data, error } = await client.rpc("publish_report_version", {
+  listClaims: async ({ projectId }) => {
+    const { data, error } = await client
+      .from("claims")
+      .select("id,project_id,review_status")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: true });
+    throwQueryError(error);
+    return (data ?? []) as ReportClaimRow[];
+  },
+  publishReviewed: async ({
+    projectId,
+    baseReportId,
+    markdown,
+    sections,
+    citations,
+  }) => {
+    const { data, error } = await client.rpc("publish_reviewed_report", {
       requested_project_id: projectId,
-      requested_report_id: reportId,
+      requested_base_report_id: baseReportId,
+      requested_markdown: markdown,
+      requested_sections: sections,
+      requested_citations: citations,
     });
     throwQueryError(error);
-    return (data ?? []) as PublishReportRow[];
+    return (data ?? []) as ReportRow[];
   },
   revoke: async ({ projectId }) => {
     const { data, error } = await client.rpc("revoke_published_report", {
@@ -184,19 +209,39 @@ export const createReportStore = (queries: ReportQueryAdapter) => ({
     const parsed = ownedReportInputSchema
       .extend({ reportId: z.string().min(1) })
       .parse(input);
+    const report = (await queries.listVersions({ projectId: parsed.projectId }))
+      .map(mapReportRow)
+      .find(
+        (candidate) =>
+          candidate.id === parsed.reportId && candidate.projectId === parsed.projectId,
+      );
+
+    if (!report) {
+      throw new Error("REPORT_NOT_FOUND");
+    }
+
+    const claims = (await queries.listClaims({ projectId: parsed.projectId })).map(
+      (row) => {
+        if (row.project_id !== parsed.projectId) {
+          throw new Error("REPORT_QUERY_FAILED");
+        }
+
+        return {
+          id: z.string().min(1).parse(row.id),
+          reviewStatus: z.enum(["pending", "accepted", "rejected"]).parse(row.review_status),
+        };
+      },
+    );
+    const snapshot = createReviewedReportSnapshot({ report, claims });
     const row = requireFirstRow(
-      await queries.publish({
+      await queries.publishReviewed({
         projectId: parsed.projectId,
-        reportId: parsed.reportId,
+        baseReportId: parsed.reportId,
+        ...snapshot,
       }),
     );
-    return {
-      id: row.report_id,
-      slug: row.project_slug,
-      version: row.report_version,
-      status: row.report_status,
-      publishedAt: normalizeTimestamp(row.report_published_at),
-    };
+
+    return mapReportRow(row);
   },
   revoke: async (input: { ownerId: string; projectId: string }) => {
     const { projectId } = ownedReportInputSchema.parse(input);
