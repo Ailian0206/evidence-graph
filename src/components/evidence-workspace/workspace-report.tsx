@@ -60,8 +60,7 @@ export function WorkspaceReport({
 
   const publicPath = selectedReport.slug ? `/r/${selectedReport.slug}` : undefined;
   const reviewReadiness = createReportReviewReadiness({ report: selectedReport, claims });
-  const showReviewReadiness =
-    persistence === "managed" && selectedReport.status !== "published";
+  const showReviewReadiness = selectedReport.status !== "published";
   const citationsById = new Map(
     selectedReport.citations.map((citation) => [citation.evidenceLinkId, citation]),
   );
