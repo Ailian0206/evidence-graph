@@ -90,24 +90,13 @@ export const createWorkspaceClaimSummaries = ({
 export const filterWorkspaceClaims = ({
   claims,
   reviewStatus,
-  relations,
 }: {
   claims: WorkspaceClaimSummary[];
   reviewStatus: ClaimReviewFilter;
-  relations: readonly EvidenceLink["relation"][];
-}) => {
-  const activeRelations = new Set(relations);
-
-  if (activeRelations.size === 0) {
-    return [];
-  }
-
-  return claims.filter(
-    ({ claim, evidenceLinks }) =>
-      (reviewStatus === "all" || claim.reviewStatus === reviewStatus) &&
-      evidenceLinks.some((link) => activeRelations.has(link.relation)),
+}) =>
+  claims.filter(
+    ({ claim }) => reviewStatus === "all" || claim.reviewStatus === reviewStatus,
   );
-};
 
 export const findNextPendingClaimId = ({
   claims,

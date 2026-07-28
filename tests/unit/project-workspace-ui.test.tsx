@@ -68,7 +68,7 @@ describe("managed project workspace UI", () => {
       "href",
       "/zh/app/research/project_1",
     );
-    expect(screen.getByText("进行中")).toBeVisible();
+    expect(screen.getByText("活跃")).toBeVisible();
     expect(screen.getByText(/2026/)).toBeVisible();
     expect(screen.getByRole("button", { name: "归档可核查的 AI 研究" })).toBeVisible();
     expect(screen.getByRole("button", { name: "删除可核查的 AI 研究" })).toBeVisible();
@@ -91,7 +91,7 @@ describe("managed project workspace UI", () => {
 
     const row = screen.getByRole("listitem");
     expect(within(row).getByRole("link", { name: project.title })).toBeVisible();
-    expect(within(row).getByText("进行中")).toHaveAttribute("data-status", "active");
+    expect(within(row).getByText("活跃")).toHaveAttribute("data-status", "active");
     expect(within(row).getByRole("button", { name: /删除/ })).toHaveAttribute(
       "data-variant",
       "danger",

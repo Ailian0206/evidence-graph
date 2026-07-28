@@ -91,6 +91,7 @@ describe("evidence workspace claim review", () => {
     expect(within(selectedCard).getByRole("button", { name: "拒绝主张" })).toBeVisible();
     expect(within(otherCard).queryByRole("button", { name: "接受主张" })).toBeNull();
     expect(screen.queryByTestId("selected-claim")).toBeNull();
+    expect(screen.getByText("运行完成")).toBeVisible();
   });
 
   it("filters the claim list by human review status", async () => {
@@ -282,7 +283,7 @@ describe("evidence workspace claim review", () => {
     );
   });
 
-  it("hides claims when their only evidence relation is disabled", async () => {
+  it("keeps claims visible when their only evidence relation is disabled", async () => {
     const user = userEvent.setup();
     const workspace = createEvidenceWorkspaceFixture("zh");
     const supportedClaim = workspace.claims[0];
@@ -290,8 +291,34 @@ describe("evidence workspace claim review", () => {
 
     await user.click(screen.getByRole("checkbox", { name: "支持" }));
 
-    expect(screen.queryByRole("button", { name: supportedClaim.statement })).toBeNull();
+    expect(screen.getByRole("button", { name: supportedClaim.statement })).toBeVisible();
     expect(screen.getByRole("checkbox", { name: "支持" })).not.toBeChecked();
+  });
+
+  it("shows an evidence-less pending claim with review actions and an empty source", async () => {
+    const user = userEvent.setup();
+    const workspace = createEvidenceWorkspaceFixture("zh");
+    const evidenceLessClaim = {
+      ...workspace.claims[0],
+      id: "claim_without_evidence",
+      normalizedKey: "claim without evidence",
+      statement: "没有 Evidence Link 的待审核主张",
+      reviewStatus: "pending" as const,
+    };
+    renderWorkspace("demo", {
+      ...workspace,
+      claims: [...workspace.claims, evidenceLessClaim],
+    });
+
+    await user.click(screen.getByRole("button", { name: evidenceLessClaim.statement }));
+
+    const claimCard = screen.getByRole("article", { name: evidenceLessClaim.statement });
+    expect(within(claimCard).getByText("0 条证据")).toBeVisible();
+    expect(within(claimCard).getByRole("button", { name: "接受主张" })).toBeVisible();
+    expect(within(claimCard).getByRole("button", { name: "拒绝主张" })).toBeVisible();
+    expect(screen.getByTestId("workspace-source")).toHaveTextContent(
+      "选择主张后查看关联来源",
+    );
   });
 });
 
