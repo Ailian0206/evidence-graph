@@ -58,6 +58,23 @@ const reportV1Row: ReportRow = {
   created_at: "2026-07-17T08:00:00.000Z",
 };
 
+const reportDraftRow: ReportRow = {
+  ...reportV2Row,
+  id: "report_draft",
+  run_id: "run_2",
+  slug: null,
+  status: "draft",
+  published_at: null,
+};
+
+const publishedReviewedRow: ReportRow = {
+  ...reportV2Row,
+  id: "report_reviewed_v3",
+  run_id: "run_2",
+  version: 3,
+  created_at: "2026-07-17T10:00:00.000Z",
+};
+
 const publicReportRow: PublicReportRow = {
   report_id: "report_v2",
   project_slug: "research-project-1",
@@ -75,15 +92,10 @@ const createQueries = (
   overrides: Partial<ReportQueryAdapter> = {},
 ): ReportQueryAdapter => ({
   listVersions: vi.fn(async () => [reportV2Row, reportV1Row]),
-  publish: vi.fn(async () => [
-    {
-      report_id: "report_v2",
-      project_slug: "research-project-1",
-      report_version: 2,
-      report_status: "published" as const,
-      report_published_at: "2026-07-17T18:00:00+08:00",
-    },
+  listClaims: vi.fn(async () => [
+    { id: "claim_1", project_id: "project_1", review_status: "accepted" as const },
   ]),
+  publishReviewed: vi.fn(async () => [publishedReviewedRow]),
   revoke: vi.fn(async () => [
     { project_slug: "research-project-1", revoked_report_id: "report_v2" },
   ]),
@@ -122,32 +134,120 @@ describe("report store", () => {
     expect(queries.listVersions).toHaveBeenCalledWith({ projectId: "project_1" });
   });
 
-  it("publishes and revokes reports through stable result DTOs", async () => {
-    const queries = createQueries();
+  it("derives, publishes, and returns a complete immutable report version", async () => {
+    const calls: string[] = [];
+    const queries = createQueries({
+      listVersions: vi.fn(async () => {
+        calls.push("reports");
+        return [reportDraftRow, reportV1Row];
+      }),
+      listClaims: vi.fn(async () => {
+        calls.push("claims");
+        return [
+          { id: "claim_1", project_id: "project_1", review_status: "accepted" as const },
+        ];
+      }),
+      publishReviewed: vi.fn(async () => {
+        calls.push("publish");
+        return [publishedReviewedRow];
+      }),
+    });
     const store = createReportStore(queries);
 
     await expect(
       store.publish({
         ownerId: "owner_1",
         projectId: "project_1",
-        reportId: "report_v2",
+        reportId: "report_draft",
       }),
     ).resolves.toEqual({
-      id: "report_v2",
+      id: "report_reviewed_v3",
+      runId: "run_2",
+      projectId: "project_1",
       slug: "research-project-1",
-      version: 2,
+      markdown: reportV2Row.markdown,
+      sections,
+      citations,
+      version: 3,
       status: "published",
       publishedAt: "2026-07-17T10:00:00.000Z",
+      createdAt: "2026-07-17T10:00:00.000Z",
+    });
+    expect(calls).toEqual(["reports", "claims", "publish"]);
+    expect(queries.publishReviewed).toHaveBeenCalledWith({
+      projectId: "project_1",
+      baseReportId: "report_draft",
+      markdown: reportDraftRow.markdown,
+      sections,
+      citations,
     });
     await expect(
       store.revoke({ ownerId: "owner_1", projectId: "project_1" }),
     ).resolves.toEqual({ slug: "research-project-1", reportId: "report_v2" });
 
-    expect(queries.publish).toHaveBeenCalledWith({
-      projectId: "project_1",
-      reportId: "report_v2",
-    });
     expect(queries.revoke).toHaveBeenCalledWith({ projectId: "project_1" });
+  });
+
+  it.each(["REPORT_REVIEW_INCOMPLETE", "REPORT_NO_ACCEPTED_CONTENT"] as const)(
+    "stops before the publishing RPC on %s",
+    async (code) => {
+      const reviewStatus =
+        code === "REPORT_REVIEW_INCOMPLETE" ? ("pending" as const) : ("rejected" as const);
+      const queries = createQueries({
+        listVersions: vi.fn(async () => [reportDraftRow]),
+        listClaims: vi.fn(async () => [
+          { id: "claim_1", project_id: "project_1", review_status: reviewStatus },
+        ]),
+      });
+
+      await expect(
+        createReportStore(queries).publish({
+          ownerId: "owner_1",
+          projectId: "project_1",
+          reportId: "report_draft",
+        }),
+      ).rejects.toThrow(code);
+      expect(queries.publishReviewed).not.toHaveBeenCalled();
+    },
+  );
+
+  it("stops before reading claims when the selected base report is missing", async () => {
+    const queries = createQueries({ listVersions: vi.fn(async () => []) });
+
+    await expect(
+      createReportStore(queries).publish({
+        ownerId: "owner_1",
+        projectId: "project_1",
+        reportId: "missing_report",
+      }),
+    ).rejects.toThrow("REPORT_NOT_FOUND");
+    expect(queries.listClaims).not.toHaveBeenCalled();
+    expect(queries.publishReviewed).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { name: "missing slug", row: { ...publishedReviewedRow, slug: null } },
+    {
+      name: "non-published status",
+      row: { ...publishedReviewedRow, slug: null, status: "revoked" as const },
+    },
+    {
+      name: "missing publication timestamp",
+      row: { ...publishedReviewedRow, published_at: null },
+    },
+  ])("rejects a reviewed RPC row with $name", async ({ row }) => {
+    const queries = createQueries({
+      listVersions: vi.fn(async () => [reportDraftRow]),
+      publishReviewed: vi.fn(async () => [row]),
+    });
+
+    await expect(
+      createReportStore(queries).publish({
+        ownerId: "owner_1",
+        projectId: "project_1",
+        reportId: "report_draft",
+      }),
+    ).rejects.toThrow("REPORT_QUERY_FAILED");
   });
 
   it("maps only the immutable fields needed by the public report page", async () => {
@@ -194,12 +294,17 @@ describe("report store", () => {
   it.each([
     {
       operation: "publish",
-      store: createReportStore(createQueries({ publish: vi.fn(async () => []) })),
+      store: createReportStore(
+        createQueries({
+          listVersions: vi.fn(async () => [reportDraftRow]),
+          publishReviewed: vi.fn(async () => []),
+        }),
+      ),
       invoke: (store: ReturnType<typeof createReportStore>) =>
         store.publish({
           ownerId: "owner_1",
           projectId: "project_1",
-          reportId: "report_v2",
+          reportId: "report_draft",
         }),
     },
     {
@@ -244,23 +349,23 @@ describe("report store", () => {
 });
 
 describe("Supabase report query adapter", () => {
-  it("uses explicit report columns, version ordering, and publishing RPCs", async () => {
-    const order = vi.fn(async () => ({ data: [reportV2Row, reportV1Row], error: null }));
-    const eq = vi.fn(() => ({ order }));
-    const select = vi.fn(() => ({ eq }));
-    const from = vi.fn(() => ({ select }));
+  it("uses explicit columns, scoped ordering, and reviewed publishing RPCs", async () => {
+    const reportOrder = vi.fn(async () => ({ data: [reportV2Row, reportV1Row], error: null }));
+    const claimOrder = vi.fn(async () => ({
+      data: [{ id: "claim_1", project_id: "project_1", review_status: "accepted" }],
+      error: null,
+    }));
+    const reportEq = vi.fn(() => ({ order: reportOrder }));
+    const claimEq = vi.fn(() => ({ order: claimOrder }));
+    const reportSelect = vi.fn(() => ({ eq: reportEq }));
+    const claimSelect = vi.fn(() => ({ eq: claimEq }));
+    const from = vi.fn((table: string) => ({
+      select: table === "reports" ? reportSelect : claimSelect,
+    }));
     const rpc = vi
       .fn()
       .mockResolvedValueOnce({
-        data: [
-          {
-            report_id: "report_v2",
-            project_slug: "research-project-1",
-            report_version: 2,
-            report_status: "published",
-            report_published_at: "2026-07-17T10:00:00.000Z",
-          },
-        ],
+        data: [publishedReviewedRow],
         error: null,
       })
       .mockResolvedValueOnce({
@@ -275,18 +380,31 @@ describe("Supabase report query adapter", () => {
       reportV2Row,
       reportV1Row,
     ]);
-    await queries.publish({ projectId: "project_1", reportId: "report_v2" });
+    await queries.listClaims({ projectId: "project_1" });
+    await queries.publishReviewed({
+      projectId: "project_1",
+      baseReportId: "report_draft",
+      markdown: reportDraftRow.markdown,
+      sections,
+      citations,
+    });
     await queries.revoke({ projectId: "project_1" });
     await queries.getPublicReport({ slug: "research-project-1" });
 
-    expect(select).toHaveBeenCalledWith(
+    expect(reportSelect).toHaveBeenCalledWith(
       "id,run_id,project_id,slug,markdown,sections,citations,version,status,published_at,created_at",
     );
-    expect(eq).toHaveBeenCalledWith("project_id", "project_1");
-    expect(order).toHaveBeenCalledWith("version", { ascending: false });
-    expect(rpc).toHaveBeenNthCalledWith(1, "publish_report_version", {
+    expect(reportEq).toHaveBeenCalledWith("project_id", "project_1");
+    expect(reportOrder).toHaveBeenCalledWith("version", { ascending: false });
+    expect(claimSelect).toHaveBeenCalledWith("id,project_id,review_status");
+    expect(claimEq).toHaveBeenCalledWith("project_id", "project_1");
+    expect(claimOrder).toHaveBeenCalledWith("created_at", { ascending: true });
+    expect(rpc).toHaveBeenNthCalledWith(1, "publish_reviewed_report", {
       requested_project_id: "project_1",
-      requested_report_id: "report_v2",
+      requested_base_report_id: "report_draft",
+      requested_markdown: reportDraftRow.markdown,
+      requested_sections: sections,
+      requested_citations: citations,
     });
     expect(rpc).toHaveBeenNthCalledWith(2, "revoke_published_report", {
       requested_project_id: "project_1",
@@ -303,7 +421,32 @@ describe("Supabase report query adapter", () => {
     const queries = createSupabaseReportQueryAdapter(client);
 
     await expect(
-      queries.publish({ projectId: "project_1", reportId: "report_v2" }),
+      queries.publishReviewed({
+        projectId: "project_1",
+        baseReportId: "report_v2",
+        markdown: reportV2Row.markdown,
+        sections,
+        citations,
+      }),
     ).rejects.toThrow("REPORT_QUERY_FAILED");
   });
+
+  it.each(["REPORT_REVIEW_INCOMPLETE", "REPORT_NO_ACCEPTED_CONTENT"])(
+    "preserves the stable %s database error",
+    async (code) => {
+      const client = {
+        rpc: vi.fn(async () => ({ data: null, error: { message: code } })),
+      } as unknown as SupabaseClient;
+
+      await expect(
+        createSupabaseReportQueryAdapter(client).publishReviewed({
+          projectId: "project_1",
+          baseReportId: "report_v2",
+          markdown: reportV2Row.markdown,
+          sections,
+          citations,
+        }),
+      ).rejects.toThrow(code);
+    },
+  );
 });

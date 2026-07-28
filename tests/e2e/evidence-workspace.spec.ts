@@ -79,25 +79,44 @@ test.describe("evidence workspace graph", () => {
     );
   });
 
-  test("removes disabled evidence relations from the graph and claim list", async ({
+  test("removes the first claim evidence from the graph but keeps the claim reviewable", async ({
     page,
   }) => {
     await page.goto("/zh/app/research/demo");
 
     const graph = page.getByTestId("workspace-graph");
     const initialElementCount = Number(await graph.getAttribute("data-graph-elements"));
-    await page.getByRole("checkbox", { name: "反驳" }).click();
+    await page.getByRole("checkbox", { name: "支持" }).click();
 
-    await expect(page.getByRole("checkbox", { name: "反驳" })).not.toBeChecked();
+    await expect(page.getByRole("checkbox", { name: "支持" })).not.toBeChecked();
     await expect(
       page.getByRole("button", {
-        name: "只有页面级链接也足以证明报告中的事实段落。",
+        name: "精确原文让审核者可以逐条核查 AI 研究主张。",
         exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", {
+        name: "证据：每条主张连接到精确原文",
       }),
     ).toHaveCount(0);
     await expect
       .poll(async () => Number(await graph.getAttribute("data-graph-elements")))
       .toBeLessThan(initialElementCount);
+  });
+
+  test("shows an evidence-less deterministic claim with an empty evidence count", async ({
+    page,
+  }) => {
+    await page.goto("/zh/app/research/demo");
+
+    const evidenceLessClaim = page.getByRole("article", {
+      name: "没有证据关系的主张仍需人工审核。",
+    });
+    await evidenceLessClaim.scrollIntoViewIfNeeded();
+
+    await expect(evidenceLessClaim).toBeVisible();
+    await expect(evidenceLessClaim.getByText("0 条证据", { exact: true })).toBeVisible();
   });
 
   test("selects graph nodes with arrow keys and Enter", async ({ page }) => {
@@ -164,6 +183,37 @@ test.describe("evidence workspace report", () => {
     await expect(page.getByTestId("workspace-source")).toContainText(
       "只保留页面级链接不足以证明事实段落",
     );
+  });
+
+  test("reviews the next pending report claim from the mobile deterministic report", async ({
+    page,
+  }) => {
+    const writeRequests: string[] = [];
+    page.on("request", (request) => {
+      if (request.method() === "POST") {
+        writeRequests.push(request.url());
+      }
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/zh/app/research/demo?view=report");
+
+    await expect(page.getByRole("button", { name: "撤销公开报告" })).toHaveCount(0);
+    await page.getByLabel("报告版本").selectOption("workspace_report_pending_zh");
+    await expect(page.getByText("还需审核 2 条报告引用主张")).toBeVisible();
+    await expect(page.getByRole("button", { name: "发布此版本" })).toHaveCount(0);
+    await page.getByRole("button", { name: "审核下一条" }).click();
+
+    const workspaceTabs = page.getByRole("tablist", { name: "工作台视图" });
+    await expect(
+      workspaceTabs.getByRole("tab", { name: "主张", exact: true }),
+    ).toHaveAttribute("aria-selected", "true");
+    await expect(
+      page.getByRole("button", {
+        name: "精确原文让审核者可以逐条核查 AI 研究主张。",
+        exact: true,
+      }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(writeRequests).toEqual([]);
   });
 });
 

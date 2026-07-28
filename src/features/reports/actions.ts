@@ -33,6 +33,8 @@ const reportActionErrorCodes = [
   "REPORT_NOT_PUBLISHABLE",
   "PROJECT_NOT_PUBLISHABLE",
   "REPORT_QUERY_FAILED",
+  "REPORT_REVIEW_INCOMPLETE",
+  "REPORT_NO_ACCEPTED_CONTENT",
 ] as const;
 
 const mapReportActionError = (error: unknown) => {
@@ -67,12 +69,7 @@ export async function publishManagedReport(
     dependencies.revalidate(`/${locale}/app/research/${projectId}`);
     dependencies.revalidate(`/r/${result.slug}`);
 
-    return {
-      ok: true as const,
-      slug: result.slug,
-      version: result.version,
-      publishedAt: result.publishedAt,
-    };
+    return { ok: true as const, report: result };
   } catch (error) {
     return { ok: false as const, code: mapReportActionError(error) };
   }

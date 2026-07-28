@@ -108,4 +108,4 @@ npm run test:managed
 
 ## 6. 当前有限周期
 
-C0 规划重置已经完成。下一个周期只能是 C1“本地真实研究运行环境”；开始时必须先创建独立设计说明与实施计划，不能同时夹带 C2 缺陷收敛、C3 Settings 或 Production 工作。
+C1“本地真实研究运行环境”已经完成并合并。当前只推进 C2“核心研究闭环与缺陷收敛”，范围以 `docs/superpowers/specs/2026-07-28-c2-core-loop-hardening-design.md` 和对应实施计划为准；不得夹带 C3 Settings、Evidence Eval、真实案例或 Production 工作。

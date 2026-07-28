@@ -68,7 +68,7 @@ describe("managed project workspace UI", () => {
       "href",
       "/zh/app/research/project_1",
     );
-    expect(screen.getByText("进行中")).toBeVisible();
+    expect(screen.getByText("活跃")).toBeVisible();
     expect(screen.getByText(/2026/)).toBeVisible();
     expect(screen.getByRole("button", { name: "归档可核查的 AI 研究" })).toBeVisible();
     expect(screen.getByRole("button", { name: "删除可核查的 AI 研究" })).toBeVisible();
@@ -91,7 +91,7 @@ describe("managed project workspace UI", () => {
 
     const row = screen.getByRole("listitem");
     expect(within(row).getByRole("link", { name: project.title })).toBeVisible();
-    expect(within(row).getByText("进行中")).toHaveAttribute("data-status", "active");
+    expect(within(row).getByText("活跃")).toHaveAttribute("data-status", "active");
     expect(within(row).getByRole("button", { name: /删除/ })).toHaveAttribute(
       "data-variant",
       "danger",
@@ -151,20 +151,46 @@ describe("managed project workspace UI", () => {
     expect(addButton).toBeEnabled();
   });
 
-  it("explains when another research run is already active", async () => {
+  it.each([
+    "MONTHLY_RUN_LIMIT_EXCEEDED",
+    "ACTIVE_RESEARCH_RUN_EXISTS",
+    "INVALID_INPUT",
+  ] as const)("preserves the research draft after %s", async (code) => {
     const user = userEvent.setup();
     vi.mocked(createResearch).mockResolvedValueOnce({
       status: "error",
-      code: "ACTIVE_RESEARCH_RUN_EXISTS",
+      code,
     } as never);
     renderWithMessages(<NewResearchForm locale="zh" />);
 
-    await user.type(screen.getByRole("textbox", { name: "项目标题" }), "并发研究");
-    await user.type(screen.getByRole("textbox", { name: "研究问题" }), "何时可以再次创建研究？");
+    await user.type(screen.getByRole("textbox", { name: "项目标题" }), "可恢复研究");
+    await user.type(
+      screen.getByRole("textbox", { name: "研究问题" }),
+      "失败后是否保留完整输入？",
+    );
+    await user.selectOptions(screen.getByRole("combobox", { name: "研究语言" }), "en");
+    await user.type(
+      screen.getByRole("textbox", { name: "来源链接 1" }),
+      "https://example.com/a",
+    );
+    await user.click(screen.getByRole("button", { name: "添加来源链接" }));
+    await user.type(
+      screen.getByRole("textbox", { name: "来源链接 2" }),
+      "https://example.com/b",
+    );
     await user.click(screen.getByRole("button", { name: "创建研究" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "已有研究正在处理，请等待完成后再创建新的研究。",
+    expect(await screen.findByRole("alert")).toBeVisible();
+    expect(screen.getByRole("textbox", { name: "项目标题" })).toHaveValue("可恢复研究");
+    expect(screen.getByRole("textbox", { name: "研究问题" })).toHaveValue(
+      "失败后是否保留完整输入？",
+    );
+    expect(screen.getByRole("combobox", { name: "研究语言" })).toHaveValue("en");
+    expect(screen.getByRole("textbox", { name: "来源链接 1" })).toHaveValue(
+      "https://example.com/a",
+    );
+    expect(screen.getByRole("textbox", { name: "来源链接 2" })).toHaveValue(
+      "https://example.com/b",
     );
   });
 

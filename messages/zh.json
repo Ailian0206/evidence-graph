@@ -70,7 +70,7 @@
       "description": "创建第一个研究项目后，它会显示在这里。"
     },
     "status": {
-      "active": "进行中",
+      "active": "活跃",
       "archived": "已归档",
       "deleted": "已删除"
     },
@@ -190,6 +190,12 @@
       "copy": "复制公开链接",
       "copySuccess": "公开链接已复制。",
       "copyError": "复制失败，请直接选择链接。",
+      "reviewPending": "还需审核 {count} 条报告引用主张",
+      "reviewNext": "审核下一条",
+      "reviewRejected": "发布时将排除涉及 {count} 条已拒绝主张的段落。",
+      "reviewReady": "报告引用主张已完成审核，可以发布。",
+      "reviewIncompleteError": "报告引用主张尚未全部审核。",
+      "noAcceptedContentError": "没有可发布的已接受事实内容。",
       "publishError": "报告发布失败，请重试。",
       "revokeError": "报告撤销失败，请重试。",
       "citationsLabel": "本节引用",

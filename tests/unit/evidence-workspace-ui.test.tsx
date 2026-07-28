@@ -7,6 +7,7 @@ import messages from "../../messages/zh.json";
 import { EvidenceWorkspace } from "@/components/evidence-workspace/evidence-workspace";
 import { ManagedWorkspaceState } from "@/components/evidence-workspace/managed-workspace-state";
 import { WorkspaceState } from "@/components/evidence-workspace/workspace-state";
+import type { PublishableReport } from "@/features/reports/report-store";
 import { createEvidenceWorkspaceFixture } from "@/features/research/evidence-workspace-fixture";
 
 const navigationMocks = vi.hoisted(() => ({ refresh: vi.fn() }));
@@ -21,16 +22,42 @@ const reportActionMocks = vi.hoisted(() => ({
     async (): Promise<
       | {
           ok: true;
-          slug: string;
-          version: number;
-          publishedAt: string;
+          report: PublishableReport;
         }
       | { ok: false; code: string }
     > => ({
       ok: true,
-      slug: "traceable-citations-review-zh",
-      version: 2,
-      publishedAt: "2026-07-17T10:00:00.000Z",
+      report: {
+        id: "report_reviewed_v2",
+        runId: "workspace_run_demo",
+        projectId: "project_workspace_demo",
+        slug: "traceable-citations-review-zh",
+        markdown: "## 结论\n\n已审核结论 [workspace_link_1]",
+        sections: [
+          {
+            id: "section_reviewed",
+            heading: "结论",
+            factual: true,
+            markdown: "已审核结论 [workspace_link_1]",
+            citationIds: ["workspace_link_1"],
+          },
+        ],
+        citations: [
+          {
+            evidenceLinkId: "workspace_link_1",
+            claimId: "workspace_claim_1",
+            chunkId: "workspace_chunk_1",
+            sourceId: "workspace_source_1",
+            quote: "每条主张连接到精确原文",
+            sourceUrl: "https://research.example.com/library/1",
+            sourceTitle: "产品研究访谈",
+          },
+        ],
+        version: 2,
+        status: "published",
+        publishedAt: "2026-07-17T10:00:00.000Z",
+        createdAt: "2026-07-17T10:00:00.000Z",
+      },
     }),
   ),
   revokeReport: vi.fn(async () => ({
@@ -91,6 +118,7 @@ describe("evidence workspace claim review", () => {
     expect(within(selectedCard).getByRole("button", { name: "拒绝主张" })).toBeVisible();
     expect(within(otherCard).queryByRole("button", { name: "接受主张" })).toBeNull();
     expect(screen.queryByTestId("selected-claim")).toBeNull();
+    expect(screen.getByText("运行完成")).toBeVisible();
   });
 
   it("filters the claim list by human review status", async () => {
@@ -282,7 +310,7 @@ describe("evidence workspace claim review", () => {
     );
   });
 
-  it("hides claims when their only evidence relation is disabled", async () => {
+  it("keeps claims visible when their only evidence relation is disabled", async () => {
     const user = userEvent.setup();
     const workspace = createEvidenceWorkspaceFixture("zh");
     const supportedClaim = workspace.claims[0];
@@ -290,8 +318,34 @@ describe("evidence workspace claim review", () => {
 
     await user.click(screen.getByRole("checkbox", { name: "支持" }));
 
-    expect(screen.queryByRole("button", { name: supportedClaim.statement })).toBeNull();
+    expect(screen.getByRole("button", { name: supportedClaim.statement })).toBeVisible();
     expect(screen.getByRole("checkbox", { name: "支持" })).not.toBeChecked();
+  });
+
+  it("shows an evidence-less pending claim with review actions and an empty source", async () => {
+    const user = userEvent.setup();
+    const workspace = createEvidenceWorkspaceFixture("zh");
+    const evidenceLessClaim = {
+      ...workspace.claims[0],
+      id: "claim_without_evidence",
+      normalizedKey: "claim without evidence",
+      statement: "没有 Evidence Link 的待审核主张",
+      reviewStatus: "pending" as const,
+    };
+    renderWorkspace("demo", {
+      ...workspace,
+      claims: [...workspace.claims, evidenceLessClaim],
+    });
+
+    await user.click(screen.getByRole("button", { name: evidenceLessClaim.statement }));
+
+    const claimCard = screen.getByRole("article", { name: evidenceLessClaim.statement });
+    expect(within(claimCard).getByText("0 条证据")).toBeVisible();
+    expect(within(claimCard).getByRole("button", { name: "接受主张" })).toBeVisible();
+    expect(within(claimCard).getByRole("button", { name: "拒绝主张" })).toBeVisible();
+    expect(screen.getByTestId("workspace-source")).toHaveTextContent(
+      "选择主张后查看关联来源",
+    );
   });
 });
 
@@ -330,30 +384,110 @@ describe("evidence workspace reports", () => {
     expect(screen.queryByTestId("workspace-graph")).toBeNull();
   });
 
-  it("publishes a selected managed report version and updates its local status", async () => {
+  it("disables publishing and selects the next pending referenced claim", async () => {
     const user = userEvent.setup();
     const workspace = createEvidenceWorkspaceFixture("zh");
     const draft = {
       ...workspace.reports[0],
-      id: "report_v2",
+      id: "report_draft",
       slug: undefined,
       version: 2,
       status: "draft" as const,
       publishedAt: undefined,
     };
-    renderWorkspace("managed", { ...workspace, reports: [draft, workspace.reports[0]] });
+    renderWorkspace("managed", { ...workspace, reports: [draft] });
+
+    const workspaceTabs = screen.getByRole("tablist", { name: "工作台视图" });
+    await user.click(within(workspaceTabs).getByRole("tab", { name: "图谱" }));
+    await user.click(screen.getByRole("tab", { name: "报告" }));
+
+    expect(screen.getByText("还需审核 2 条报告引用主张")).toBeVisible();
+    expect(screen.getByRole("button", { name: "发布此版本" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "审核下一条" }));
+
+    expect(
+      screen.getByRole("button", { name: workspace.claims[0].statement }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(within(workspaceTabs).getByRole("tab", { name: "主张" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  it("warns that rejected claim paragraphs will be excluded", async () => {
+    const user = userEvent.setup();
+    const workspace = createEvidenceWorkspaceFixture("zh");
+    const claims = workspace.claims.map((claim) => ({
+      ...claim,
+      reviewStatus:
+        claim.id === "workspace_claim_4" ? ("rejected" as const) : ("accepted" as const),
+    }));
+    const draft = {
+      ...workspace.reports[0],
+      id: "report_draft",
+      slug: undefined,
+      version: 2,
+      status: "draft" as const,
+      publishedAt: undefined,
+    };
+    renderWorkspace("managed", { ...workspace, claims, reports: [draft] });
 
     await user.click(screen.getByRole("tab", { name: "报告" }));
-    await user.selectOptions(screen.getByLabelText("报告版本"), "report_v2");
+
+    expect(
+      screen.getByText("发布时将排除涉及 1 条已拒绝主张的段落。"),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "发布此版本" })).toBeEnabled();
+  });
+
+  it("publishes a new immutable managed report version and selects it", async () => {
+    const user = userEvent.setup();
+    const workspace = createEvidenceWorkspaceFixture("zh");
+    const claims = workspace.claims.map((claim) => ({
+      ...claim,
+      reviewStatus: "accepted" as const,
+    }));
+    const draft = {
+      ...workspace.reports[0],
+      id: "report_draft",
+      slug: undefined,
+      version: 2,
+      status: "draft" as const,
+      publishedAt: undefined,
+    };
+    const reviewedReport = {
+      ...draft,
+      id: "report_reviewed_v3",
+      slug: "traceable-citations-review-zh",
+      version: 3,
+      status: "published" as const,
+      publishedAt: "2026-07-17T10:00:00.000Z",
+      createdAt: "2026-07-17T10:00:00.000Z",
+    };
+    reportActionMocks.publishReport.mockResolvedValueOnce({
+      ok: true,
+      report: reviewedReport,
+    });
+    renderWorkspace("managed", {
+      ...workspace,
+      claims,
+      reports: [draft, workspace.reports[0]],
+    });
+
+    await user.click(screen.getByRole("tab", { name: "报告" }));
+    await user.selectOptions(screen.getByLabelText("报告版本"), "report_draft");
     await user.click(screen.getByRole("button", { name: "发布此版本" }));
 
     await waitFor(() =>
       expect(reportActionMocks.publishReport).toHaveBeenCalledWith(
         "zh",
         workspace.project.id,
-        "report_v2",
+        "report_draft",
       ),
     );
+    expect(screen.getByLabelText("报告版本")).toHaveValue("report_reviewed_v3");
+    expect(screen.getByRole("option", { name: "版本 3 - 已发布" })).toBeVisible();
+    expect(screen.getByRole("option", { name: "版本 1 - 已撤销" })).toBeVisible();
     expect(screen.getByText("已发布", { selector: "[role='status']" })).toBeVisible();
     expect(await screen.findByRole("button", { name: "撤销公开报告" })).toBeVisible();
   });
@@ -372,7 +506,11 @@ describe("evidence workspace reports", () => {
       status: "draft" as const,
       publishedAt: undefined,
     };
-    renderWorkspace("managed", { ...workspace, reports: [draft] });
+    const claims = workspace.claims.map((claim) => ({
+      ...claim,
+      reviewStatus: "accepted" as const,
+    }));
+    renderWorkspace("managed", { ...workspace, claims, reports: [draft] });
 
     await user.click(screen.getByRole("tab", { name: "报告" }));
     await user.click(screen.getByRole("button", { name: "发布此版本" }));
@@ -380,6 +518,32 @@ describe("evidence workspace reports", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("报告发布失败，请重试。");
     expect(screen.getByText("草稿", { selector: "[role='status']" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "撤销公开报告" })).toBeNull();
+  });
+
+  it.each([
+    ["REPORT_REVIEW_INCOMPLETE", "报告引用主张尚未全部审核。"],
+    ["REPORT_NO_ACCEPTED_CONTENT", "没有可发布的已接受事实内容。"],
+  ] as const)("shows the stable %s publication error", async (code, message) => {
+    reportActionMocks.publishReport.mockResolvedValueOnce({ ok: false, code });
+    const user = userEvent.setup();
+    const workspace = createEvidenceWorkspaceFixture("zh");
+    const claims = workspace.claims.map((claim) => ({
+      ...claim,
+      reviewStatus: "accepted" as const,
+    }));
+    const draft = {
+      ...workspace.reports[0],
+      id: "report_draft",
+      slug: undefined,
+      status: "draft" as const,
+      publishedAt: undefined,
+    };
+    renderWorkspace("managed", { ...workspace, claims, reports: [draft] });
+
+    await user.click(screen.getByRole("tab", { name: "报告" }));
+    await user.click(screen.getByRole("button", { name: "发布此版本" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(message);
   });
 
   it("synchronizes a report citation with the existing claim and source panels", async () => {

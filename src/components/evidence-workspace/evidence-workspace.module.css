@@ -555,7 +555,7 @@
   min-width: 0;
   height: 100%;
   min-height: 520px;
-  grid-template-rows: auto auto auto auto minmax(0, 1fr);
+  grid-template-rows: repeat(5, auto) minmax(0, 1fr);
 }
 
 .reportToolbar {
@@ -673,6 +673,61 @@
   opacity: 0.55;
 }
 
+.reportReadiness {
+  display: flex;
+  min-width: 0;
+  min-height: 48px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  border-bottom: 1px solid #d0d4cc;
+  background: #f2f3ee;
+  gap: 12px;
+}
+
+.reportReadiness[data-state="incomplete"] {
+  background: #f8f2e8;
+}
+
+.reportReadiness p {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #50584f;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.reportReadiness[data-state="incomplete"] p {
+  color: #76552c;
+}
+
+.reportReadiness button {
+  display: inline-flex;
+  min-height: 34px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 0 9px;
+  border: 1px solid #bfc4bc;
+  border-radius: 3px;
+  background: transparent;
+  color: #303630;
+  cursor: pointer;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.reportReadiness button:hover {
+  border-color: #303630;
+}
+
+.reportReadiness button:active {
+  transform: translateY(1px);
+}
+
 .reportPublicPath {
   display: block;
   min-width: 0;
@@ -702,6 +757,7 @@
 }
 
 .reportDocument {
+  grid-row: -2;
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
@@ -1288,6 +1344,11 @@
 
   .reportActions > button:not(.reportIconAction) {
     min-width: 132px;
+  }
+
+  .reportReadiness {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .runLogPanel[data-mobile-active="true"] {

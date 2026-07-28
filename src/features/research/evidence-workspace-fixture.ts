@@ -60,6 +60,7 @@ const workspaceCopy = {
       "只有页面级链接也足以证明报告中的事实段落。",
       "引用可审核性的提升依赖于完整正文和限定条件。",
       "人工审核应保留模型原始输出和运行记录。",
+      "没有证据关系的主张仍需人工审核。",
     ],
     rationales: [
       "访谈直接描述了主张与精确原文之间的可追溯关系。",
@@ -102,6 +103,7 @@ const workspaceCopy = {
       "Page-level links alone are sufficient support for factual report paragraphs.",
       "Citation reviewability depends on preserving full text and qualifiers.",
       "Human review should preserve the original model output and run record.",
+      "Claims without evidence relations still require human review.",
     ],
     rationales: [
       "The interview directly describes traceability between claims and exact excerpts.",
@@ -158,6 +160,7 @@ export const createEvidenceWorkspaceFixture = (
     "pending",
     "accepted",
     "rejected",
+    "accepted",
   ];
   const claims: Claim[] = copy.claims.map((statement, index) => ({
     id: `workspace_claim_${index + 1}`,
@@ -166,7 +169,7 @@ export const createEvidenceWorkspaceFixture = (
     normalizedKey: `workspace claim ${index + 1}`,
     claimType: index === 2 ? "causal" : "factual",
     qualifiers: index === 2 ? [locale === "zh" ? "仅限保留完整正文" : "full text retained"] : [],
-    confidence: [0.91, 0.38, 0.78, 0.84][index],
+    confidence: [0.91, 0.38, 0.78, 0.84, 0.62][index],
     reviewStatus: reviewStatuses[index],
     createdAt: FIXED_NOW,
   }));
@@ -176,7 +179,7 @@ export const createEvidenceWorkspaceFixture = (
     "qualifies",
     "context",
   ];
-  const evidenceLinks: EvidenceLink[] = claims.map((claim, index) => ({
+  const evidenceLinks: EvidenceLink[] = claims.slice(0, sources.length).map((claim, index) => ({
     id: `workspace_link_${index + 1}`,
     claimId: claim.id,
     chunkId: chunks[index].id,
@@ -199,6 +202,16 @@ export const createEvidenceWorkspaceFixture = (
           : "Exact-excerpt requirements conflict with the claim that page-level links are sufficient.",
     },
   ];
+
+  const publishedReport = createWorkspaceReportFixture(locale);
+  const pendingReport = {
+    ...publishedReport,
+    id: `workspace_report_pending_${locale}`,
+    slug: undefined,
+    version: 2,
+    status: "draft" as const,
+    publishedAt: undefined,
+  };
 
   return {
     locale,
@@ -231,6 +244,6 @@ export const createEvidenceWorkspaceFixture = (
       attempt: 1,
       timestamp: `2026-07-16T08:${String(index).padStart(2, "0")}:00.000Z`,
     })),
-    reports: [createWorkspaceReportFixture(locale)],
+    reports: [publishedReport, pendingReport],
   };
 };

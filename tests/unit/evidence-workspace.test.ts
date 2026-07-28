@@ -26,9 +26,19 @@ describe("evidence workspace fixture", () => {
 });
 
 describe("evidence workspace claim summaries", () => {
-  it("derives relation counts and filters by review status and relation", () => {
+  it("derives relation counts and filters every claim only by review status", () => {
     const workspace = createEvidenceWorkspaceFixture("zh");
-    const summaries = createWorkspaceClaimSummaries(workspace);
+    const evidenceLessClaim = {
+      ...workspace.claims[0],
+      id: "claim_without_evidence",
+      normalizedKey: "claim without evidence",
+      statement: "没有 Evidence Link 的待审核主张",
+      reviewStatus: "pending" as const,
+    };
+    const summaries = createWorkspaceClaimSummaries({
+      ...workspace,
+      claims: [...workspace.claims, evidenceLessClaim],
+    });
     const supportedClaim = summaries.find((summary) => summary.relationCounts.supports > 0);
 
     expect(supportedClaim?.evidenceLinks).not.toHaveLength(0);
@@ -36,27 +46,24 @@ describe("evidence workspace claim summaries", () => {
       filterWorkspaceClaims({
         claims: summaries,
         reviewStatus: "accepted",
-        relations: ["supports", "rebuts", "qualifies", "context"],
       }).every((summary) => summary.claim.reviewStatus === "accepted"),
     ).toBe(true);
     expect(
       filterWorkspaceClaims({
         claims: summaries,
         reviewStatus: "all",
-        relations: ["rebuts"],
       }),
-    ).toEqual([
-      expect.objectContaining({
-        relationCounts: expect.objectContaining({ rebuts: 1 }),
-      }),
-    ]);
+    ).toHaveLength(workspace.claims.length + 1);
     expect(
       filterWorkspaceClaims({
         claims: summaries,
-        reviewStatus: "all",
-        relations: [],
+        reviewStatus: "pending",
       }),
-    ).toEqual([]);
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ claim: evidenceLessClaim }),
+      ]),
+    );
   });
 
   it("updates only the selected claim review status without mutating the input", () => {

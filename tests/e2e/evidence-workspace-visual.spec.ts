@@ -13,6 +13,38 @@ for (const viewport of viewports) {
     await page.setViewportSize(viewport);
     await page.goto("/zh/app/research/demo");
 
+    const claims = page.locator("#workspace-panel-claims article");
+    const evidenceLessClaim = page.getByRole("article", {
+      name: "没有证据关系的主张仍需人工审核。",
+    });
+    await expect(claims).toHaveCount(5);
+    await evidenceLessClaim.scrollIntoViewIfNeeded();
+    await expect(evidenceLessClaim.getByText("0 条证据", { exact: true })).toBeVisible();
+    const claimMetrics = await page.evaluate(() => {
+      const claimPanel = document.querySelector<HTMLElement>("#workspace-panel-claims");
+      const claimCards = Array.from(
+        document.querySelectorAll<HTMLElement>("#workspace-panel-claims article"),
+      );
+      const panelBounds = claimPanel?.getBoundingClientRect();
+
+      return {
+        count: claimCards.length,
+        cardsInsidePanel: claimCards.every((card) => {
+          const bounds = card.getBoundingClientRect();
+          return (
+            !panelBounds ||
+            (bounds.left >= panelBounds.left - 1 && bounds.right <= panelBounds.right + 1)
+          );
+        }),
+      };
+    });
+
+    expect(claimMetrics.count).toBe(5);
+    expect(claimMetrics.cardsInsidePanel).toBe(true);
+    await page.locator("#workspace-panel-claims").screenshot({
+      path: `output/playwright/evidence-workspace-claims-${viewport.name}.png`,
+    });
+
     if (viewport.name === "mobile") {
       await page
         .getByRole("tablist", { name: "工作台视图" })
@@ -124,18 +156,116 @@ for (const viewport of viewports) {
     });
 
     await page.getByRole("tab", { name: "报告", exact: true }).click();
-    const reportMetrics = await page.evaluate(() => ({
-      viewportWidth: window.innerWidth,
-      documentWidth: document.documentElement.scrollWidth,
-      reportWidth:
-        document.querySelector<HTMLElement>('[data-testid="workspace-report"]')
-          ?.getBoundingClientRect().width ?? 0,
-    }));
+    const reportBeforeReadiness = await page
+      .getByTestId("workspace-report")
+      .boundingBox();
+    await page.getByLabel("报告版本").selectOption("workspace_report_pending_zh");
+    await expect(page.getByText("还需审核 2 条报告引用主张")).toBeVisible();
+    await expect(page.getByRole("button", { name: "发布此版本" })).toHaveCount(0);
+    const reportMetrics = await page.evaluate(() => {
+      const report = document.querySelector<HTMLElement>('[data-testid="workspace-report"]');
+      const documentBody = report?.querySelector<HTMLElement>("article");
+      const readiness = report?.querySelector<HTMLElement>("[data-state='incomplete']");
+      const readinessText = readiness?.querySelector<HTMLElement>("p");
+      const controls = Array.from(
+        report?.querySelectorAll<HTMLElement>("button, select") ?? [],
+      ).filter((control) => {
+        const bounds = control.getBoundingClientRect();
+        const style = getComputedStyle(control);
+        return style.display !== "none" && bounds.width > 0 && bounds.height > 0;
+      });
+      const controlsOverlap = controls.some((control, index) => {
+        const first = control.getBoundingClientRect();
+
+        return controls.slice(index + 1).some((candidate) => {
+          const second = candidate.getBoundingClientRect();
+          return !(
+            first.right <= second.left ||
+            second.right <= first.left ||
+            first.bottom <= second.top ||
+            second.bottom <= first.top
+          );
+        });
+      });
+
+      return {
+        viewportWidth: window.innerWidth,
+        documentWidth: document.documentElement.scrollWidth,
+        reportWidth: report?.getBoundingClientRect().width ?? 0,
+        reportHeight: report?.getBoundingClientRect().height ?? 0,
+        documentHeight: documentBody?.getBoundingClientRect().height ?? 0,
+        readinessTextClipped:
+          Boolean(readinessText) &&
+          ((readinessText?.scrollWidth ?? 0) > (readinessText?.clientWidth ?? 0) + 1 ||
+            (readinessText?.scrollHeight ?? 0) > (readinessText?.clientHeight ?? 0) + 1),
+        controlsOverlap,
+      };
+    });
+    const reportAfterReadiness = await page
+      .getByTestId("workspace-report")
+      .boundingBox();
+    const pendingAudit = await inspectVisibleUi(page, [
+      "[data-testid='workspace-report'] [data-state='incomplete']",
+    ]);
 
     expect(reportMetrics.documentWidth).toBeLessThanOrEqual(reportMetrics.viewportWidth);
     expect(reportMetrics.reportWidth).toBeGreaterThan(viewport.name === "mobile" ? 340 : 360);
+    expect(reportMetrics.reportHeight).toBeGreaterThan(480);
+    expect(reportMetrics.documentHeight).toBeGreaterThan(240);
+    expect(reportMetrics.readinessTextClipped).toBe(false);
+    expect(reportMetrics.controlsOverlap).toBe(false);
+    expect(reportAfterReadiness?.width).toBe(reportBeforeReadiness?.width);
+    expect(
+      (reportAfterReadiness?.height ?? 0) - (reportBeforeReadiness?.height ?? 0),
+    ).toBeGreaterThanOrEqual(0);
+    expect(
+      (reportAfterReadiness?.height ?? 0) - (reportBeforeReadiness?.height ?? 0),
+    ).toBeLessThanOrEqual(16);
+    expect(pendingAudit.documentWidth).toBeLessThanOrEqual(pendingAudit.viewportWidth);
+    expect(pendingAudit.fontSizeViolations).toEqual([]);
+    expect(pendingAudit.leftRuleViolations).toEqual([]);
     await page.screenshot({
-      path: `output/playwright/evidence-workspace-report-${viewport.name}.png`,
+      path: `output/playwright/evidence-workspace-report-pending-${viewport.name}.png`,
+      fullPage: false,
+    });
+
+    await page.getByRole("button", { name: "审核下一条" }).click();
+    const firstClaim = page.getByRole("article", {
+      name: "精确原文让审核者可以逐条核查 AI 研究主张。",
+    });
+    await firstClaim.getByRole("button", { name: "接受主张" }).click();
+    const secondClaim = page.getByRole("article", {
+      name: "只有页面级链接也足以证明报告中的事实段落。",
+    });
+    await secondClaim.getByRole("button", { name: "拒绝主张" }).click();
+
+    if (viewport.name === "mobile") {
+      await page
+        .getByRole("tablist", { name: "工作台视图" })
+        .getByRole("tab", { name: "图谱", exact: true })
+        .click();
+    }
+
+    await expect(page.getByLabel("报告版本")).toHaveValue(
+      "workspace_report_pending_zh",
+    );
+    await expect(
+      page.getByText("发布时将排除涉及 2 条已拒绝主张的段落。"),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "发布此版本" })).toHaveCount(0);
+    await page.evaluate(() => {
+      document.documentElement.style.scrollBehavior = "auto";
+      window.scrollTo(0, 0);
+    });
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+    const reviewedAudit = await inspectVisibleUi(page, [
+      "[data-testid='workspace-report'] [data-state='ready']",
+    ]);
+    expect(reviewedAudit.documentWidth).toBeLessThanOrEqual(reviewedAudit.viewportWidth);
+    expect(reviewedAudit.fontSizeViolations).toEqual([]);
+    expect(reviewedAudit.leftRuleViolations).toEqual([]);
+    await page.screenshot({
+      path: `output/playwright/evidence-workspace-report-reviewed-${viewport.name}.png`,
       fullPage: false,
     });
   });

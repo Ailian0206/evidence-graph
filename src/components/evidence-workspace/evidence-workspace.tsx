@@ -107,22 +107,16 @@ function EvidenceWorkspaceReady({
       filterWorkspaceClaims({
         claims: claimSummaries,
         reviewStatus: reviewFilter,
-        relations: workspaceEvidenceRelations.filter((relation) =>
-          activeRelations.has(relation),
-        ),
       }),
-    [activeRelations, claimSummaries, reviewFilter],
+    [claimSummaries, reviewFilter],
   );
   const reviewCandidates = useMemo(
     () =>
       filterWorkspaceClaims({
         claims: claimSummaries,
         reviewStatus: "all",
-        relations: workspaceEvidenceRelations.filter((relation) =>
-          activeRelations.has(relation),
-        ),
       }),
-    [activeRelations, claimSummaries],
+    [claimSummaries],
   );
   const graphElements = useMemo(
     () =>
@@ -557,8 +551,13 @@ function EvidenceWorkspaceReady({
                 locale={workspace.locale}
                 projectId={workspace.project.id}
                 reports={workspace.reports}
+                claims={claims}
                 persistence={persistence}
                 onSelectCitation={handleSelectReportCitation}
+                onReviewClaim={(claimId) => {
+                  setSelectedClaimId(claimId);
+                  setActiveMobileTab("claims");
+                }}
               />
             </div>
           )}

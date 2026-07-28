@@ -6,11 +6,35 @@ import {
 } from "@/features/reports/actions";
 
 const publishedResult = {
-  id: "report_v2",
+  id: "report_reviewed_v3",
+  runId: "run_2",
+  projectId: "project_1",
   slug: "research-project-1",
-  version: 2,
+  markdown: "## Finding\n\nFinding [link_1]",
+  sections: [
+    {
+      id: "section_1",
+      heading: "Finding",
+      factual: true,
+      markdown: "Finding [link_1]",
+      citationIds: ["link_1"],
+    },
+  ],
+  citations: [
+    {
+      evidenceLinkId: "link_1",
+      claimId: "claim_1",
+      chunkId: "chunk_1",
+      sourceId: "source_1",
+      quote: "Exact quote",
+      sourceUrl: "https://example.com/source",
+      sourceTitle: "Source",
+    },
+  ],
+  version: 3,
   status: "published" as const,
   publishedAt: "2026-07-17T10:00:00.000Z",
+  createdAt: "2026-07-17T10:00:00.000Z",
 };
 
 const createStore = () => ({
@@ -47,9 +71,7 @@ describe("report publishing actions", () => {
 
     expect(result).toEqual({
       ok: true,
-      slug: "research-project-1",
-      version: 2,
-      publishedAt: "2026-07-17T10:00:00.000Z",
+      report: publishedResult,
     });
     expect(calls).toEqual([
       "authorize",
@@ -141,9 +163,14 @@ describe("report publishing actions", () => {
     expect(createStore).not.toHaveBeenCalled();
   });
 
-  it("returns stable report errors without revalidating", async () => {
+  it.each([
+    "REPORT_NOT_PUBLISHABLE",
+    "REPORT_QUERY_FAILED",
+    "REPORT_REVIEW_INCOMPLETE",
+    "REPORT_NO_ACCEPTED_CONTENT",
+  ] as const)("returns stable %s errors without revalidating", async (code) => {
     const store = createStore();
-    store.publish.mockRejectedValue(new Error("REPORT_NOT_PUBLISHABLE"));
+    store.publish.mockRejectedValue(new Error(code));
     const revalidate = vi.fn();
 
     await expect(
@@ -155,7 +182,7 @@ describe("report publishing actions", () => {
           revalidate,
         },
       ),
-    ).resolves.toEqual({ ok: false, code: "REPORT_NOT_PUBLISHABLE" });
+    ).resolves.toEqual({ ok: false, code });
     expect(revalidate).not.toHaveBeenCalled();
   });
 
