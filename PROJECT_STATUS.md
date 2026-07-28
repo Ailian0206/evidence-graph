@@ -4,9 +4,9 @@
 
 ## 当前阶段
 
-- 当前里程碑：C2“核心研究闭环与缺陷收敛”正在分支 `feat/c2-core-loop-hardening` 实现。
-- 当前进度：基线 lint、typecheck 和单元测试 `359/359` 通过；Agent 已在用户 Chrome 登录态完成核心流程走查并冻结 4 个 P1，设计见 `docs/superpowers/specs/2026-07-28-c2-core-loop-hardening-design.md`。
-- 下一次用户可见结果：所有 Claim 均可审核；创建失败保留输入；人工审核真实约束新发布报告，被拒绝内容不会进入新的公开版本。
+- 当前里程碑：C2“核心研究闭环与缺陷收敛”正在 Draft PR #19 收口。
+- 当前进度：4 个 P1 已完成实现、自动化和托管开发环境核心流程验收；PR #19 等待独立 Claude 审核和 GitHub CI。
+- 下一次用户可见结果：PR #19 通过当前 head 审核和 CI 后直接以 merge commit 合并，不等待用户本地验收。
 - 当前禁止：不得提前实现 C3-C6，不得更新 `release`，不得执行 Production 迁移、变量修改、Inngest 同步或部署。
 - 路线图：`docs/roadmap.md`。
 
@@ -14,8 +14,8 @@
 
 | 维度 | 当前状态 | 说明 |
 | --- | --- | --- |
-| 代码完成度 | C2 设计完成 | 4 个 P1 已复现并冻结，尚未开始产品代码 GREEN |
-| Agent 本地验收度 | C2 基线走查完成 | 已复现 Claim 隐藏、审核与发布脱节、创建失败丢输入和项目状态误导 |
+| 代码完成度 | C2 实现完成 | 4 个 P1 已关闭，完整模块门禁通过，Draft PR #19 等待审核与 CI |
+| Agent 本地验收度 | C2 核心流程通过 | 已完成创建、fixture 运行、Claim 审核、报告发布、报告库和公开页走查 |
 | 用户反馈状态 | 异步接收 | 用户可继续体验并提交问题；反馈不回溯阻断已通过门禁的开发流程 |
 | 产品完成度 | 未完成 | Settings/删除、Evidence Eval、3 个真实案例和 Release Candidate 尚未完成 |
 | Production 状态 | 有可用历史基线，当前冻结 | `release` 是唯一 Production Branch；C6 前不再发布 |
@@ -26,7 +26,7 @@
 
 - 分支：`main` 是日常开发与集成分支；`release` 只用于明确批准的 Production 发布。
 - Vercel：Preview 自动部署已关闭。
-- 托管开发数据库：当前 Supabase 项目用于 C1-C6 开发；本地不再启动 Supabase Docker。Schema 继续由仓库 4 条迁移和 4 个 pgTAP 文件管理。
+- 托管开发数据库：当前 Supabase 项目用于 C1-C6 开发；本地不再启动 Supabase Docker。Schema 继续由仓库 5 条迁移和 4 个 pgTAP 文件管理。
 - 本地应用：固定目标端口 `3218` 正在运行，C1 验收入口为 `http://127.0.0.1:3218/zh`，登录直达入口为 `http://127.0.0.1:3218/zh/auth/login`。
 - 本地 Inngest：固定端口 `8288` 正在运行，使用 CLI `1.38.1` 可正常扫描队列的最小值 5 个 worker；PR 收口或本地测试结束后停止。
 - 本地认证：使用现有 GitHub OAuth 和 loopback redirect，不启用托管 anonymous sign-in。
@@ -66,6 +66,7 @@
 
 ## 最近验证基线
 
+- 2026-07-28 C2 Draft PR #19 已创建。完整门禁通过 lint、typecheck、单元测试 `384/384`、build、E2E `87/87`、托管 pgTAP `98/98`、public Schema lint 和 Provider 边界；最新验收差异的聚焦 lint 与 E2E `17/17` 复验通过。Agent 在用户 Chrome 登录态完成一条 fixture 研究，确认 GitHub 用户信息、生成 Loading、Claim 接受/拒绝、审核约束发布、报告库和公开报告均可用；未调用付费 Provider，Production 保持冻结。
 - 2026-07-28 C2 worktree 基线通过 lint、typecheck 和单元测试 `359/359`。用户 Chrome 登录态走查确认：20 条 Claim 中只有 11 条 Evidence-linked Claim 出现在审核列表；rejected Claim 仍保留在草稿且发布按钮可用；月额度错误会清空新建表单；完成研究的 active 项目仍显示“进行中”。四项均列为 C2 P1。
 - 2026-07-27 PR #18 的独立 Claude 审核对 head `f50e598` 返回 `pass`，未发现可复现的正确性、安全性、数据隔离或测试可信度问题；GitHub 代码门禁和 Supabase Schema/RLS/lint 两项 CI 均通过，随后以 merge commit `ea06616` 合并到 `main` 并删除远端模块分支。
 - 2026-07-27 用户明确取消“等待用户本地验收后再审核”的流程门禁。此后自动化和 Agent 本地验收通过即直接完成独立 Claude 审核、CI 和 merge commit；用户后续发现的问题继续提交和修复，不阻塞 PR 或下一里程碑。Production 发布仍保留单独的用户明确授权门禁。
@@ -106,4 +107,4 @@
 
 ## 下一步
 
-按 C2 设计编写 TDD 实施计划，依次修复 Claim 完整审核、已审核报告版本、创建失败恢复和项目状态表达；随后运行托管数据库、完整自动化、三档浏览器验收、独立审核和 CI。用户反馈继续异步接收，Production 继续冻结。
+对 Draft PR #19 立即运行独立 Claude 审核并等待 GitHub CI；仅修复阻塞项。当前 head 审核通过且 CI 全绿后以 merge commit 合并。用户反馈继续异步接收，Production 继续冻结。
