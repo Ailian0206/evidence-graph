@@ -79,7 +79,7 @@ test.describe("evidence workspace graph", () => {
     );
   });
 
-  test("removes disabled evidence relations from the graph and claim list", async ({
+  test("removes disabled evidence relations from the graph but keeps claims reviewable", async ({
     page,
   }) => {
     await page.goto("/zh/app/research/demo");
@@ -93,6 +93,11 @@ test.describe("evidence workspace graph", () => {
       page.getByRole("button", {
         name: "只有页面级链接也足以证明报告中的事实段落。",
         exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", {
+        name: "证据：只保留页面级链接不足以证明事实段落",
       }),
     ).toHaveCount(0);
     await expect
