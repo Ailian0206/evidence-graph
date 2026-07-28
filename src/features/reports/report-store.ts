@@ -20,6 +20,12 @@ export const publishableReportSchema = researchReportSchema.extend({
   publishedAt: z.string().datetime().optional(),
 });
 
+const publishedReportSchema = publishableReportSchema.extend({
+  slug: z.string().min(1),
+  status: z.literal("published"),
+  publishedAt: z.string().datetime(),
+});
+
 const publicReportSnapshotSchema = z.object({
   id: z.string().min(1),
   slug: z.string().min(1),
@@ -187,6 +193,14 @@ export const mapReportRow = (row: ReportRow): PublishableReport =>
     createdAt: normalizeTimestamp(row.created_at),
   });
 
+const mapPublishedReportRow = (row: ReportRow) => {
+  try {
+    return publishedReportSchema.parse(mapReportRow(row));
+  } catch {
+    throw new Error("REPORT_QUERY_FAILED");
+  }
+};
+
 const requireFirstRow = <T>(rows: T[]) => {
   const row = rows[0];
   if (!row) {
@@ -241,7 +255,7 @@ export const createReportStore = (queries: ReportQueryAdapter) => ({
       }),
     );
 
-    return mapReportRow(row);
+    return mapPublishedReportRow(row);
   },
   revoke: async (input: { ownerId: string; projectId: string }) => {
     const { projectId } = ownedReportInputSchema.parse(input);

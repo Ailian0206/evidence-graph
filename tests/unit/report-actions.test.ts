@@ -165,6 +165,7 @@ describe("report publishing actions", () => {
 
   it.each([
     "REPORT_NOT_PUBLISHABLE",
+    "REPORT_QUERY_FAILED",
     "REPORT_REVIEW_INCOMPLETE",
     "REPORT_NO_ACCEPTED_CONTENT",
   ] as const)("returns stable %s errors without revalidating", async (code) => {

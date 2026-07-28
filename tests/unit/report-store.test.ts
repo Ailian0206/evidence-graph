@@ -211,6 +211,45 @@ describe("report store", () => {
     },
   );
 
+  it("stops before reading claims when the selected base report is missing", async () => {
+    const queries = createQueries({ listVersions: vi.fn(async () => []) });
+
+    await expect(
+      createReportStore(queries).publish({
+        ownerId: "owner_1",
+        projectId: "project_1",
+        reportId: "missing_report",
+      }),
+    ).rejects.toThrow("REPORT_NOT_FOUND");
+    expect(queries.listClaims).not.toHaveBeenCalled();
+    expect(queries.publishReviewed).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { name: "missing slug", row: { ...publishedReviewedRow, slug: null } },
+    {
+      name: "non-published status",
+      row: { ...publishedReviewedRow, slug: null, status: "revoked" as const },
+    },
+    {
+      name: "missing publication timestamp",
+      row: { ...publishedReviewedRow, published_at: null },
+    },
+  ])("rejects a reviewed RPC row with $name", async ({ row }) => {
+    const queries = createQueries({
+      listVersions: vi.fn(async () => [reportDraftRow]),
+      publishReviewed: vi.fn(async () => [row]),
+    });
+
+    await expect(
+      createReportStore(queries).publish({
+        ownerId: "owner_1",
+        projectId: "project_1",
+        reportId: "report_draft",
+      }),
+    ).rejects.toThrow("REPORT_QUERY_FAILED");
+  });
+
   it("maps only the immutable fields needed by the public report page", async () => {
     const store = createReportStore(createQueries());
 
