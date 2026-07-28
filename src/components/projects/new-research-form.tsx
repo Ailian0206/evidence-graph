@@ -2,7 +2,7 @@
 
 import { ArrowLeft, LoaderCircle, Plus, X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useActionState, useEffect, useState } from "react";
+import { startTransition, useActionState, useState, type FormEvent } from "react";
 
 import {
   createResearch,
@@ -34,15 +34,11 @@ export function NewResearchForm({ locale }: { locale: AppLocale }) {
   const action = createResearch.bind(null, locale);
   const [state, formAction, pending] = useActionState(action, initialState);
 
-  // React resets action forms after commit, so errors need one render to restore the draft.
-  useEffect(() => {
-    if (state.status === "error") {
-      setDraft((current) => ({
-        ...current,
-        manualUrls: current.manualUrls.map((field) => ({ ...field })),
-      }));
-    }
-  }, [state]);
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    startTransition(() => formAction(formData));
+  };
 
   const addUrlField = () => {
     if (draft.manualUrls.length >= 5) {
@@ -79,7 +75,7 @@ export function NewResearchForm({ locale }: { locale: AppLocale }) {
           <p className={styles.description}>{t("form.description")}</p>
         </header>
 
-        <form action={formAction} className={styles.form} noValidate>
+        <form className={styles.form} noValidate onSubmit={handleSubmit}>
           <div className={styles.formColumns}>
             <section
               className={styles.formPrimary}
