@@ -36,6 +36,15 @@ test.describe("managed authentication boundary", () => {
     await expect(page.getByText("Managed sign-in is not configured")).toBeVisible();
   });
 
+  test("redirects anonymous settings access to the localized login", async ({ page }) => {
+    await page.goto("/zh/app/settings");
+
+    await expect(page).toHaveURL(
+      /\/zh\/auth\/login\?next=%2Fzh%2Fapp%2Fsettings$/,
+    );
+    await expect(page.getByRole("heading", { name: "登录 Evidence Graph" })).toBeVisible();
+  });
+
   test("keeps localized login states accessible and stable on mobile", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/zh/auth/login?error=oauth");
