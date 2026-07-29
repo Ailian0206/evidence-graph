@@ -1,6 +1,12 @@
 "use client";
 
-import { FileText, FolderKanban, LogOut, UserRound } from "lucide-react";
+import {
+  FileText,
+  FolderKanban,
+  LogOut,
+  Settings as SettingsIcon,
+  UserRound,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { signOut } from "@/features/auth/actions";
@@ -10,7 +16,7 @@ import type { AppLocale } from "@/i18n/routing";
 import styles from "./managed-app-shell.module.css";
 
 type ManagedAppShellProps = {
-  active: "projects" | "reports";
+  active: "projects" | "reports" | "settings";
   children: React.ReactNode;
   locale: AppLocale;
   user: {
@@ -51,6 +57,13 @@ export function ManagedAppShell({
           >
             <FileText aria-hidden="true" size={17} />
             {t("reports")}
+          </Link>
+          <Link
+            href="/app/settings"
+            aria-current={active === "settings" ? "page" : undefined}
+          >
+            <SettingsIcon aria-hidden="true" size={17} />
+            {t("settings")}
           </Link>
         </nav>
 
