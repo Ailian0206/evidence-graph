@@ -1,5 +1,12 @@
 # Evidence Graph Agent 工作流
 
+## 默认工作流
+
+- 本仓库使用 Trellis 作为默认开发工作流。任务状态、需求、设计和实施计划统一存放在 `.trellis/tasks/`。
+- 开始工作前读取 `.trellis/workflow.md`、相关 `.trellis/spec/` 和当前任务；平台命令可用时优先使用 Trellis 命令。
+- `docs/superpowers/` 仅保留已完成工作的历史记录，不再为新任务创建 Superpowers spec 或 plan，也不要求加载 Superpowers skill。
+- 常规技术决策、任务创建、实现、验证和提交默认自主推进。只有付费 Provider、Production 写入、密钥或高风险破坏操作，以及无法从仓库判断的产品决策需要用户确认。
+
 ## 产品边界
 
 Evidence Graph 是一个可追溯的 AI 研究工作台，也是 Ailian 作品集中的主项目。MVP 把研究问题转换为持久化的来源、主张、证据关系、冲突和带引文的公开报告。
@@ -22,10 +29,10 @@ MVP 不增加 ProjectPilot AI、通用聊天、计费、团队、浏览器扩展
 
 ## 开发流程
 
-1. 开始前检查 `git status -sb` 和当前实施计划。
+1. 开始前检查 `git status -sb`，并用 Trellis 确认当前任务及其实施计划。
 2. 读取 `docs/roadmap.md` 与 `PROJECT_STATUS.md`；同一时间只允许一个有限里程碑处于进行中。
 3. 先判断改动级别：小型维护可直接在已同步且干净的 `main` 上完成；里程碑改动使用模块分支，并优先用 `.worktrees/` 隔离工作区。
-4. 每个里程碑开始前单独编写设计说明和实施计划，写清进入条件、用户可见结果、自动化门禁、Agent 本地验收、明确不做和终止条件。
+4. 每个里程碑开始前在对应 `.trellis/tasks/<task>/` 中编写 `prd.md`、`design.md` 和 `implement.md`，写清进入条件、用户可见结果、自动化门禁、Agent 本地验收、明确不做和终止条件。
 5. 每个行为先写一个失败测试，并实际运行以确认预期失败。
 6. 只实现让测试通过的最小改动。
 7. 先跑聚焦验证，再在测试保持通过时重构。

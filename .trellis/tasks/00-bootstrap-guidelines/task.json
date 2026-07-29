@@ -1,0 +1,31 @@
+{
+  "id": "00-bootstrap-guidelines",
+  "name": "00-bootstrap-guidelines",
+  "title": "Bootstrap Guidelines",
+  "description": "Fill in project development guidelines for AI agents",
+  "status": "in_progress",
+  "dev_type": "docs",
+  "scope": null,
+  "package": null,
+  "priority": "P1",
+  "creator": "Ailian",
+  "assignee": "Ailian",
+  "createdAt": "2026-07-29",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": null,
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    ".trellis/spec/frontend/",
+    ".trellis/spec/project/index.md",
+    "AGENT.md",
+    "AGENTS.md"
+  ],
+  "notes": "Trellis initialized for Codex and Claude; project conventions imported from the repository and verified against current code patterns.",
+  "meta": {}
+}

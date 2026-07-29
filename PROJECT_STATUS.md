@@ -7,6 +7,7 @@
 - 当前里程碑：C3“Settings 与账号/数据生命周期”已完成并合并 PR #20。
 - 当前进度：Settings、语言偏好、项目删除和测试账号删除已通过自动化、Agent 本地验收、独立审核和 CI。
 - 下一候选里程碑：C4“Evidence Eval”；本次不自动开始，用户反馈继续异步处理。
+- 默认开发工作流：Trellis 3.4.2；新任务使用 `.trellis/tasks/` 与 `.trellis/spec/`，`docs/superpowers/` 只保留历史记录。
 - 当前禁止：不得删除 Production 用户或数据，不得开始 C4-C6，不得更新 `release` 或部署。
 - 路线图：`docs/roadmap.md`。
 

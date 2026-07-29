@@ -2,7 +2,7 @@
 
 ## 1. 计划用途
 
-本文件只定义里程碑的执行方法。产品顺序、用户可见结果和每阶段边界以 `docs/roadmap.md` 为准；实时进度以 `PROJECT_STATUS.md` 为准；已经完成的细粒度技术记录由 Git 历史、PR 和对应 `docs/superpowers/plans/` 保留。
+本文件只定义里程碑的执行方法。产品顺序、用户可见结果和每阶段边界以 `docs/roadmap.md` 为准；实时进度以 `PROJECT_STATUS.md` 为准；新任务的需求、设计和实施计划统一放在 `.trellis/tasks/`。已经完成的旧技术记录继续由 Git 历史、PR 和 `docs/superpowers/` 保留，但该目录不再用于新工作。
 
 ## 2. 历史技术基线
 
@@ -45,8 +45,8 @@ C0 规划重置
 
 1. 确认上一里程碑已通过自动化、Agent 本地验收、独立审核和 CI 并完成合并；C0 文档里程碑除外。
 2. 从干净、已同步的 `main` 创建一个模块分支，优先使用 `.worktrees/` 隔离。
-3. 在 `docs/superpowers/specs/` 写当前里程碑设计，固定范围、方案、数据边界、风险和“不做”。
-4. Agent 完成设计自审后，在 `docs/superpowers/plans/` 写一个可按 TDD 执行的实施计划并直接推进；只有付费调用、Production 写入或会显著改变产品/数据结构的歧义需要提前确认。
+3. 使用 Trellis 创建当前里程碑任务，在任务目录的 `prd.md` 与 `design.md` 固定范围、方案、数据边界、风险和“不做”。
+4. Agent 完成设计自审后，在同一任务目录的 `implement.md` 写一个可按 TDD 执行的实施计划并直接推进；只有付费调用、Production 写入或会显著改变产品/数据结构的歧义需要提前确认。
 5. 更新 `PROJECT_STATUS.md`，只把该里程碑标记为进行中。
 
 ### 4.2 实现
@@ -108,4 +108,4 @@ npm run test:managed
 
 ## 6. 当前有限周期
 
-C1“本地真实研究运行环境”已经完成并合并。当前只推进 C2“核心研究闭环与缺陷收敛”，范围以 `docs/superpowers/specs/2026-07-28-c2-core-loop-hardening-design.md` 和对应实施计划为准；不得夹带 C3 Settings、Evidence Eval、真实案例或 Production 工作。
+C3“Settings 与账号/数据生命周期”已经完成并合并。当前没有进行中的产品里程碑；下一候选是 C4“Evidence Eval”，启动时必须创建独立 Trellis 任务并固定评测范围与预算，不得夹带 C5-C6 或 Production 工作。
