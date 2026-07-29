@@ -19,7 +19,7 @@ const createQueries = (
   overrides: Partial<AccountSettingsQueryAdapter> = {},
 ): AccountSettingsQueryAdapter => ({
   getProfile: vi.fn(async () => profileRow),
-  updateLanguage: vi.fn(async () => ({ ...profileRow, language: "en" })),
+  updateLanguage: vi.fn(async () => ({ ...profileRow, language: "en" as const })),
   ...overrides,
 });
 
