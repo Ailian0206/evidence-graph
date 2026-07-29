@@ -15,8 +15,47 @@
     "navigationLabel": "Workspace navigation",
     "projects": "Research projects",
     "reports": "Report library",
+    "settings": "Settings",
     "accountFallback": "Signed-in account",
     "signOut": "Sign out"
+  },
+  "Settings": {
+    "eyebrow": "Account and preferences",
+    "title": "Settings",
+    "description": "Manage the interface language and your current Evidence Graph account.",
+    "account": {
+      "title": "Account",
+      "description": "The GitHub identity used for this workspace.",
+      "fallback": "Signed-in account"
+    },
+    "language": {
+      "title": "Interface language",
+      "description": "The workspace switches to this language after you save.",
+      "label": "Interface language",
+      "options": {
+        "zh": "中文",
+        "en": "English"
+      },
+      "save": "Save language",
+      "saving": "Saving...",
+      "errors": {
+        "INVALID_LANGUAGE": "Select a supported interface language.",
+        "LANGUAGE_UPDATE_FAILED": "The language could not be saved. Try again."
+      }
+    },
+    "danger": {
+      "title": "Delete account",
+      "description": "Permanently delete this account, its research projects, sources, claims, and reports. This cannot be undone.",
+      "confirmationInstruction": "Enter {account} to confirm permanent deletion.",
+      "confirmationLabel": "Confirm account name",
+      "delete": "Permanently delete account",
+      "deleting": "Deleting...",
+      "errors": {
+        "ACCOUNT_CONFIRMATION_MISMATCH": "The account name does not match. Enter it again.",
+        "ACCOUNT_CONFIRMATION_UNAVAILABLE": "This account has no name available for confirmation and cannot be deleted.",
+        "ACCOUNT_DELETE_FAILED": "The account could not be deleted completely. Try again."
+      }
+    }
   },
   "Portfolio": {
     "eyebrow": "AI product engineering",

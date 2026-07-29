@@ -46,6 +46,10 @@ describe("managed app shell", () => {
       "href",
       "/zh/app/reports",
     );
+    expect(within(navigation).getByRole("link", { name: "设置" })).toHaveAttribute(
+      "href",
+      "/zh/app/settings",
+    );
     expect(within(navigation).getByRole("link", { name: "研究项目" })).toHaveAttribute(
       "aria-current",
       "page",
