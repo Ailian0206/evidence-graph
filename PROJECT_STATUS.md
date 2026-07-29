@@ -4,10 +4,10 @@
 
 ## 当前阶段
 
-- 当前里程碑：C2“核心研究闭环与缺陷收敛”已完成，当前没有进行中的里程碑。
-- 当前进度：4 个 P1 已关闭；PR #19 已通过独立 Claude 审核和 GitHub CI，并以 merge commit `de567b0` 合并。
-- 下一次用户可见结果：后续按独立范围启动 C3“Settings 与账号/数据生命周期”，不在 C2 后静默扩展。
-- 当前禁止：不得直接开始 C3-C6，不得更新 `release`，不得执行 Production 迁移、变量修改、Inngest 同步或部署。
+- 当前里程碑：C3“Settings 与账号/数据生命周期”正在分支 `feat/c3-settings-data-lifecycle` 实现。
+- 当前进度：范围已冻结为语言偏好、单项目删除和测试账号删除，设计见 `docs/superpowers/specs/2026-07-29-c3-settings-data-lifecycle-design.md`。
+- 下一次用户可见结果：工作台设置页可保存语言、删除项目数据并通过高风险确认删除测试账号。
+- 当前禁止：不得删除 Production 用户或数据，不得开始 C4-C6，不得更新 `release` 或部署。
 - 路线图：`docs/roadmap.md`。
 
 ## 真实完成度
