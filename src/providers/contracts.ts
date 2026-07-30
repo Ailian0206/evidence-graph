@@ -21,6 +21,19 @@ export const providerUsageSchema = z.object({
 
 export type ProviderUsage = z.infer<typeof providerUsageSchema>;
 
+export class ProviderCallError extends Error {
+  constructor(
+    message: string,
+    readonly usage: ProviderUsage,
+  ) {
+    super(message);
+    this.name = "ProviderCallError";
+  }
+}
+
+export const getProviderErrorUsage = (error: unknown) =>
+  error instanceof ProviderCallError ? error.usage : undefined;
+
 export type ProviderResult<T> = {
   data: T;
   usage: ProviderUsage;

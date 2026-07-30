@@ -6,6 +6,7 @@ import type {
   LanguageModel,
   ResearchModelOperation,
 } from "@/providers/contracts";
+import { ProviderCallError } from "@/providers/contracts";
 import {
   providerHeaders,
   requestProviderJson,
@@ -55,60 +56,85 @@ export const createDeepSeekLanguageModel = ({
       tokenCount: number;
     };
   }> => {
-    const responseBody = await requestProviderJson({
-      fetchImpl,
-      input: DEEPSEEK_ENDPOINT,
-      init: {
-        method: "POST",
-        headers: providerHeaders(apiKey),
-        body: JSON.stringify({
-          model: "deepseek-v4-flash",
-          thinking: { type: "disabled" },
-          temperature: 0,
-          max_tokens: 4000,
-          response_format: { type: "json_object" },
-          messages: [
-            { role: "system", content: modelSystemPrompt(operation) },
-            {
-              role: "user",
-              content: JSON.stringify({
-                output_schema: createJsonSchema(schema),
-                payload,
-              }),
-            },
-          ],
-        }),
-      },
-      errorCode: "DEEPSEEK_REQUEST_FAILED",
+    let estimatedCostUsd = 0;
+    let tokenCount = 0;
+    let previousResponseErrors:
+      | Array<{ code: string; message: string; path: string }>
+      | undefined;
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const responseBody = await requestProviderJson({
+        fetchImpl,
+        input: DEEPSEEK_ENDPOINT,
+        init: {
+          method: "POST",
+          headers: providerHeaders(apiKey),
+          body: JSON.stringify({
+            model: "deepseek-v4-flash",
+            thinking: { type: "disabled" },
+            temperature: 0,
+            max_tokens: 4000,
+            response_format: { type: "json_object" },
+            messages: [
+              { role: "system", content: modelSystemPrompt(operation) },
+              {
+                role: "user",
+                content: JSON.stringify({
+                  output_schema: createJsonSchema(schema),
+                  payload,
+                  ...(previousResponseErrors
+                    ? { previous_response_errors: previousResponseErrors }
+                    : {}),
+                }),
+              },
+            ],
+          }),
+        },
+        errorCode: "DEEPSEEK_REQUEST_FAILED",
+      });
+      let parsedResponse: z.infer<typeof deepSeekResponseSchema>;
+      try {
+        parsedResponse = deepSeekResponseSchema.parse(responseBody);
+      } catch {
+        throw new Error("PROVIDER_RESPONSE_INVALID");
+      }
+
+      estimatedCostUsd += estimateCost(parsedResponse.usage);
+      tokenCount += parsedResponse.usage.total_tokens;
+
+      let decoded: unknown;
+      try {
+        decoded = JSON.parse(parsedResponse.choices[0].message.content);
+      } catch {
+        previousResponseErrors = [
+          {
+            code: "invalid_json",
+            message: "The previous response was not valid JSON.",
+            path: "",
+          },
+        ];
+        continue;
+      }
+
+      const parsedData = schema.safeParse(decoded);
+      if (parsedData.success) {
+        return {
+          data: parsedData.data,
+          usage: { estimatedCostUsd, searchCount: 0, tokenCount },
+        };
+      }
+
+      previousResponseErrors = parsedData.error.issues.map((issue) => ({
+        code: issue.code,
+        message: issue.message,
+        path: issue.path.map(String).join("."),
+      }));
+    }
+
+    throw new ProviderCallError("PROVIDER_RESPONSE_INVALID", {
+      estimatedCostUsd,
+      searchCount: 0,
+      tokenCount,
     });
-    let parsedResponse: z.infer<typeof deepSeekResponseSchema>;
-    try {
-      parsedResponse = deepSeekResponseSchema.parse(responseBody);
-    } catch {
-      throw new Error("PROVIDER_RESPONSE_INVALID");
-    }
-
-    let decoded: unknown;
-    try {
-      decoded = JSON.parse(parsedResponse.choices[0].message.content);
-    } catch {
-      throw new Error("PROVIDER_RESPONSE_INVALID");
-    }
-
-    let data: T;
-    try {
-      data = schema.parse(decoded);
-    } catch {
-      throw new Error("PROVIDER_RESPONSE_INVALID");
-    }
-
-    return {
-      data,
-      usage: {
-        estimatedCostUsd: estimateCost(parsedResponse.usage),
-        searchCount: 0,
-        tokenCount: parsedResponse.usage.total_tokens,
-      },
-    };
   },
 });

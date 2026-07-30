@@ -13,7 +13,7 @@ import {
   evidenceCandidatesSchema,
   reportDraftSchema,
 } from "@/features/research/workflow-types";
-import { searchResultSchema } from "@/providers/contracts";
+import { ProviderCallError, searchResultSchema } from "@/providers/contracts";
 import { createFixtureResearchProviders } from "@/providers/fixtures/research-providers";
 
 const createMemoizingProviderCallExecutor = (): ProviderCallExecutor => {
@@ -31,6 +31,28 @@ const createMemoizingProviderCallExecutor = (): ProviderCallExecutor => {
 };
 
 describe("research provider fixtures", () => {
+  it("bounds claim extraction to twelve unique candidates", () => {
+    const claim = {
+      candidateId: "claim_1",
+      statement: "A bounded claim.",
+      claimType: "factual" as const,
+      qualifiers: [],
+      confidence: 0.8,
+    };
+
+    expect(() =>
+      claimCandidatesSchema.parse({
+        claims: Array.from({ length: 13 }, (_, index) => ({
+          ...claim,
+          candidateId: `claim_${index + 1}`,
+        })),
+      }),
+    ).toThrow();
+    expect(() =>
+      claimCandidatesSchema.parse({ claims: [claim, { ...claim }] }),
+    ).toThrow("CLAIM_CANDIDATE_ID_CONFLICT");
+  });
+
   it("returns deterministic structured data and records idempotency keys", async () => {
     const first = createFixtureResearchProviders();
     const second = createFixtureResearchProviders();
@@ -1279,6 +1301,258 @@ describe("research workflow", () => {
     ).toBe(true);
   });
 
+  it("limits search queries for a bounded evaluation run", async () => {
+    const providers = createFixtureResearchProviders();
+    const fixture = createDemoResearchFixture();
+    fixture.sources = [];
+    fixture.chunks = [];
+    fixture.claims = [];
+    fixture.evidenceLinks = [];
+    fixture.claimRelations = [];
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      maxSearchQueries: 2,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+
+    expect(result.run.status).toBe("ready");
+    expect(providers.calls.filter((call) => call.operation === "search")).toHaveLength(
+      2,
+    );
+  });
+
+  it("prioritizes distinct search result domains before filling source slots", async () => {
+    const providers = createFixtureResearchProviders();
+    let searchCall = 0;
+    providers.search.search = async () => {
+      searchCall += 1;
+      return {
+        data:
+          searchCall === 1
+            ? [
+                {
+                  url: "https://example.com/research",
+                  title: "Primary research",
+                  body: "Evidence Graph keeps claims connected to exact quotes for review.",
+                  sourceType: "article" as const,
+                },
+                {
+                  url: "https://example.com/other",
+                  title: "Same-domain result",
+                  body: "A same-domain result should wait until distinct domains are selected.",
+                  sourceType: "article" as const,
+                },
+                {
+                  url: "https://docs.example.com/evidence-graph",
+                  title: "Product notes",
+                  body: "A cited report should use only claims with stored evidence links and preserved source excerpts.",
+                  sourceType: "documentation" as const,
+                },
+                {
+                  url: "https://third.example.org/research",
+                  title: "Third domain",
+                  body: "A third domain provides independent research context.",
+                  sourceType: "article" as const,
+                },
+              ]
+            : [
+                {
+                  url: "https://fourth.example.net/research",
+                  title: "Fourth domain",
+                  body: "A fourth domain provides additional independent context.",
+                  sourceType: "article" as const,
+                },
+              ],
+        usage: { estimatedCostUsd: 0.01, searchCount: 1, tokenCount: 0 },
+      };
+    };
+    const fixture = createDemoResearchFixture();
+    fixture.researchRuns[0].sourceLimit = 4;
+    fixture.sources = [];
+    fixture.chunks = [];
+    fixture.claims = [];
+    fixture.evidenceLinks = [];
+    fixture.claimRelations = [];
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+
+    expect(result.run.status).toBe("ready");
+    expect(new Set(store.getSnapshot().sources.map((source) => source.domain))).toEqual(
+      new Set([
+        "example.com",
+        "docs.example.com",
+        "third.example.org",
+        "fourth.example.net",
+      ]),
+    );
+  });
+
+  it("repairs missing evidence domains once for a quality-gated run", async () => {
+    const providers = createFixtureResearchProviders();
+    const generateStructured = providers.languageModel.generateStructured;
+    let linkEvidenceCalls = 0;
+    const linkEvidencePayloads: unknown[] = [];
+    const linkEvidenceSchemas: Array<z.ZodType<unknown>> = [];
+    const repairEvidence = [
+      {
+        claimCandidateId: "claim_exact_quotes",
+        sourceUrl: "https://third.example.org/research",
+        quote: "Third-domain evidence remains inspectable",
+        relation: "context" as const,
+        strength: "moderate" as const,
+        rationale: "The third source adds independent context.",
+      },
+      {
+        claimCandidateId: "claim_exact_quotes",
+        sourceUrl: "https://fourth.example.net/research",
+        quote: "Fourth-domain evidence remains inspectable",
+        relation: "context" as const,
+        strength: "moderate" as const,
+        rationale: "The fourth source adds independent context.",
+      },
+    ];
+    providers.languageModel.generateStructured = async (input) => {
+      if (input.operation !== "link_evidence") {
+        return generateStructured(input);
+      }
+
+      linkEvidenceCalls += 1;
+      linkEvidencePayloads.push(input.payload);
+      linkEvidenceSchemas.push(input.schema);
+      if (linkEvidenceCalls === 1) {
+        return generateStructured(input);
+      }
+
+      return {
+        data: input.schema.parse({ evidence: repairEvidence }),
+        usage: { estimatedCostUsd: 0.01, searchCount: 0, tokenCount: 120 },
+      };
+    };
+    const fixture = createDemoResearchFixture();
+    fixture.researchRuns[0].sourceLimit = 5;
+    fixture.sources = [];
+    fixture.chunks = [];
+    fixture.claims = [];
+    fixture.evidenceLinks = [];
+    fixture.claimRelations = [];
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [
+        {
+          url: "https://example.com/research",
+          title: "Primary research",
+          body: "Evidence Graph keeps claims connected to exact quotes for review.",
+          sourceType: "primary_interview",
+        },
+        {
+          url: "https://docs.example.com/evidence-graph",
+          title: "Product notes",
+          body: "A cited report should use only claims with stored evidence links and preserved source excerpts.",
+          sourceType: "official_document",
+        },
+        {
+          url: "https://third.example.org/research",
+          title: "Third domain",
+          body: "Third-domain evidence remains inspectable for research review.",
+          sourceType: "article",
+        },
+        {
+          url: "https://fourth.example.net/research",
+          title: "Fourth domain",
+          body: "Fourth-domain evidence remains inspectable for research review.",
+          sourceType: "article",
+        },
+        {
+          url: "https://fifth.example.edu/research",
+          title: "Fifth domain",
+          body: "Fifth-domain evidence provides additional research context.",
+          sourceType: "article",
+        },
+      ],
+      providers,
+      minimumEvidenceDomains: 4,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+    const snapshot = store.getSnapshot();
+    const chunksById = new Map(snapshot.chunks.map((chunk) => [chunk.id, chunk]));
+    const sourcesById = new Map(snapshot.sources.map((source) => [source.id, source]));
+    const extractionPayload = providers.calls.find(
+      (call) => call.operation === "extract_claims",
+    )?.payload as
+      | {
+          chunks?: Array<{ sourceUrl?: string }>;
+          minimumSourceDomains?: number;
+          requiredSourceUrls?: string[];
+        }
+      | undefined;
+    const linkedDomains = new Set(
+      snapshot.evidenceLinks.map((link) => {
+        const chunk = chunksById.get(link.chunkId);
+        return chunk ? sourcesById.get(chunk.sourceId)?.domain : undefined;
+      }),
+    );
+
+    expect(result.run.status).toBe("ready");
+    expect(linkEvidenceCalls).toBe(2);
+    expect(extractionPayload?.requiredSourceUrls).toEqual([
+      "https://example.com/research",
+      "https://docs.example.com/evidence-graph",
+      "https://third.example.org/research",
+      "https://fourth.example.net/research",
+      "https://fifth.example.edu/research",
+    ]);
+    expect(extractionPayload?.minimumSourceDomains).toBe(4);
+    expect(extractionPayload?.chunks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ sourceUrl: "https://third.example.org/research" }),
+        expect.objectContaining({
+          sourceUrl: "https://fourth.example.net/research",
+        }),
+      ]),
+    );
+    expect(linkEvidencePayloads).toEqual([
+      expect.objectContaining({ minimumSourceDomains: 4 }),
+      expect.objectContaining({
+        minimumSourceDomains: 2,
+        requiredSourceUrls: [
+          "https://third.example.org/research",
+          "https://fourth.example.net/research",
+          "https://fifth.example.edu/research",
+        ],
+      }),
+    ]);
+    expect(
+      linkEvidenceSchemas[1].safeParse({ evidence: repairEvidence.slice(0, 1) })
+        .success,
+    ).toBe(false);
+    expect(linkedDomains).toEqual(
+      new Set([
+        "example.com",
+        "docs.example.com",
+        "third.example.org",
+        "fourth.example.net",
+      ]),
+    );
+  });
+
   it("does not double-count usage when a partial search step retries", async () => {
     const providers = createFixtureResearchProviders({ failSearchAtCall: 2 });
     const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
@@ -1448,6 +1722,45 @@ describe("research workflow", () => {
     );
   });
 
+  it("records usage attached to a failed structured Provider response", async () => {
+    const providers = createFixtureResearchProviders();
+    const generateStructured = providers.languageModel.generateStructured;
+    providers.languageModel.generateStructured = async (input) => {
+      if (input.operation === "extract_claims") {
+        throw new ProviderCallError("PROVIDER_RESPONSE_INVALID", {
+          estimatedCostUsd: 0.002,
+          searchCount: 0,
+          tokenCount: 200,
+        });
+      }
+
+      return generateStructured(input);
+    };
+    const fixture = createDemoResearchFixture();
+    fixture.sources = [];
+    fixture.chunks = [];
+    fixture.claims = [];
+    fixture.evidenceLinks = [];
+    fixture.claimRelations = [];
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+
+    expect(result.run).toMatchObject({
+      status: "failed",
+      errorMessage: "PROVIDER_RESPONSE_INVALID",
+      estimatedCostUsd: 0.043,
+      tokenCount: 480,
+    });
+  });
+
   it("rejects manual sources above the run limit before provider calls", async () => {
     const providers = createFixtureResearchProviders();
     const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
@@ -1508,6 +1821,71 @@ describe("research workflow", () => {
     });
     expect(providers.calls.some((call) => call.operation === "embed")).toBe(false);
     expect(store.getSnapshot().sources).toEqual([]);
+  });
+
+  it("retains bounded excerpts from oversized search sources", async () => {
+    const fixture = createDemoResearchFixture();
+    fixture.researchRuns[0].sourceLimit = 4;
+    fixture.researchRuns[0].maxContentChars = 4_000;
+    fixture.sources = [];
+    fixture.chunks = [];
+    fixture.claims = [];
+    fixture.evidenceLinks = [];
+    fixture.claimRelations = [];
+    const providers = createFixtureResearchProviders();
+    providers.search.search = async () => ({
+      data: [
+        {
+          url: "https://example.com/research",
+          title: "Product research interview",
+          body: `Evidence Graph keeps claims connected to exact quotes for review. ${"😀".repeat(5_000)}`,
+          sourceType: "primary_interview" as const,
+        },
+        {
+          url: "https://docs.example.com/evidence-graph",
+          title: "Evidence Graph product notes",
+          body: `A cited report should use only claims with stored evidence links and preserved source excerpts. ${"😀".repeat(5_000)}`,
+          sourceType: "official_document" as const,
+        },
+        {
+          url: "https://market.example.org/research",
+          title: "Market research",
+          body: `Independent market evidence remains available for comparison. ${"😀".repeat(5_000)}`,
+          sourceType: "article" as const,
+        },
+        {
+          url: "https://standards.example.net/research",
+          title: "Research standard",
+          body: `Published standards describe review and traceability controls. ${"😀".repeat(5_000)}`,
+          sourceType: "documentation" as const,
+        },
+      ],
+      usage: { estimatedCostUsd: 0.01, searchCount: 1, tokenCount: 0 },
+    });
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+    const sources = store.getSnapshot().sources;
+
+    expect(result.run.status).toBe("ready");
+    expect(sources).toHaveLength(4);
+    expect(new Set(sources.map((source) => source.domain))).toHaveLength(4);
+    expect(
+      sources.reduce(
+        (total, source) => total + Array.from(source.body).length,
+        0,
+      ),
+    ).toBe(fixture.researchRuns[0].maxContentChars);
+    expect(sources.every((source) => Array.from(source.body).length === 1_000)).toBe(
+      true,
+    );
   });
 
   it("coalesces more than 1500 short paragraphs before embedding", async () => {

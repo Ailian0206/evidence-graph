@@ -14,7 +14,7 @@ const TRACKING_PARAMS = new Set([
   "fbclid",
   "gclid",
 ]);
-const MIN_CHUNK_CHARACTERS = 800;
+export const MIN_CHUNK_CHARACTERS = 800;
 const MAX_CHUNK_CHARACTERS = 1200;
 
 export const canonicalizeUrl = (rawUrl: string) => {

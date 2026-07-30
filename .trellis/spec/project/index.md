@@ -25,3 +25,7 @@ Evidence Graph is a bilingual, traceable AI research workspace. Preserve source-
 - Current milestone and environment: `PROJECT_STATUS.md`
 - Detailed repository workflow and gates: `AGENT.md` and `AGENTS.md`
 - Installed Next.js behavior: `node_modules/next/dist/docs/`
+
+## Code Specs
+
+- [Provider cost gates](./provider-cost-gates.md): live-call confirmation, cumulative budgets, structured retries, and failed-response usage accounting.

@@ -245,6 +245,18 @@ describe("DeepSeek live Provider", () => {
     expect(prompt).toContain("payload.language");
   });
 
+  it("requires claim candidates from every source in a coverage-gated run", () => {
+    expect(modelSystemPrompt("extract_claims")).toContain(
+      "payload.requiredSourceUrls",
+    );
+    expect(modelSystemPrompt("extract_claims")).toContain(
+      "payload.minimumSourceDomains",
+    );
+    expect(modelSystemPrompt("link_evidence")).toContain(
+      "payload.minimumSourceDomains",
+    );
+  });
+
   it("requests deepseek-v4-flash JSON and validates structured output", async () => {
     const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       expect(input).toBe("https://api.deepseek.com/chat/completions");
@@ -276,6 +288,85 @@ describe("DeepSeek live Provider", () => {
     expect(result.data.queries).toEqual(["one", "two", "three"]);
     expect(result.usage.estimatedCostUsd).toBeCloseTo(0.0000196, 12);
     expect(result.usage).toMatchObject({ searchCount: 0, tokenCount: 120 });
+  });
+
+  it("repairs one invalid structured response and combines both usages", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({
+          choices: [{ message: { content: '{"queries":[]}' } }],
+          usage: { prompt_tokens: 100, completion_tokens: 20, total_tokens: 120 },
+        }),
+      )
+      .mockImplementationOnce(async (_input: RequestInfo | URL, init?: RequestInit) => {
+        const body = JSON.parse(String(init?.body)) as {
+          messages: Array<{ content: string; role: string }>;
+        };
+        const repairPayload = JSON.parse(body.messages[1].content) as {
+          previous_response_errors: Array<{
+            code: string;
+            message: string;
+            path: string;
+          }>;
+        };
+        expect(repairPayload.previous_response_errors).toEqual([
+          expect.objectContaining({
+            code: "too_small",
+            message: expect.any(String),
+            path: "queries",
+          }),
+        ]);
+        return jsonResponse({
+          choices: [{ message: { content: '{"queries":["one","two","three"]}' } }],
+          usage: { prompt_tokens: 110, completion_tokens: 30, total_tokens: 140 },
+        });
+      });
+    const provider = createDeepSeekLanguageModel({
+      apiKey: "deepseek-secret",
+      fetchImpl,
+    });
+
+    const result = await provider.generateStructured({
+      operation: "plan",
+      schema: z.object({ queries: z.array(z.string()).min(3) }),
+      payload: { question: "How?", language: "en" },
+      idempotencyKey: "run:planning",
+    });
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(result.data.queries).toEqual(["one", "two", "three"]);
+    expect(result.usage).toMatchObject({ searchCount: 0, tokenCount: 260 });
+    expect(result.usage.estimatedCostUsd).toBeCloseTo(
+      (210 * 0.14 + 50 * 0.28) / 1_000_000,
+      12,
+    );
+  });
+
+  it("keeps accumulated usage on a final invalid structured response", async () => {
+    const fetchImpl = vi.fn(async () =>
+      jsonResponse({
+        choices: [{ message: { content: '{"queries":[]}' } }],
+        usage: { prompt_tokens: 100, completion_tokens: 20, total_tokens: 120 },
+      }),
+    );
+    const provider = createDeepSeekLanguageModel({
+      apiKey: "deepseek-secret",
+      fetchImpl,
+    });
+
+    await expect(
+      provider.generateStructured({
+        operation: "plan",
+        schema: z.object({ queries: z.array(z.string()).min(3) }),
+        payload: { question: "How?", language: "en" },
+        idempotencyKey: "run:planning",
+      }),
+    ).rejects.toMatchObject({
+      message: "PROVIDER_RESPONSE_INVALID",
+      usage: { searchCount: 0, tokenCount: 240 },
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 
   it("turns invalid JSON and non-success responses into stable errors", async () => {
