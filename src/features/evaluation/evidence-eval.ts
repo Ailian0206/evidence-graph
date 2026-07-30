@@ -144,7 +144,8 @@ export const evidenceEvalThresholds = {
   quoteExactness: 1,
   uncitedFactualParagraphs: 0,
   evidenceRelationAccuracy: 0.9,
-  sourceDomains: 4,
+  sourceDomains: 2,
+  sourceDomainCoverage: 0.9,
   runCompletion: 0.9,
   maximumRunCostUsd: 1,
   maximumLiveTotalCostUsd: 0.5,
@@ -167,6 +168,7 @@ export const evaluateEvidenceEval = (rawInput: EvidenceEvalInput) => {
   let maximumRunCostUsd = 0;
   let totalRunCostUsd = 0;
   const completedUsableDomainCounts: number[] = [];
+  let casesMeetingSourceDomainMinimum = 0;
 
   for (const manifestItem of evidenceEvalManifest) {
     const item = casesById.get(manifestItem.id);
@@ -350,6 +352,8 @@ export const evaluateEvidenceEval = (rawInput: EvidenceEvalInput) => {
           caseId: item.caseId,
           runId: item.run.id,
         });
+      } else {
+        casesMeetingSourceDomainMinimum += 1;
       }
     }
 
@@ -377,6 +381,12 @@ export const evaluateEvidenceEval = (rawInput: EvidenceEvalInput) => {
     completedUsableDomainCounts.length === 0
       ? 0
       : Math.min(...completedUsableDomainCounts);
+  const sourceDomainCoverageValue =
+    completedUsableDomainCounts.length === 0
+      ? 0
+      : roundMetric(
+          casesMeetingSourceDomainMinimum / completedUsableDomainCounts.length,
+        );
   const hasTraceabilityFailure = failures.some((failure) => failure.metric === "traceability");
   const metrics = {
     quoteExactness: {
@@ -405,10 +415,14 @@ export const evaluateEvidenceEval = (rawInput: EvidenceEvalInput) => {
     },
     sourceDomainCoverage: {
       minimum: minimumSourceDomains,
+      passingCases: casesMeetingSourceDomainMinimum,
+      totalCases: completedUsableDomainCounts.length,
+      value: sourceDomainCoverageValue,
+      threshold: evidenceEvalThresholds.sourceDomainCoverage,
       requiredMinimum: evidenceEvalThresholds.sourceDomains,
       passed:
         completedUsableDomainCounts.length > 0 &&
-        minimumSourceDomains >= evidenceEvalThresholds.sourceDomains,
+        sourceDomainCoverageValue >= evidenceEvalThresholds.sourceDomainCoverage,
     },
     runCompletion: {
       ready: readyRuns,

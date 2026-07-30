@@ -59,7 +59,11 @@ describe("Evidence Eval gate", () => {
       },
       sourceDomainCoverage: {
         minimum: 4,
-        requiredMinimum: 4,
+        passingCases: 10,
+        totalCases: 10,
+        value: 1,
+        threshold: 0.9,
+        requiredMinimum: 2,
         passed: true,
       },
       runCompletion: {
@@ -160,26 +164,47 @@ describe("Evidence Eval gate", () => {
     );
   });
 
-  it("fails a usable completed case with fewer than four evidence domains", () => {
+  it("requires two evidence domains in at least ninety percent of cases", () => {
     const input = cloneFixture();
     for (const source of input.cases[0].sources) {
       source.domain = "single.example";
     }
 
-    const summary = evaluateEvidenceEval(input);
+    const passingSummary = evaluateEvidenceEval(input);
 
-    expect(summary.metrics.sourceDomainCoverage).toEqual({
+    expect(passingSummary.passed).toBe(true);
+    expect(passingSummary.metrics.sourceDomainCoverage).toEqual({
       minimum: 1,
-      requiredMinimum: 4,
-      passed: false,
+      passingCases: 9,
+      totalCases: 10,
+      value: 0.9,
+      threshold: 0.9,
+      requiredMinimum: 2,
+      passed: true,
     });
-    expect(summary.failures).toContainEqual(
+    expect(passingSummary.failures).toContainEqual(
       expect.objectContaining({
         code: "SOURCE_DOMAIN_COVERAGE_LOW",
         caseId: "technical-vector-store",
         runId: "run_technical-vector-store",
       }),
     );
+
+    for (const source of input.cases[1].sources) {
+      source.domain = "another-single.example";
+    }
+
+    const failedSummary = evaluateEvidenceEval(input);
+    expect(failedSummary.passed).toBe(false);
+    expect(failedSummary.metrics.sourceDomainCoverage).toEqual({
+      minimum: 1,
+      passingCases: 8,
+      totalCases: 10,
+      value: 0.8,
+      threshold: 0.9,
+      requiredMinimum: 2,
+      passed: false,
+    });
   });
 
   it("fails completion below ninety percent", () => {

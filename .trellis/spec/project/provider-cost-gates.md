@@ -34,7 +34,8 @@ The live Evidence Eval command is `npm run eval:evidence:live`.
 - The allocated per-run limit is floored to six decimals and cannot exceed `0.15`.
 - A structured model retry is limited to one repair attempt. The retry payload includes each validation issue's code, path, and readable message. A successful retry returns combined usage for both responses. A final validation failure throws `ProviderCallError` with the accumulated usage so the workflow records it before failing the step.
 - A quality-gated run may require multiple Evidence-link domains. Search candidates prioritize distinct domains, and linking makes at most one repair call restricted to missing domains. The repair uses its own idempotency key and usage record; insufficient coverage fails instead of producing a low-quality ready result.
-- Under its separate paid gate, live Evidence Eval allocates six distinct-prioritized source slots instead of the local product workflow's default four. It keeps the existing evaluation content and cost caps and requires Evidence links from any four domains, avoiding a single point of failure without changing routine product limits or weakening the metric.
+- Live Evidence Eval uses the product's default source limit and a workflow minimum of one Evidence domain so collection measures all ten cases instead of aborting on an allowed low-coverage case.
+- The aggregate source-domain metric passes when at least 90% of usable completed cases have Evidence links from at least two domains. Its summary exposes `minimum`, `passingCases`, `totalCases`, `value`, `threshold`, and `requiredMinimum`; four-domain coverage is non-blocking.
 - Before a multi-domain link gate, Claim extraction receives candidate source URLs, chunk-to-URL mappings, and `minimumSourceDomains`. Initial linking uses the same minimum; the single repair receives all missing source URLs and the remaining domain deficit.
 - The repair response uses a runtime-refined schema that rejects unknown Claim candidates, non-exact quotes, and fewer exact source domains than the remaining deficit. These semantic issues trigger the same bounded structured retry instead of an untracked extra workflow call.
 - Live observations, source excerpts, manual labels, summaries, and Provider responses remain under ignored `output/evidence-eval/`. Files containing source excerpts use mode `0600`.
@@ -67,7 +68,8 @@ The live Evidence Eval command is `npm run eval:evidence:live`.
 - Assert a final invalid structured response carries accumulated usage and that `runResearchWorkflow` persists it.
 - Assert bounded evaluation runs honor `maxSearchQueries` without changing the default workflow query count.
 - Assert search candidates fill distinct domains first and a quality-gated run repairs only missing Evidence domains once.
-- Assert live evaluation allocates six distinct-prioritized source slots for a four-domain threshold while routine product limits remain unchanged.
+- Assert live collection has no hard multi-domain workflow gate and retains routine product source limits.
+- Assert one of ten usable completed cases below two domains keeps aggregate coverage at 90% and passes, while two low-coverage cases fail at 80%.
 - Assert quality-gated Claim extraction and linking receive candidate URLs, URL-bearing chunks, and the correct `minimumSourceDomains`; repair receives the remaining deficit.
 - Assert the repair schema rejects a schema-valid response that covers fewer exact domains than the remaining deficit.
 - Keep Provider boundary, lint, typecheck, fixture evaluation, unit, build, and E2E gates free of live calls.

@@ -74,7 +74,7 @@ describe("live Evidence Eval collection", () => {
           id: runId,
           projectId,
           ownerId: OWNER_ID,
-          sourceLimit: liveEvidenceEvalConstants.collectionSourceLimit,
+          sourceLimit: providers.executionLimits?.sourceLimit ?? 4,
           maxContentChars: Math.min(
             providers.executionLimits?.maxContentChars ?? MAX_EVAL_CONTENT_CHARS,
             MAX_EVAL_CONTENT_CHARS,
@@ -95,7 +95,8 @@ describe("live Evidence Eval collection", () => {
         maxCostUsd: budget.perRunCostLimitUsd,
         maxEmbeddingBatches: providers.executionLimits?.maxEmbeddingBatches,
         maxSearchQueries: 2,
-        minimumEvidenceDomains: liveEvidenceEvalConstants.minimumEvidenceDomains,
+        minimumEvidenceDomains:
+          liveEvidenceEvalConstants.workflowMinimumEvidenceDomains,
         store,
         now: () => new Date().toISOString(),
       });

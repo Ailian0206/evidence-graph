@@ -13,9 +13,8 @@ const validEnvironment = {
 };
 
 describe("live Evidence Eval gate", () => {
-  it("allocates more source slots than the four-domain quality threshold", () => {
-    expect(liveEvidenceEvalConstants.collectionSourceLimit).toBe(6);
-    expect(liveEvidenceEvalConstants.minimumEvidenceDomains).toBe(4);
+  it("measures domain coverage without a hard multi-domain workflow gate", () => {
+    expect(liveEvidenceEvalConstants.workflowMinimumEvidenceDomains).toBe(1);
   });
 
   it("requires live mode and the dedicated confirmation", () => {
