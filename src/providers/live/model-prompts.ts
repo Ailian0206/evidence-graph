@@ -6,7 +6,7 @@ import type { ResearchModelOperation } from "@/providers/contracts";
 const operationInstructions: Record<ResearchModelOperation, string> = {
   plan: "Generate three focused search queries for the research question.",
   extract_claims:
-    `Extract between 1 and ${MAX_CLAIM_CANDIDATES} decision-relevant atomic claims grounded in the supplied source chunks. Preserve qualifications and give every claim a unique candidateId.`,
+    `Extract between 1 and ${MAX_CLAIM_CANDIDATES} decision-relevant atomic claims grounded in the supplied source chunks. When payload.requiredSourceUrls exists, extract at least one grounded claim from chunks belonging to every listed URL so each required source can be linked later; never invent a claim merely to satisfy coverage. Preserve qualifications and give every claim a unique candidateId.`,
   link_evidence:
     "Link claims to exact source quotes only; never invent or paraphrase evidence quotes. When the payload contains four source URLs, return valid evidence from all four URLs. When payload.requiredSourceUrls exists, return at least one valid exact quote from every listed URL. Use only supports, rebuts, qualifies, or context as relation values and weak, moderate, or strong as strength values.",
   detect_conflicts:

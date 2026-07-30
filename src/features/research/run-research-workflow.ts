@@ -614,12 +614,42 @@ const runResearchWorkflowAttempt = async ({
     async (idempotencyKey) => {
       const snapshot = store.getSnapshot();
       const chunks = snapshot.chunks.filter((chunk) => indexed.chunkIds.includes(chunk.id));
+      const sourceById = new Map(
+        snapshot.sources
+          .filter((source) => source.projectId === run.projectId)
+          .map((source) => [source.id, source]),
+      );
+      const sourceAwareChunks = chunks.map((chunk) => {
+        const source = sourceById.get(chunk.sourceId);
+
+        if (!source) {
+          throw new Error("SOURCE_NOT_FOUND");
+        }
+
+        return { ...chunk, sourceUrl: source.canonicalUrl };
+      });
+      const claimChunks = minimumEvidenceDomains > 1 ? sourceAwareChunks : chunks;
+      const sourceUrlsByDomain = new Map<string, string>();
+      for (const chunk of sourceAwareChunks) {
+        const domain = extractDomain(chunk.sourceUrl);
+        if (!sourceUrlsByDomain.has(domain)) {
+          sourceUrlsByDomain.set(domain, chunk.sourceUrl);
+        }
+      }
+      const requiredSourceUrls =
+        minimumEvidenceDomains > 1
+          ? Array.from(sourceUrlsByDomain.values()).slice(0, minimumEvidenceDomains)
+          : undefined;
       assertProviderBudget();
       const result = await executeTrackedProviderCall(idempotencyKey, () =>
         providers.languageModel.generateStructured({
           operation: "extract_claims",
           schema: claimCandidatesSchema,
-          payload: { ...researchContext, chunks },
+          payload: {
+            ...researchContext,
+            chunks: claimChunks,
+            ...(requiredSourceUrls ? { requiredSourceUrls } : {}),
+          },
           idempotencyKey,
         }),
       );

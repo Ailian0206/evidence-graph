@@ -1440,7 +1440,7 @@ describe("research workflow", () => {
       };
     };
     const fixture = createDemoResearchFixture();
-    fixture.researchRuns[0].sourceLimit = 4;
+    fixture.researchRuns[0].sourceLimit = 5;
     fixture.sources = [];
     fixture.chunks = [];
     fixture.claims = [];
@@ -1476,6 +1476,12 @@ describe("research workflow", () => {
           body: "Fourth-domain evidence remains inspectable for research review.",
           sourceType: "article",
         },
+        {
+          url: "https://fifth.example.edu/research",
+          title: "Fifth domain",
+          body: "Fifth-domain evidence provides additional research context.",
+          sourceType: "article",
+        },
       ],
       providers,
       minimumEvidenceDomains: 4,
@@ -1485,6 +1491,14 @@ describe("research workflow", () => {
     const snapshot = store.getSnapshot();
     const chunksById = new Map(snapshot.chunks.map((chunk) => [chunk.id, chunk]));
     const sourcesById = new Map(snapshot.sources.map((source) => [source.id, source]));
+    const extractionPayload = providers.calls.find(
+      (call) => call.operation === "extract_claims",
+    )?.payload as
+      | {
+          chunks?: Array<{ sourceUrl?: string }>;
+          requiredSourceUrls?: string[];
+        }
+      | undefined;
     const linkedDomains = new Set(
       snapshot.evidenceLinks.map((link) => {
         const chunk = chunksById.get(link.chunkId);
@@ -1494,6 +1508,20 @@ describe("research workflow", () => {
 
     expect(result.run.status).toBe("ready");
     expect(linkEvidenceCalls).toBe(2);
+    expect(extractionPayload?.requiredSourceUrls).toEqual([
+      "https://example.com/research",
+      "https://docs.example.com/evidence-graph",
+      "https://third.example.org/research",
+      "https://fourth.example.net/research",
+    ]);
+    expect(extractionPayload?.chunks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ sourceUrl: "https://third.example.org/research" }),
+        expect.objectContaining({
+          sourceUrl: "https://fourth.example.net/research",
+        }),
+      ]),
+    );
     expect(linkedDomains).toEqual(
       new Set([
         "example.com",

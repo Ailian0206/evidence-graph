@@ -245,6 +245,12 @@ describe("DeepSeek live Provider", () => {
     expect(prompt).toContain("payload.language");
   });
 
+  it("requires claim candidates from every source in a coverage-gated run", () => {
+    expect(modelSystemPrompt("extract_claims")).toContain(
+      "payload.requiredSourceUrls",
+    );
+  });
+
   it("requests deepseek-v4-flash JSON and validates structured output", async () => {
     const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       expect(input).toBe("https://api.deepseek.com/chat/completions");
