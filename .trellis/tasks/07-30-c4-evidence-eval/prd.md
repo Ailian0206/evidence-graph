@@ -62,7 +62,7 @@ Turn the existing research workflow's quality claims into a repeatable, inspecta
 - [ ] The milestone uses one Draft PR, independent Claude review, CI, and a merge commit.
 - [x] Real ten-question execution remained blocked until the user separately approved the paid call and a USD 0.50 aggregate cap.
 - [x] The approved real run completed all ten questions and twenty manual relation samples without committing source text or Provider responses.
-- [ ] The real observation passes all six thresholds; source-domain coverage currently fails in eight of ten cases.
+- [ ] The real observation passes all six thresholds; the first full batch failed source-domain coverage in eight of ten cases, and the post-fix rerun stopped on case three with `EVIDENCE_DOMAIN_COVERAGE_LOW`.
 
 ## Out of Scope
 

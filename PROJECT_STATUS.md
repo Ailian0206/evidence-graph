@@ -5,8 +5,8 @@
 ## 当前阶段
 
 - 当前里程碑：C4“Evidence Eval 与证据质量门禁”正在进行中，模块分支为 `feat/c4-evidence-eval`。
-- 当前进度：C4 真实 10 题评测的六项指标中五项通过，8/10 题的 Evidence links 未覆盖 4 个来源域名。对应 fixture 修复已实现：搜索优先保留不同域名，缺域时只补链一次并独立记账；Draft PR #22 继续跟踪。
-- 下一门禁：取得新的付费上限授权重跑真实 10 题，验证 4 域修复；未通过真实门禁前不进入独立审核、合并或 C5。
+- 当前进度：C4 四域修复后的真实重测在第 3 题按门禁停止，累计费用 `0.059527 USD`。对应 fixture-first 稳定性修复已完成：多域门禁会在 Claim extraction 阶段要求每个必需来源先产出有依据的候选主张，避免后续 linking 无 Claim 可连；Draft PR #22 继续跟踪。
+- 下一门禁：取得新的付费上限授权重跑完整 10 题，验证 Claim 与 Evidence 两阶段的四域覆盖；未通过真实门禁前不进入独立审核、合并或 C5。
 - 默认开发工作流：Trellis 3.4.2；新任务使用 `.trellis/tasks/` 与 `.trellis/spec/`，`docs/superpowers/` 只保留历史记录。
 - 当前禁止：不得未经确认调用真实 Provider，不得开始 C5-C6，不得删除 Production 用户或数据，不得更新 `release` 或部署。
 - 路线图：`docs/roadmap.md`。
@@ -16,7 +16,7 @@
 | 维度 | 当前状态 | 说明 |
 | --- | --- | --- |
 | 代码完成度 | C4 评测、受限 live 收集与四域修复已实现 | 固定题集、评测器、CLI、累计预算、不同域名来源优先级和一次缺域补链已通过 fixture 验证 |
-| Agent 本地验收度 | C4 真实门禁 5/6 通过 | 65/65 引用精确、无引用事实段落 0、关系抽查 19/20、完成率 10/10、单题最高 `0.02009 USD`；来源域名覆盖失败 |
+| Agent 本地验收度 | C4 真实门禁仍未通过 | 首轮完整评测为 5/6 指标通过；四域修复后的重测仅完成 3 题并在第 3 题停止。后续 fixture 稳定性修复已通过完整单元测试，但尚未经真实重测 |
 | 用户反馈状态 | 异步接收 | 用户可继续体验并提交问题；反馈不回溯阻断已通过门禁的开发流程 |
 | 产品完成度 | 未完成 | C4 真实 Evidence Eval 尚未达到 4 域门槛；3 个真实案例和 Release Candidate 尚未开始 |
 | Production 状态 | 有可用历史基线，当前冻结 | `release` 是唯一 Production Branch；C6 前不再发布 |
@@ -43,7 +43,7 @@
 | C1 本地真实研究运行环境 | 已完成 | PR #18 已通过自动化、Agent 本地验收、独立审核和 CI，并以 merge commit 合并 |
 | C2 核心研究闭环与缺陷收敛 | 已完成 | PR #19 已通过自动化、Agent 本地验收、独立审核和 CI，并以 merge commit 合并 |
 | C3 Settings 与账号/数据生命周期 | 已完成 | PR #20 已通过 Agent 验收、独立审核和 CI，并以 merge commit 合并 |
-| C4 Evidence Eval | 进行中 | 真实 10 题和 20 条人工关系抽查已完成；5/6 指标通过，仍需修复 8 个案例的 Evidence link 域名覆盖并重测 |
+| C4 Evidence Eval | 进行中 | 首轮真实 10 题为 5/6 指标通过；四域修复后的重测在第 3 题仍触发覆盖门禁，需 fixture 修复后重新取得付费授权 |
 | C5 真实案例与作品集回填 | 尚未开始 | 3 个真实案例和作品集页面通过 Agent 验收与模块门禁 |
 | C6 本地 Release Candidate | 尚未开始 | 固定候选提交通过完整门禁和 Agent walkthrough |
 | R1 Production Beta | 冻结 | 只有 C6 完成并获用户明确发布授权后执行 |
@@ -68,6 +68,8 @@
 
 ## 最近验证基线
 
+- 2026-07-30 针对重测第 3 题的失败完成 fixture-first 稳定性修复：启用多域门禁时，Claim extraction payload 会携带必需来源 URL 及 chunk-to-URL 映射，DeepSeek 指令要求每个必需来源至少产出一个有依据的候选主张，避免 linking 阶段面对没有对应 Claim 的来源。新增测试先得到 `2` 项 RED，修复后聚焦测试 `111/111`、Provider boundary、10 题 fixture eval、lint、typecheck 和完整单元测试 `426/426` 通过；未再次调用付费 Provider。
+- 2026-07-30 用户批准独立 `0.25 USD` 总上限后执行 C4 四域修复真实重测。`technical-vector-store` 与 `technical-durable-workflow` 均为 `ready`，分别覆盖 4 个 Evidence domains，费用为 `0.019397 USD` 和 `0.020124 USD`；`technical-citation-verifiability` 收集 4 个来源域名后在 linking 阶段触发 `EVIDENCE_DOMAIN_COVERAGE_LOW`，费用为 `0.020006 USD`。收集器按首个失败停止，固定题集完成率为 `2/10`，累计费用 `0.059527 USD`；完整引用、关系和报告指标未从残缺批次重算。真实产物仍为 Git 忽略且权限 `0600`，再次调用付费 Provider 需要新的明确授权。
 - 2026-07-30 C4 四域覆盖 fixture 修复完成：搜索候选优先填充不同域名，质量门禁可要求 4 个 Evidence domains，缺域时只对缺失域名调用一次补链并使用独立 idempotency key 和 usage。受影响模块 `127/127`、单独复跑 UI 文件 `11/11`、fixture eval、Provider boundary、lint 和 typecheck 通过；全量 unit 首轮为 `423/425`，仅两项无关 UI 输入测试在并发负载下超过 5 秒且单文件复跑通过。未再次调用付费 Provider。
 - 2026-07-30 Draft PR #22 的代码 head `779c426` 通过 GitHub 代码质量门禁和 Supabase Schema/RLS/lint 门禁。真实评测的四域覆盖指标仍失败，因此不启动独立 Claude 审核、不合并 PR，也不开始 C5。
 - 2026-07-30 C4 真实 10 题评测在用户批准的 `0.50 USD` 总上限内完成，预算账面总额 `0.477799 USD`（含 `0.010 USD` 保守预留），最终成功批次费用 `0.190739 USD`，单题最高 `0.02009 USD`。10/10 runs 为 ready，65/65 exact quotes、无引用事实段落 0、20 条人工关系抽查正确 19 条（95%）；只有来源域名覆盖失败，8/10 案例的 Evidence links 仅覆盖 1-3 个域名。真实输入、来源文本与 Provider 响应均保留在权限 `0600` 的 Git 忽略文件中；未触碰 Production。
@@ -105,7 +107,7 @@
 
 ## 已知 MVP 缺口
 
-- 真实 Evidence Eval 的 Evidence link 四域覆盖（当前 8/10 案例未达标）。
+- 真实 Evidence Eval 的 Evidence link 四域覆盖稳定性；四域修复后的重测在第 3 题仍未达到门禁。
 - 3 个真实公开案例、案例文章、决策图和作品集回填。
 - 干净环境的本地 Release Candidate 验收。
 
@@ -113,4 +115,4 @@
 
 ## 下一步
 
-C4 的四域 Evidence link fixture 修复已完成。下一步需要新的付费授权与成本上限重跑真实 10 题；C4 通过前不开始 C5，Production 继续冻结。
+C4 四域重测失败后的 fixture-first 稳定性修复已完成。下一步需要新的付费授权与成本上限重跑真实 10 题。C4 通过前不开始 C5，Production 继续冻结。

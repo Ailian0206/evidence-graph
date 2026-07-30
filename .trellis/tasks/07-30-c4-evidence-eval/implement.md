@@ -34,6 +34,21 @@
 - The fixture remediation now prioritizes distinct search domains and performs at most one missing-domain Evidence repair with independent cost and idempotency tracking.
 - No further paid call is authorized. The next step is a newly capped real rerun; do not reuse the exhausted approval.
 
+## Live Evaluation Rerun (2026-07-30)
+
+- The user approved a separate USD 0.25 aggregate cap with a USD 0.025 per-run allocation.
+- `technical-vector-store` and `technical-durable-workflow` reached `ready`; each linked Evidence across four domains and cost USD 0.019397 and USD 0.020124 respectively.
+- `technical-citation-verifiability` collected four source domains but failed during Evidence linking with `EVIDENCE_DOMAIN_COVERAGE_LOW`; its recorded cost was USD 0.020006.
+- The collector stopped on the first failed run. The fixed-set completion result is therefore 2/10 and the batch cost is USD 0.059527. Quote, report-citation, and manual-relation metrics were not recomputed from this incomplete batch.
+- No further paid call is authorized. Return to fixture-first remediation and require a new explicit aggregate cap before another live run.
+
+## Post-rerun Fixture Remediation (2026-07-30)
+
+- The failed run exposed a contract gap: Claim extraction did not know which sources had to remain linkable for a multi-domain quality gate.
+- Quality-gated Claim extraction now receives required source URLs and a chunk-to-URL mapping. The model instruction requires at least one grounded claim per required source without permitting invented claims.
+- Two new assertions were confirmed RED before implementation. Focused tests passed 111/111; Provider boundary, the ten-case fixture evaluation, lint, typecheck, and the full unit suite passed 426/426.
+- This fixture result does not establish real model quality. A new explicit aggregate cap is still required before another live ten-case run.
+
 ## Risk Points
 
 - Empty or broken observations must not pass through favorable denominators.
