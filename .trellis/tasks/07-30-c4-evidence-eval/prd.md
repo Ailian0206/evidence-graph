@@ -40,7 +40,7 @@ Turn the existing research workflow's quality claims into a repeatable, inspecta
    - exact quote substring precision: 100%
    - uncited factual report paragraphs: 0
    - manually sampled Evidence Relation accuracy: at least 90%
-   - evidence-linked source domains for every usable completed case: at least 4
+   - evidence-linked source domains: at least 90% of usable completed cases reach at least 2; four-domain coverage remains a non-blocking enhancement metric
    - run completion rate: at least 90%
    - estimated cost for every run: at most USD 1
 4. Invalid or missing traceability references must fail the gate instead of being omitted from a denominator.
@@ -62,7 +62,7 @@ Turn the existing research workflow's quality claims into a repeatable, inspecta
 - [ ] The milestone uses one Draft PR, independent Claude review, CI, and a merge commit.
 - [x] Real ten-question execution remained blocked until the user separately approved the paid call and a USD 0.50 aggregate cap.
 - [x] The approved real run completed all ten questions and twenty manual relation samples without committing source text or Provider responses.
-- [ ] The real observation passes all six thresholds; the first full batch failed source-domain coverage in eight cases, three remediation reruns stopped on cases three, six, and three with `EVIDENCE_DOMAIN_COVERAGE_LOW`, and the final semantic-retry run stopped on case one with `PROVIDER_RESPONSE_INVALID`.
+- [x] The existing complete real observation passes all six approved MVP thresholds after the user changed domain coverage to at least two domains in at least 90% of usable completed cases.
 
 ## Out of Scope
 

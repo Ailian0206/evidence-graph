@@ -86,6 +86,13 @@
 - The historical complete batch covered four domains in 2/10 cases, at least three domains in 7/10, and at least two domains in 9/10. Prompt constraints, Claim coverage, six source slots, deficit repair, and semantic retry did not make the strict four-domain rule reliable.
 - Stop further paid tuning. C4 remains in progress and PR #22 remains Draft/Open until a product decision either keeps the four-domain rule with a different linking model/architecture or changes the MVP acceptance metric.
 
+## Approved MVP Metric Decision (2026-07-30)
+
+- The user approved replacing the strict per-case four-domain rule with at least two Evidence-linked domains in at least 90% of usable completed cases. Four-domain coverage remains non-blocking.
+- The evaluator reports the observed minimum, passing/total cases, ratio, ratio threshold, and per-case minimum. It keeps traceable low-coverage records even when the allowed one-case exception does not fail the aggregate gate.
+- Live collection returns to the product's default source limit and a one-domain workflow minimum so the evaluator can observe all ten cases instead of aborting on an allowed low-coverage case.
+- The existing complete real observation passes all six approved metrics without another Provider call: exact quotes 65/65, uncited factual paragraphs 0, relation accuracy 19/20, domain coverage 9/10, completion 10/10, and maximum per-run cost USD 0.02009.
+
 ## Risk Points
 
 - Empty or broken observations must not pass through favorable denominators.

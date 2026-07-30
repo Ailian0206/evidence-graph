@@ -5,8 +5,8 @@
 ## 当前阶段
 
 - 当前里程碑：C4“Evidence Eval 与证据质量门禁”正在进行中，模块分支为 `feat/c4-evidence-eval`。
-- 当前进度：补链语义重试后的最终真实验证在第 1 题返回 `PROVIDER_RESPONSE_INVALID`，说明 DeepSeek 在一次带具体错误的自动修复后仍无法稳定满足四域精确 Quote 契约。四次修复后重测合计记录费用 `0.253291 USD`；C4 严格门禁未通过，停止继续付费调参，Draft PR #22 保持 Draft/Open。
-- 下一门禁：需要产品决策选择“保留四域门槛并更换链接模型/架构”或“重新定义 MVP 域名覆盖指标”；决策前不再调用真实 Provider，不进入独立审核、合并或 C5。
+- 当前进度：用户已批准把 MVP 域名指标调整为“至少 90% 的可用完成案例覆盖不少于 2 个 Evidence domains”，四域作为非阻断增强指标。现有完整真实批次按新口径六项全部通过，未再次调用 Provider；Draft PR #22 进入收口。
+- 下一门禁：完成新口径的完整自动化、独立 Claude 审核和 GitHub CI 后，以 merge commit 合并 PR #22；不开始 C5。
 - 默认开发工作流：Trellis 3.4.2；新任务使用 `.trellis/tasks/` 与 `.trellis/spec/`，`docs/superpowers/` 只保留历史记录。
 - 当前禁止：不得未经确认调用真实 Provider，不得开始 C5-C6，不得删除 Production 用户或数据，不得更新 `release` 或部署。
 - 路线图：`docs/roadmap.md`。
@@ -15,10 +15,10 @@
 
 | 维度 | 当前状态 | 说明 |
 | --- | --- | --- |
-| 代码完成度 | C4 评测、受限 live 收集与四域修复已实现 | 固定题集、评测器、CLI、累计预算、不同域名来源优先级和一次缺域补链已通过 fixture 验证 |
-| Agent 本地验收度 | C4 严格门禁未通过 | 首轮完整评测为 5/6 指标通过；补链语义重试后的最终验证在第 1 题失败。现有 DeepSeek 路径无法稳定达到四域精确 Quote 契约 |
+| 代码完成度 | C4 评测、受限 live 收集与域名质量门禁已实现 | 固定题集、比例评测器、CLI、累计预算、不同域名来源优先级和有界补链已通过 fixture 验证 |
+| Agent 本地验收度 | C4 新口径 6/6 通过 | 65/65 精确引用、无引用事实段落 0、关系 19/20、至少二域 9/10、完成 10/10、单题最高 `0.02009 USD` |
 | 用户反馈状态 | 异步接收 | 用户可继续体验并提交问题；反馈不回溯阻断已通过门禁的开发流程 |
-| 产品完成度 | 未完成 | C4 真实 Evidence Eval 尚未达到 4 域门槛；3 个真实案例和 Release Candidate 尚未开始 |
+| 产品完成度 | 未完成 | C4 尚待独立审核和合并；3 个真实案例和 Release Candidate 尚未开始 |
 | Production 状态 | 有可用历史基线，当前冻结 | `release` 是唯一 Production Branch；C6 前不再发布 |
 
 结论：Evidence Graph 不是“已经开发完成”，当前处于本地 MVP 收口阶段。
@@ -43,7 +43,7 @@
 | C1 本地真实研究运行环境 | 已完成 | PR #18 已通过自动化、Agent 本地验收、独立审核和 CI，并以 merge commit 合并 |
 | C2 核心研究闭环与缺陷收敛 | 已完成 | PR #19 已通过自动化、Agent 本地验收、独立审核和 CI，并以 merge commit 合并 |
 | C3 Settings 与账号/数据生命周期 | 已完成 | PR #20 已通过 Agent 验收、独立审核和 CI，并以 merge commit 合并 |
-| C4 Evidence Eval | 决策阻塞 | 首轮真实 10 题为 5/6 指标通过；四次修复后重测仍未稳定通过四域门禁，停止付费调参并等待指标或模型方案决策 |
+| C4 Evidence Eval | 收口中 | 用户批准二域/90% MVP 口径；现有完整真实 observation 已通过六项指标，等待独立审核、CI 和 merge commit |
 | C5 真实案例与作品集回填 | 尚未开始 | 3 个真实案例和作品集页面通过 Agent 验收与模块门禁 |
 | C6 本地 Release Candidate | 尚未开始 | 固定候选提交通过完整门禁和 Agent walkthrough |
 | R1 Production Beta | 冻结 | 只有 C6 完成并获用户明确发布授权后执行 |
@@ -68,6 +68,7 @@
 
 ## 最近验证基线
 
+- 2026-07-30 用户批准把来源覆盖 MVP 门禁调整为“至少 90% 的可用完成案例覆盖不少于 2 个 Evidence domains”，四域保留为非阻断增强指标。评测器新增通过案例数、总案例数、覆盖比例和比例阈值；一个低覆盖案例时 `9/10` 通过，两个时 `8/10` 失败。live collector 恢复产品默认来源限制并取消硬多域中止。现有权限 `0600` 的完整真实 observation 在 fixture 模式重算后六项全部通过，未调用 Provider；Provider boundary、fixture eval、lint、typecheck、单元测试 `427/427`、production build 和 E2E `88/88` 通过。
 - 2026-07-30 用户批准最后一次独立 `0.25 USD` 上限后验证补链语义重试。第 1 题收集 6 个来源域名，但 repair 响应经过一次带具体错误的自动修复后仍未通过运行时 schema，最终以 `PROVIDER_RESPONSE_INVALID` 停止，费用 `0.019665 USD`。四次修复后重测合计记录费用 `0.253291 USD`；连同首轮 `0.477799 USD` 预算账本，C4 真实评测账面累计 `0.731090 USD`，其中包含 `0.010 USD` 保守预留。历史完整批次中四域覆盖为 `2/10`、至少三域为 `7/10`、至少二域为 `9/10`；不再继续付费调参。
 - 2026-07-30 针对第三次重测失败完成补链语义重试修复：repair 响应 schema 会校验 Claim candidate、来源 URL、精确 Quote 和需要补足的域名数；不满足时把具体 Zod message 传给 DeepSeek 现有的一次结构化自动修复，而不是把 schema-valid 但语义不足的响应直接判死。新增断言先得到 `2` 项 RED，修复后聚焦测试 `111/111`、Provider boundary、10 题 fixture eval、lint、typecheck 和完整单元测试 `427/427` 通过；未再次调用付费 Provider。
 - 2026-07-30 用户批准新的独立 `0.25 USD` 总上限后执行 C4 第三次重测。前 2 题均从 6 个来源域名中成功链接 4 域；第 3 题 `technical-citation-verifiability` 同样收集 6 个来源域名，但在 linking 阶段触发 `EVIDENCE_DOMAIN_COVERAGE_LOW`。收集器按首个失败停止，固定题集完成率为 `2/10`，本轮累计费用 `0.058600 USD`。三次修复后重测合计记录费用 `0.233626 USD`；再次调用付费 Provider 需要新的明确授权。
@@ -113,7 +114,6 @@
 
 ## 已知 MVP 缺口
 
-- 真实 Evidence Eval 的 Evidence link 四域覆盖稳定性；现有 DeepSeek 路径在四次修复后重测中仍未稳定通过，需更换模型/架构或重新定义 MVP 指标。
 - 3 个真实公开案例、案例文章、决策图和作品集回填。
 - 干净环境的本地 Release Candidate 验收。
 
@@ -121,4 +121,4 @@
 
 ## 下一步
 
-C4 的严格四域门禁已确认无法由当前 DeepSeek 补链路径稳定满足，停止继续付费调参。下一步需要产品决策：保留四域并更换链接模型/架构，或重新定义 MVP 域名覆盖指标。决策前不开始 C5，Production 继续冻结。
+C4 已按用户批准的二域/90% MVP 口径通过现有完整真实 observation。下一步完成 PR #22 的独立审核、CI 和 merge commit；不开始 C5，Production 继续冻结。

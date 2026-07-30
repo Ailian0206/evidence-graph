@@ -33,7 +33,7 @@ The evaluator returns six threshold results, per-case results, a flat failure li
 1. Quote precision compares every evidence-link quote to its referenced chunk with exact, case-sensitive substring matching. Missing chunks count as failures.
 2. An uncited factual paragraph is a factual report paragraph with no recognized citation ID.
 3. Relation accuracy compares each manual sample with its referenced evidence link. Missing links or zero samples fail the metric.
-4. Source-domain coverage counts distinct domains reached through evidence links for each ready usable case. Every such case must have at least four.
+4. Source-domain coverage counts distinct domains reached through evidence links for each ready usable case. At least 90% of those cases must reach two domains. Four-domain coverage remains visible as a non-blocking enhancement signal.
 5. Completion rate is ready runs divided by all ten cases and must be at least 90%.
 6. Cost passes only when every run is at or below USD 1. The summary also records total and maximum observed cost.
 
