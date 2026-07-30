@@ -1,6 +1,6 @@
 # Evidence Graph 项目状态
 
-更新时间：2026-07-29
+更新时间：2026-07-30
 
 ## 当前阶段
 
@@ -68,6 +68,7 @@
 
 ## 最近验证基线
 
+- 2026-07-30 作品站与 Evidence Graph 产品壳层通过 Route Groups 完成拆分，由 PR #21 跟踪。作品站保留个人导航与 Footer；登录、匿名 Demo 和受保护工作台只显示产品头部，原有 URL 保持不变。本地 lint、typecheck、单元测试 `400/400`、production build 和 E2E `88/88` 通过，390x844、1024x768、1440x1000 三档布局与图谱 canvas 像素检查通过；未调用付费 Provider，Production 保持冻结。
 - 2026-07-29 C3 PR #20 的独立 Claude 审核对 head `1c15c89` 返回 `pass`，两项 GitHub CI 均通过，随后以 merge commit `fb443d1` 合并到 `main`。完整门禁通过 Provider 边界、托管 pgTAP `106/106`、lint、typecheck、单元测试 `396/396`、production build 和 E2E `88/88`。Agent 在用户 Chrome 登录态验证中英文语言保存与恢复、精确账号名门禁和 390x844、1024x768、1440x1000 三档布局；一次性项目删除后旧项目入口与公开报告 slug 均失效，现有账号未删除，Production 保持冻结。
 - 2026-07-28 C2 PR #19 的独立 Claude 审核对 head `6758dde` 返回 `pass`，两项 GitHub CI 均通过，随后以 merge commit `de567b0` 合并到 `main`。完整门禁通过 lint、typecheck、单元测试 `384/384`、build、E2E `87/87`、托管 pgTAP `98/98`、public Schema lint 和 Provider 边界；最新验收差异的聚焦 lint 与 E2E `17/17` 复验通过。Agent 在用户 Chrome 登录态完成一条 fixture 研究，确认 GitHub 用户信息、生成 Loading、Claim 接受/拒绝、审核约束发布、报告库和公开报告均可用；未调用付费 Provider，Production 保持冻结。
 - 2026-07-28 C2 worktree 基线通过 lint、typecheck 和单元测试 `359/359`。用户 Chrome 登录态走查确认：20 条 Claim 中只有 11 条 Evidence-linked Claim 出现在审核列表；rejected Claim 仍保留在草稿且发布按钮可用；月额度错误会清空新建表单；完成研究的 active 项目仍显示“进行中”。四项均列为 C2 P1。
