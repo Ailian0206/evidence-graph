@@ -59,7 +59,7 @@ Turn the existing research workflow's quality claims into a repeatable, inspecta
 - [x] A failing input produces a non-zero process exit and a failure record traceable to concrete entity IDs.
 - [x] Agent inspection confirms one technical, one competition, and one market fixture sample has a complete source-to-claim-to-evidence-to-citation path.
 - [x] The focused tests, provider boundary check, lint, typecheck, unit suite, production build, and E2E suite pass before PR review.
-- [ ] The milestone uses one Draft PR, independent Claude review, CI, and a merge commit.
+- [x] The milestone uses one Draft PR, independent Claude review, CI, and a merge commit.
 - [x] Real ten-question execution remained blocked until the user separately approved the paid call and a USD 0.50 aggregate cap.
 - [x] The approved real run completed all ten questions and twenty manual relation samples without committing source text or Provider responses.
 - [x] The existing complete real observation passes all six approved MVP thresholds after the user changed domain coverage to at least two domains in at least 90% of usable completed cases.
