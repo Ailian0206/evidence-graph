@@ -4,21 +4,21 @@
 
 ## 当前阶段
 
-- 当前里程碑：C3“Settings 与账号/数据生命周期”已完成并合并 PR #20。
-- 当前进度：Settings、语言偏好、项目删除和测试账号删除已通过自动化、Agent 本地验收、独立审核和 CI。
-- 下一候选里程碑：C4“Evidence Eval”；本次不自动开始，用户反馈继续异步处理。
+- 当前里程碑：C4“Evidence Eval 与证据质量门禁”正在进行中，模块分支为 `feat/c4-evidence-eval`。
+- 当前进度：10 个固定问题、六项质量指标、可定位失败记录和零外呼 fixture 评测已实现并通过本地门禁；真实 10 题评测尚未获付费调用授权。
+- 下一门禁：在用户明确批准真实评测和总成本上限后运行 10 题、完成人工关系抽查，再进入独立审核和 CI。
 - 默认开发工作流：Trellis 3.4.2；新任务使用 `.trellis/tasks/` 与 `.trellis/spec/`，`docs/superpowers/` 只保留历史记录。
-- 当前禁止：不得删除 Production 用户或数据，不得开始 C4-C6，不得更新 `release` 或部署。
+- 当前禁止：不得未经确认调用真实 Provider，不得开始 C5-C6，不得删除 Production 用户或数据，不得更新 `release` 或部署。
 - 路线图：`docs/roadmap.md`。
 
 ## 真实完成度
 
 | 维度 | 当前状态 | 说明 |
 | --- | --- | --- |
-| 代码完成度 | C2 已合并 | 4 个 P1 已关闭，PR #19 已通过完整门禁、独立审核和 CI |
-| Agent 本地验收度 | C2 核心流程通过 | 已完成创建、fixture 运行、Claim 审核、报告发布、报告库和公开页走查 |
+| 代码完成度 | C4 fixture 门禁已实现 | C3 已合并；C4 固定题集、评测器和 CLI 已通过本地非付费门禁，真实评测待执行 |
+| Agent 本地验收度 | C4 fixture 样本通过 | 技术、竞品、市场三类代表样本均可定位到具体 Run、Claim、Evidence 和 Citation |
 | 用户反馈状态 | 异步接收 | 用户可继续体验并提交问题；反馈不回溯阻断已通过门禁的开发流程 |
-| 产品完成度 | 未完成 | Settings/删除、Evidence Eval、3 个真实案例和 Release Candidate 尚未完成 |
+| 产品完成度 | 未完成 | C4 真实 Evidence Eval、3 个真实案例和 Release Candidate 尚未完成 |
 | Production 状态 | 有可用历史基线，当前冻结 | `release` 是唯一 Production Branch；C6 前不再发布 |
 
 结论：Evidence Graph 不是“已经开发完成”，当前处于本地 MVP 收口阶段。
@@ -43,7 +43,7 @@
 | C1 本地真实研究运行环境 | 已完成 | PR #18 已通过自动化、Agent 本地验收、独立审核和 CI，并以 merge commit 合并 |
 | C2 核心研究闭环与缺陷收敛 | 已完成 | PR #19 已通过自动化、Agent 本地验收、独立审核和 CI，并以 merge commit 合并 |
 | C3 Settings 与账号/数据生命周期 | 已完成 | PR #20 已通过 Agent 验收、独立审核和 CI，并以 merge commit 合并 |
-| C4 Evidence Eval | 尚未开始 | 10 题评测达到产品计划门槛并经 Agent 人工样本抽查 |
+| C4 Evidence Eval | 进行中 | fixture 门禁已通过；仍需真实 10 题评测达到产品计划门槛并经 Agent 人工样本抽查 |
 | C5 真实案例与作品集回填 | 尚未开始 | 3 个真实案例和作品集页面通过 Agent 验收与模块门禁 |
 | C6 本地 Release Candidate | 尚未开始 | 固定候选提交通过完整门禁和 Agent walkthrough |
 | R1 Production Beta | 冻结 | 只有 C6 完成并获用户明确发布授权后执行 |
@@ -68,6 +68,7 @@
 
 ## 最近验证基线
 
+- 2026-07-30 C4 非付费评测基线完成：固定 10 题覆盖技术选型、产品竞品和市场事实，fixture 输出 Quote 精确率 `100%`、无引用事实段落 `0`、Evidence Relation 准确率 `100%`、每题来源域名 `4`、完成率 `100%`、费用 `0 USD`；失败输入可定位 Run、Claim、Evidence、Chunk、Report 和 Citation。Provider 边界、lint、typecheck、单元测试 `412/412`、production build 和 E2E `88/88` 通过；未调用真实 Provider，真实评测总成本门限冻结为 `0.50 USD`，等待单独授权。
 - 2026-07-30 作品站与 Evidence Graph 产品壳层通过 Route Groups 完成拆分，由 PR #21 跟踪。作品站保留个人导航与 Footer；登录、匿名 Demo 和受保护工作台只显示产品头部，原有 URL 保持不变。本地 lint、typecheck、单元测试 `400/400`、production build 和 E2E `88/88` 通过，390x844、1024x768、1440x1000 三档布局与图谱 canvas 像素检查通过；未调用付费 Provider，Production 保持冻结。
 - 2026-07-29 C3 PR #20 的独立 Claude 审核对 head `1c15c89` 返回 `pass`，两项 GitHub CI 均通过，随后以 merge commit `fb443d1` 合并到 `main`。完整门禁通过 Provider 边界、托管 pgTAP `106/106`、lint、typecheck、单元测试 `396/396`、production build 和 E2E `88/88`。Agent 在用户 Chrome 登录态验证中英文语言保存与恢复、精确账号名门禁和 390x844、1024x768、1440x1000 三档布局；一次性项目删除后旧项目入口与公开报告 slug 均失效，现有账号未删除，Production 保持冻结。
 - 2026-07-28 C2 PR #19 的独立 Claude 审核对 head `6758dde` 返回 `pass`，两项 GitHub CI 均通过，随后以 merge commit `de567b0` 合并到 `main`。完整门禁通过 lint、typecheck、单元测试 `384/384`、build、E2E `87/87`、托管 pgTAP `98/98`、public Schema lint 和 Provider 边界；最新验收差异的聚焦 lint 与 E2E `17/17` 复验通过。Agent 在用户 Chrome 登录态完成一条 fixture 研究，确认 GitHub 用户信息、生成 Loading、Claim 接受/拒绝、审核约束发布、报告库和公开报告均可用；未调用付费 Provider，Production 保持冻结。
@@ -101,8 +102,7 @@
 
 ## 已知 MVP 缺口
 
-- `/app/settings`、语言偏好、项目数据删除和账号删除。
-- 10 个固定问题及人工样本的 Evidence Eval。
+- 10 个固定问题的真实 Evidence Eval 和人工关系抽查。
 - 3 个真实公开案例、案例文章、决策图和作品集回填。
 - 干净环境的本地 Release Candidate 验收。
 
@@ -110,4 +110,4 @@
 
 ## 下一步
 
-C3 到此结束，不自动开始下一阶段。下一候选里程碑为 C4“Evidence Eval”；用户反馈继续异步接收，Production 继续冻结。
+C4 fixture 质量门禁已经通过。下一步在独立付费确认后执行真实 10 题评测并完成人工关系抽查；未获授权前不调用 Provider，不开始 C5，Production 继续冻结。
