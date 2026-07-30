@@ -79,6 +79,13 @@
 - Two assertions were confirmed RED before implementation. Focused tests passed 111/111; Provider boundary, the ten-case fixture evaluation, lint, typecheck, and the full unit suite passed 427/427.
 - A new explicit aggregate cap is required before another live ten-case run.
 
+## Final Live Verification And Stop Decision (2026-07-30)
+
+- The user approved one final separate USD 0.25 aggregate cap. The first case collected six source domains, but its repair response still failed the runtime-refined schema after DeepSeek's one structured retry.
+- The collector stopped with `PROVIDER_RESPONSE_INVALID` after recording USD 0.019665. The four remediation reruns recorded USD 0.253291 in total; combined with the initial USD 0.477799 budget ledger, C4's live-evaluation ledger is USD 0.731090, including the earlier USD 0.010 conservative reserve.
+- The historical complete batch covered four domains in 2/10 cases, at least three domains in 7/10, and at least two domains in 9/10. Prompt constraints, Claim coverage, six source slots, deficit repair, and semantic retry did not make the strict four-domain rule reliable.
+- Stop further paid tuning. C4 remains in progress and PR #22 remains Draft/Open until a product decision either keeps the four-domain rule with a different linking model/architecture or changes the MVP acceptance metric.
+
 ## Risk Points
 
 - Empty or broken observations must not pass through favorable denominators.
