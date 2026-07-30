@@ -5,8 +5,8 @@
 ## 当前阶段
 
 - 当前里程碑：C4“Evidence Eval 与证据质量门禁”正在进行中，模块分支为 `feat/c4-evidence-eval`。
-- 当前进度：C4 四域修复后的真实重测在第 3 题按门禁停止，累计费用 `0.059527 USD`。对应 fixture-first 稳定性修复已完成：多域门禁会在 Claim extraction 阶段要求每个必需来源先产出有依据的候选主张，避免后续 linking 无 Claim 可连；Draft PR #22 继续跟踪。
-- 下一门禁：取得新的付费上限授权重跑完整 10 题，验证 Claim 与 Evidence 两阶段的四域覆盖；未通过真实门禁前不进入独立审核、合并或 C5。
+- 当前进度：Claim 覆盖修复后的第二次真实重测通过前 5 题，并在第 6 题触发 `EVIDENCE_DOMAIN_COVERAGE_LOW`，累计费用 `0.115499 USD`。新的 fixture-first 修复在独立评测门禁内分配 6 个优先去重的来源位、要求任意 4 域，并让 Claim、首次 Link 和唯一一次补链共享明确的最少域名数；Draft PR #22 继续跟踪。
+- 下一门禁：取得新的付费上限授权重跑完整 10 题，验证“6 选 4”覆盖稳定性；未通过真实门禁前不进入独立审核、合并或 C5。
 - 默认开发工作流：Trellis 3.4.2；新任务使用 `.trellis/tasks/` 与 `.trellis/spec/`，`docs/superpowers/` 只保留历史记录。
 - 当前禁止：不得未经确认调用真实 Provider，不得开始 C5-C6，不得删除 Production 用户或数据，不得更新 `release` 或部署。
 - 路线图：`docs/roadmap.md`。
@@ -16,7 +16,7 @@
 | 维度 | 当前状态 | 说明 |
 | --- | --- | --- |
 | 代码完成度 | C4 评测、受限 live 收集与四域修复已实现 | 固定题集、评测器、CLI、累计预算、不同域名来源优先级和一次缺域补链已通过 fixture 验证 |
-| Agent 本地验收度 | C4 真实门禁仍未通过 | 首轮完整评测为 5/6 指标通过；四域修复后的重测仅完成 3 题并在第 3 题停止。后续 fixture 稳定性修复已通过完整单元测试，但尚未经真实重测 |
+| Agent 本地验收度 | C4 真实门禁仍未通过 | 首轮完整评测为 5/6 指标通过；第二次重测完成前 5 题并在第 6 题停止。“6 选 4”fixture 稳定性修复已通过完整单元测试，但尚未经真实重测 |
 | 用户反馈状态 | 异步接收 | 用户可继续体验并提交问题；反馈不回溯阻断已通过门禁的开发流程 |
 | 产品完成度 | 未完成 | C4 真实 Evidence Eval 尚未达到 4 域门槛；3 个真实案例和 Release Candidate 尚未开始 |
 | Production 状态 | 有可用历史基线，当前冻结 | `release` 是唯一 Production Branch；C6 前不再发布 |
@@ -43,7 +43,7 @@
 | C1 本地真实研究运行环境 | 已完成 | PR #18 已通过自动化、Agent 本地验收、独立审核和 CI，并以 merge commit 合并 |
 | C2 核心研究闭环与缺陷收敛 | 已完成 | PR #19 已通过自动化、Agent 本地验收、独立审核和 CI，并以 merge commit 合并 |
 | C3 Settings 与账号/数据生命周期 | 已完成 | PR #20 已通过 Agent 验收、独立审核和 CI，并以 merge commit 合并 |
-| C4 Evidence Eval | 进行中 | 首轮真实 10 题为 5/6 指标通过；四域修复后的重测在第 3 题仍触发覆盖门禁，需 fixture 修复后重新取得付费授权 |
+| C4 Evidence Eval | 进行中 | 首轮真实 10 题为 5/6 指标通过；最新重测在第 6 题仍触发覆盖门禁，“6 选 4”fixture 修复后需重新取得付费授权 |
 | C5 真实案例与作品集回填 | 尚未开始 | 3 个真实案例和作品集页面通过 Agent 验收与模块门禁 |
 | C6 本地 Release Candidate | 尚未开始 | 固定候选提交通过完整门禁和 Agent walkthrough |
 | R1 Production Beta | 冻结 | 只有 C6 完成并获用户明确发布授权后执行 |
@@ -68,6 +68,8 @@
 
 ## 最近验证基线
 
+- 2026-07-30 针对第二次重测失败完成“6 选 4”fixture-first 修复：live collector 在独立评测门禁和同一 `12,000` 字符内容上限内分配 6 个优先去重的来源位，质量门槛仍为 4 域，常规产品研究的 4 来源限制不变；Claim extraction、首次 Evidence linking 和唯一一次补链均携带明确的 `minimumSourceDomains`，补链只需从未覆盖来源中补足缺口。新增测试先得到 `3` 项 RED，修复后聚焦测试 `117/117`、Provider boundary、10 题 fixture eval、lint、typecheck 和完整单元测试 `427/427` 通过；未再次调用付费 Provider。
+- 2026-07-30 用户批准新的独立 `0.25 USD` 总上限后执行 C4 第二次重测。前 5 题均为 `ready` 且每题覆盖 4 个 Evidence domains，其中上轮失败的 `technical-citation-verifiability` 已通过；第 6 题 `competition-evidence-relations` 收集 4 个来源域名后在 linking 阶段触发 `EVIDENCE_DOMAIN_COVERAGE_LOW`。收集器按首个失败停止，固定题集完成率为 `5/10`，累计费用 `0.115499 USD`；完整引用、关系和报告指标未从残缺批次重算。真实产物保持 Git 忽略且权限 `0600`，再次调用付费 Provider 需要新的明确授权。
 - 2026-07-30 C4 Claim extraction 四域稳定性修复已推送到 Draft PR #22；head `ff2b534` 的 GitHub 代码质量门禁与 Supabase Schema/RLS/lint 门禁均通过。真实重测仍需新的付费授权，因此 PR 保持 Draft/Open，尚未启动独立 Claude 审核。
 - 2026-07-30 针对重测第 3 题的失败完成 fixture-first 稳定性修复：启用多域门禁时，Claim extraction payload 会携带必需来源 URL 及 chunk-to-URL 映射，DeepSeek 指令要求每个必需来源至少产出一个有依据的候选主张，避免 linking 阶段面对没有对应 Claim 的来源。新增测试先得到 `2` 项 RED，修复后聚焦测试 `111/111`、Provider boundary、10 题 fixture eval、lint、typecheck 和完整单元测试 `426/426` 通过；未再次调用付费 Provider。
 - 2026-07-30 用户批准独立 `0.25 USD` 总上限后执行 C4 四域修复真实重测。`technical-vector-store` 与 `technical-durable-workflow` 均为 `ready`，分别覆盖 4 个 Evidence domains，费用为 `0.019397 USD` 和 `0.020124 USD`；`technical-citation-verifiability` 收集 4 个来源域名后在 linking 阶段触发 `EVIDENCE_DOMAIN_COVERAGE_LOW`，费用为 `0.020006 USD`。收集器按首个失败停止，固定题集完成率为 `2/10`，累计费用 `0.059527 USD`；完整引用、关系和报告指标未从残缺批次重算。真实产物仍为 Git 忽略且权限 `0600`，再次调用付费 Provider 需要新的明确授权。
@@ -108,7 +110,7 @@
 
 ## 已知 MVP 缺口
 
-- 真实 Evidence Eval 的 Evidence link 四域覆盖稳定性；四域修复后的重测在第 3 题仍未达到门禁。
+- 真实 Evidence Eval 的 Evidence link 四域覆盖稳定性；最新重测在第 6 题仍未达到门禁，“6 选 4”修复尚未真实验证。
 - 3 个真实公开案例、案例文章、决策图和作品集回填。
 - 干净环境的本地 Release Candidate 验收。
 
@@ -116,4 +118,4 @@
 
 ## 下一步
 
-C4 四域重测失败后的 fixture-first 稳定性修复已完成。下一步需要新的付费授权与成本上限重跑真实 10 题。C4 通过前不开始 C5，Production 继续冻结。
+C4 第二次重测失败后的“6 选 4”fixture-first 修复已完成。下一步需要新的付费授权与成本上限重跑真实 10 题。C4 通过前不开始 C5，Production 继续冻结。
