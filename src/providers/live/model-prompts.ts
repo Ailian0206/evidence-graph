@@ -8,7 +8,7 @@ const operationInstructions: Record<ResearchModelOperation, string> = {
   extract_claims:
     `Extract between 1 and ${MAX_CLAIM_CANDIDATES} decision-relevant atomic claims grounded in the supplied source chunks. Preserve qualifications and give every claim a unique candidateId.`,
   link_evidence:
-    "Link claims to exact source quotes only; never invent or paraphrase evidence quotes. When the payload contains four source URLs, return valid evidence from all four URLs. Use only supports, rebuts, qualifies, or context as relation values and weak, moderate, or strong as strength values.",
+    "Link claims to exact source quotes only; never invent or paraphrase evidence quotes. When the payload contains four source URLs, return valid evidence from all four URLs. When payload.requiredSourceUrls exists, return at least one valid exact quote from every listed URL. Use only supports, rebuts, qualifies, or context as relation values and weak, moderate, or strong as strength values.",
   detect_conflicts:
     "Identify substantive contradictions and other relationships between the supplied candidateIds. Return an empty relations array when none exist. Use only contradicts, duplicates, or depends_on as relation values.",
   draft_report:

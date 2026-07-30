@@ -26,6 +26,7 @@ import {
   extractDomain,
 } from "@/features/sources/source-utils";
 import {
+  ProviderCallError,
   getProviderErrorUsage,
   searchResultSchema,
   type EmbeddingProvider,
@@ -56,6 +57,7 @@ type RunResearchWorkflowInput = {
   maxCostUsd?: number;
   maxEmbeddingBatches?: number;
   maxSearchQueries?: number;
+  minimumEvidenceDomains?: number;
   executeProviderCall?: ProviderCallExecutor;
   store: InMemoryResearchWorkflowStore;
   now: () => string;
@@ -94,6 +96,8 @@ const KNOWN_WORKFLOW_ERRORS = new Set([
   "CONTENT_LIMIT_EXCEEDED",
   "DEEPSEEK_REQUEST_FAILED",
   "EMBEDDING_BATCH_LIMIT_EXCEEDED",
+  "EVIDENCE_DOMAIN_COVERAGE_LOW",
+  "EVIDENCE_DOMAIN_LIMIT_INVALID",
   "MANUAL_URL_LIMIT_EXCEEDED",
   "PROJECT_NOT_FOUND",
   "PROVIDER_REQUEST_TIMEOUT",
@@ -116,6 +120,23 @@ const createClaimId = (projectId: string, candidateId: string) =>
 const countUnicodeCodePoints = (content: string) => Array.from(content).length;
 const truncateUnicodeCodePoints = (content: string, maximum: number) =>
   Array.from(content).slice(0, maximum).join("");
+const prioritizeDistinctSearchDomains = (results: SearchResult[]) => {
+  const domains = new Set<string>();
+  const distinct: SearchResult[] = [];
+  const deferred: SearchResult[] = [];
+
+  for (const result of results) {
+    const domain = extractDomain(canonicalizeUrl(result.url));
+    if (domains.has(domain)) {
+      deferred.push(result);
+    } else {
+      domains.add(domain);
+      distinct.push(result);
+    }
+  }
+
+  return [...distinct, ...deferred];
+};
 
 const roundCost = (cost: number) => Math.round(cost * 1_000_000) / 1_000_000;
 
@@ -151,6 +172,7 @@ const runResearchWorkflowAttempt = async ({
   maxCostUsd = 1,
   maxEmbeddingBatches = DEFAULT_MAX_EMBEDDING_BATCHES,
   maxSearchQueries = 5,
+  minimumEvidenceDomains = 1,
   executeProviderCall = executeProviderCallDirectly,
   store,
   now,
@@ -176,6 +198,13 @@ const runResearchWorkflowAttempt = async ({
   }
 
   let run = store.requireRun({ runId, ownerId });
+  if (
+    !Number.isInteger(minimumEvidenceDomains) ||
+    minimumEvidenceDomains < 1 ||
+    minimumEvidenceDomains > run.sourceLimit
+  ) {
+    throw new Error("EVIDENCE_DOMAIN_LIMIT_INVALID");
+  }
   const completedSteps: WorkflowStep[] = [];
   const project = store
     .getSnapshot()
@@ -418,7 +447,7 @@ const runResearchWorkflowAttempt = async ({
       for (const candidate of [
         ...manualSources,
         ...(extractedManualSources ?? []),
-        ...searchOutput.results,
+        ...prioritizeDistinctSearchDomains(searchOutput.results),
       ]) {
         const parsed = searchResultSchema.parse(candidate);
         const canonicalUrl = canonicalizeUrl(parsed.url);
@@ -647,47 +676,140 @@ const runResearchWorkflowAttempt = async ({
       const claimCandidateIds = new Set(
         extractedClaims.claims.map((claim) => claim.candidateId),
       );
-      assertProviderBudget();
-      const result = await executeTrackedProviderCall(idempotencyKey, async () => {
-        const providerResult = await providers.languageModel.generateStructured({
-          operation: "link_evidence",
-          schema: evidenceCandidatesSchema,
-          payload: {
-            ...researchContext,
-            claims: extractedClaims.claims,
-            sourceChunks,
-          },
-          idempotencyKey,
-        });
-        const output = evidenceCandidatesSchema.parse(providerResult.data);
+      const availableDomains = new Set(
+        sourceChunks.map((chunk) => extractDomain(chunk.sourceUrl)),
+      );
 
-        for (const candidate of output.evidence) {
-          if (!claimCandidateIds.has(candidate.claimCandidateId)) {
-            throw new Error("CLAIM_CANDIDATE_NOT_FOUND");
-          }
-        }
+      if (availableDomains.size < minimumEvidenceDomains) {
+        throw new Error("EVIDENCE_DOMAIN_COVERAGE_LOW");
+      }
 
-        const exactEvidence = output.evidence.filter((candidate) => {
-          const sourceUrl = canonicalizeUrl(candidate.sourceUrl);
-          return sourceChunks.some(
-            (chunk) =>
-              chunk.sourceUrl === sourceUrl && chunk.text.includes(candidate.quote),
+      const requestEvidence = async ({
+        callId,
+        chunks,
+        requiredSourceUrls,
+        requireEvidence,
+      }: {
+        callId: string;
+        chunks: typeof sourceChunks;
+        requiredSourceUrls?: string[];
+        requireEvidence: boolean;
+      }) => {
+        assertProviderBudget();
+        const result = await executeTrackedProviderCall(callId, async () => {
+          const providerResult = await providers.languageModel.generateStructured({
+            operation: "link_evidence",
+            schema: evidenceCandidatesSchema,
+            payload: {
+              ...researchContext,
+              claims: extractedClaims.claims,
+              sourceChunks: chunks,
+              ...(requiredSourceUrls ? { requiredSourceUrls } : {}),
+            },
+            idempotencyKey: callId,
+          });
+          const parsedOutput = evidenceCandidatesSchema.safeParse(
+            providerResult.data,
           );
+
+          if (!parsedOutput.success) {
+            throw new ProviderCallError(
+              "PROVIDER_RESPONSE_INVALID",
+              providerResult.usage,
+            );
+          }
+
+          for (const candidate of parsedOutput.data.evidence) {
+            if (!claimCandidateIds.has(candidate.claimCandidateId)) {
+              throw new ProviderCallError(
+                "CLAIM_CANDIDATE_NOT_FOUND",
+                providerResult.usage,
+              );
+            }
+          }
+
+          const evidence = parsedOutput.data.evidence.filter((candidate) => {
+            const sourceUrl = canonicalizeUrl(candidate.sourceUrl);
+            return chunks.some(
+              (chunk) =>
+                chunk.sourceUrl === sourceUrl &&
+                chunk.text.includes(candidate.quote),
+            );
+          });
+
+          if (requireEvidence && evidence.length === 0) {
+            throw new ProviderCallError(
+              requiredSourceUrls
+                ? "EVIDENCE_DOMAIN_COVERAGE_LOW"
+                : "QUOTE_NOT_FOUND",
+              providerResult.usage,
+            );
+          }
+
+          return { ...providerResult, data: { evidence } };
         });
+        applyUsage(callId, result.usage);
+        return result.data.evidence;
+      };
 
-        if (exactEvidence.length === 0) {
-          throw new Error("QUOTE_NOT_FOUND");
-        }
-
-        return { ...providerResult, data: { evidence: exactEvidence } };
+      let exactEvidence = await requestEvidence({
+        callId: idempotencyKey,
+        chunks: sourceChunks,
+        requireEvidence: minimumEvidenceDomains === 1,
       });
-      applyUsage(idempotencyKey, result.usage);
+
+      const linkedDomains = new Set(
+        exactEvidence.map((candidate) =>
+          extractDomain(canonicalizeUrl(candidate.sourceUrl)),
+        ),
+      );
+      if (linkedDomains.size < minimumEvidenceDomains) {
+        const missingDomains = new Set(
+          [...availableDomains].filter((domain) => !linkedDomains.has(domain)),
+        );
+        const repairChunks = sourceChunks.filter((chunk) =>
+          missingDomains.has(extractDomain(chunk.sourceUrl)),
+        );
+        const requiredSourceUrls = Array.from(
+          new Set(repairChunks.map((chunk) => chunk.sourceUrl)),
+        );
+        const repairedEvidence = await requestEvidence({
+          callId: `${idempotencyKey}:domain_coverage`,
+          chunks: repairChunks,
+          requiredSourceUrls,
+          requireEvidence: true,
+        });
+        exactEvidence = [...exactEvidence, ...repairedEvidence];
+      }
+
+      const evidenceByIdentity = new Map(
+        exactEvidence.map((candidate) => [
+          [
+            candidate.claimCandidateId,
+            canonicalizeUrl(candidate.sourceUrl),
+            candidate.quote,
+            candidate.relation,
+          ].join("\u0000"),
+          candidate,
+        ]),
+      );
+      exactEvidence = Array.from(evidenceByIdentity.values());
+      if (
+        new Set(
+          exactEvidence.map((candidate) =>
+            extractDomain(canonicalizeUrl(candidate.sourceUrl)),
+          ),
+        ).size < minimumEvidenceDomains
+      ) {
+        throw new Error("EVIDENCE_DOMAIN_COVERAGE_LOW");
+      }
+
       const sourceByUrl = new Map(
         snapshot.sources
           .filter((source) => source.projectId === run.projectId)
           .map((source) => [source.canonicalUrl, source]),
       );
-      const evidenceLinkIds = result.data.evidence.map((candidate) => {
+      const evidenceLinkIds = exactEvidence.map((candidate) => {
         const source = sourceByUrl.get(canonicalizeUrl(candidate.sourceUrl));
         const chunk = snapshot.chunks.find(
           (current) =>

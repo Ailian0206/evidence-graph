@@ -94,6 +94,7 @@ describe("live Evidence Eval collection", () => {
         maxCostUsd: budget.perRunCostLimitUsd,
         maxEmbeddingBatches: providers.executionLimits?.maxEmbeddingBatches,
         maxSearchQueries: 2,
+        minimumEvidenceDomains: 4,
         store,
         now: () => new Date().toISOString(),
       });
