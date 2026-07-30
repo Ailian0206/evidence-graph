@@ -13,6 +13,9 @@ test.describe("managed authentication boundary", () => {
       }),
     ).toBeVisible();
     await expect(page).toHaveURL(/\/zh\/app\/research\/demo$/);
+    await expect(page.locator("header[data-product-shell]")).toHaveCount(1);
+    await expect(page.locator(".site-header")).toHaveCount(0);
+    await expect(page.getByRole("navigation", { name: "工作台导航" })).toHaveCount(0);
   });
 
   test("redirects managed research routes to localized login", async ({ page }) => {
@@ -52,6 +55,8 @@ test.describe("managed authentication boundary", () => {
     await expect(page.getByRole("heading", { name: "登录 Evidence Graph" })).toBeVisible();
     await expect(page.getByRole("status")).toHaveText("托管登录尚未配置");
     await expect(page.locator("p[role='alert']")).toHaveText("登录没有完成，请重新尝试。");
+    await expect(page.locator("header[data-product-shell]")).toHaveCount(1);
+    await expect(page.locator(".site-header")).toHaveCount(0);
 
     const audit = await inspectVisibleUi(page);
     expect(audit.documentWidth).toBeLessThanOrEqual(audit.viewportWidth);

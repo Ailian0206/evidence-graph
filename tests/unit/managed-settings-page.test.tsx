@@ -37,7 +37,7 @@ vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: mocks.createSupabaseServerClient,
 }));
 
-import SettingsPage from "@/app/[locale]/app/settings/page";
+import SettingsPage from "@/app/[locale]/(product)/app/settings/page";
 import { ManagedAppShell } from "@/components/projects/managed-app-shell";
 
 describe("managed settings page", () => {

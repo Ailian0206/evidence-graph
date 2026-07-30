@@ -33,8 +33,8 @@ vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: vi.fn(async () => ({})),
 }));
 
-import ProjectDashboardPage from "@/app/[locale]/app/page";
-import NewResearchPage from "@/app/[locale]/app/research/new/page";
+import ProjectDashboardPage from "@/app/[locale]/(product)/app/page";
+import NewResearchPage from "@/app/[locale]/(product)/app/research/new/page";
 import { ManagedAppShell } from "@/components/projects/managed-app-shell";
 
 describe("managed app pages", () => {

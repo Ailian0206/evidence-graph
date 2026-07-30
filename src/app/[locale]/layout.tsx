@@ -4,8 +4,6 @@ import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 
-import { SiteFooter } from "@/components/site/site-footer";
-import { SiteHeader } from "@/components/site/site-header";
 import { profile } from "@/content/profile";
 import { routing } from "@/i18n/routing";
 
@@ -60,13 +58,7 @@ export default async function LocaleLayout({
           <a className="skip-link" href="#main-content">
             {navigation("skip")}
           </a>
-          <div className="site-shell">
-            <SiteHeader />
-            <main id="main-content" tabIndex={-1}>
-              {children}
-            </main>
-            <SiteFooter />
-          </div>
+          {children}
           <Analytics />
         </NextIntlClientProvider>
       </body>

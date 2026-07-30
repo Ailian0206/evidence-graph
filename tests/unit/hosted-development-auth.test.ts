@@ -56,7 +56,7 @@ describe("hosted development authentication", () => {
     const [actions, loginPage, config] = await Promise.all([
       readFile(join(process.cwd(), "src/features/auth/actions.ts"), "utf8"),
       readFile(
-        join(process.cwd(), "src/app/[locale]/auth/login/page.tsx"),
+        join(process.cwd(), "src/app/[locale]/(product)/auth/login/page.tsx"),
         "utf8",
       ),
       readFile(join(process.cwd(), "supabase/config.toml"), "utf8"),

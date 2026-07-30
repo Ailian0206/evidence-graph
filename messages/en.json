@@ -12,6 +12,8 @@
     "skip": "Skip to main content"
   },
   "AppShell": {
+    "portfolio": "Back to Ailian portfolio",
+    "language": "中文",
     "navigationLabel": "Workspace navigation",
     "projects": "Research projects",
     "reports": "Report library",

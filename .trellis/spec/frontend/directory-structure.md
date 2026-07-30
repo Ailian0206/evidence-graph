@@ -22,7 +22,8 @@ supabase/
 
 ## Module Rules
 
-- Keep route files thin. They authenticate, load data, and compose feature components, as in `src/app/[locale]/app/reports/page.tsx`.
+- Keep route files thin. They authenticate, load data, and compose feature components, as in `src/app/[locale]/(product)/app/reports/page.tsx`.
+- Keep locale-wide providers and metadata in `src/app/[locale]/layout.tsx`. Let the `(portfolio)` layout and `ManagedAppShell` within `(product)` routes own their visual chrome and main landmark. This preserves public URLs, keeps product headers outside `<main>`, and prevents personal-site chrome from leaking into product routes.
 - Put product rules and data adapters under `src/features/<domain>/`; `src/features/reports/report-list-store.ts` is the report-list example.
 - Put reusable UI under `src/components/<domain>/`; colocate a CSS module when styling is domain-specific.
 - Keep external service adapters under `src/providers/` or `src/lib/`, not inside React components.
