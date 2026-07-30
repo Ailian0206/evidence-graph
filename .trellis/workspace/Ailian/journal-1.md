@@ -25,3 +25,26 @@
 ### Status
 
 [OK] **Completed**
+
+
+## Session 2: 拆分作品站与产品布局
+
+**Date**: 2026-07-30
+**Task**: 拆分作品站与产品布局
+**Branch**: `main`
+
+### Summary
+
+使用 Next.js Route Groups 分离作品站与 Evidence Graph 产品壳层，修复产品 skip link 地标，完成双语、响应式与完整门禁验证，并通过 PR #21 独立审核和 CI 合并。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `608b2ab` | (see git log) |
+| `a07dcfb` | (see git log) |
+| `ffdfde1` | (see git log) |
+
+### Status
+
+[OK] **Completed**
