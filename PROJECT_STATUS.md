@@ -5,7 +5,7 @@
 ## 当前阶段
 
 - 当前里程碑：C4“Evidence Eval 与证据质量门禁”正在进行中，模块分支为 `feat/c4-evidence-eval`。
-- 当前进度：C4 真实 10 题评测已在用户批准的 `0.50 USD` 总上限内完成，六项指标中五项通过；8/10 题的 Evidence links 未覆盖 4 个来源域名，因此质量门禁如实失败，仍由 Draft PR #22 跟踪。
+- 当前进度：C4 真实 10 题评测已在用户批准的 `0.50 USD` 总上限内完成，六项指标中五项通过；8/10 题的 Evidence links 未覆盖 4 个来源域名，因此质量门禁如实失败。Draft PR #22 的代码 head `779c426` 两项 CI 已通过。
 - 下一门禁：先用 fixture 修复并验证 Evidence link 的 4 域覆盖，再取得新的付费上限授权重跑真实评测；未通过真实门禁前不进入独立审核、合并或 C5。
 - 默认开发工作流：Trellis 3.4.2；新任务使用 `.trellis/tasks/` 与 `.trellis/spec/`，`docs/superpowers/` 只保留历史记录。
 - 当前禁止：不得未经确认调用真实 Provider，不得开始 C5-C6，不得删除 Production 用户或数据，不得更新 `release` 或部署。
@@ -68,6 +68,7 @@
 
 ## 最近验证基线
 
+- 2026-07-30 Draft PR #22 的代码 head `779c426` 通过 GitHub 代码质量门禁和 Supabase Schema/RLS/lint 门禁。真实评测的四域覆盖指标仍失败，因此不启动独立 Claude 审核、不合并 PR，也不开始 C5。
 - 2026-07-30 C4 真实 10 题评测在用户批准的 `0.50 USD` 总上限内完成，预算账面总额 `0.477799 USD`（含 `0.010 USD` 保守预留），最终成功批次费用 `0.190739 USD`，单题最高 `0.02009 USD`。10/10 runs 为 ready，65/65 exact quotes、无引用事实段落 0、20 条人工关系抽查正确 19 条（95%）；只有来源域名覆盖失败，8/10 案例的 Evidence links 仅覆盖 1-3 个域名。真实输入、来源文本与 Provider 响应均保留在权限 `0600` 的 Git 忽略文件中；未触碰 Production。
 - 2026-07-30 C4 非付费评测基线完成：固定 10 题覆盖技术选型、产品竞品和市场事实，fixture 输出 Quote 精确率 `100%`、无引用事实段落 `0`、Evidence Relation 准确率 `100%`、每题来源域名 `4`、完成率 `100%`、费用 `0 USD`；失败输入可定位 Run、Claim、Evidence、Chunk、Report 和 Citation。Provider 边界、lint、typecheck、单元测试 `412/412`、production build 和 E2E `88/88` 通过；未调用真实 Provider，真实评测总成本门限冻结为 `0.50 USD`，等待单独授权。
 - 2026-07-30 作品站与 Evidence Graph 产品壳层通过 Route Groups 完成拆分，由 PR #21 跟踪。作品站保留个人导航与 Footer；登录、匿名 Demo 和受保护工作台只显示产品头部，原有 URL 保持不变。本地 lint、typecheck、单元测试 `400/400`、production build 和 E2E `88/88` 通过，390x844、1024x768、1440x1000 三档布局与图谱 canvas 像素检查通过；未调用付费 Provider，Production 保持冻结。
