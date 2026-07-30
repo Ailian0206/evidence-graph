@@ -734,9 +734,50 @@ const runResearchWorkflowAttempt = async ({
       }) => {
         assertProviderBudget();
         const result = await executeTrackedProviderCall(callId, async () => {
+          const responseSchema = requiredSourceUrls
+            ? evidenceCandidatesSchema.superRefine(({ evidence }, context) => {
+                const exactDomains = new Set<string>();
+
+                for (const [index, candidate] of evidence.entries()) {
+                  if (!claimCandidateIds.has(candidate.claimCandidateId)) {
+                    context.addIssue({
+                      code: "custom",
+                      message: "CLAIM_CANDIDATE_NOT_FOUND",
+                      path: ["evidence", index, "claimCandidateId"],
+                    });
+                    continue;
+                  }
+
+                  const sourceUrl = canonicalizeUrl(candidate.sourceUrl);
+                  const exactQuote = chunks.some(
+                    (chunk) =>
+                      chunk.sourceUrl === sourceUrl &&
+                      chunk.text.includes(candidate.quote),
+                  );
+                  if (!exactQuote) {
+                    context.addIssue({
+                      code: "custom",
+                      message: "QUOTE_NOT_FOUND",
+                      path: ["evidence", index, "quote"],
+                    });
+                    continue;
+                  }
+
+                  exactDomains.add(extractDomain(sourceUrl));
+                }
+
+                if (exactDomains.size < minimumSourceDomains) {
+                  context.addIssue({
+                    code: "custom",
+                    message: `EVIDENCE_DOMAIN_COVERAGE_LOW: expected ${minimumSourceDomains} exact domains, received ${exactDomains.size}`,
+                    path: ["evidence"],
+                  });
+                }
+              })
+            : evidenceCandidatesSchema;
           const providerResult = await providers.languageModel.generateStructured({
             operation: "link_evidence",
-            schema: evidenceCandidatesSchema,
+            schema: responseSchema,
             payload: {
               ...researchContext,
               claims: extractedClaims.claims,
@@ -746,9 +787,7 @@ const runResearchWorkflowAttempt = async ({
             },
             idempotencyKey: callId,
           });
-          const parsedOutput = evidenceCandidatesSchema.safeParse(
-            providerResult.data,
-          );
+          const parsedOutput = responseSchema.safeParse(providerResult.data);
 
           if (!parsedOutput.success) {
             throw new ProviderCallError(

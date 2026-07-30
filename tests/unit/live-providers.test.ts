@@ -300,7 +300,23 @@ describe("DeepSeek live Provider", () => {
         }),
       )
       .mockImplementationOnce(async (_input: RequestInfo | URL, init?: RequestInit) => {
-        expect(String(init?.body)).toContain("previous_response_errors");
+        const body = JSON.parse(String(init?.body)) as {
+          messages: Array<{ content: string; role: string }>;
+        };
+        const repairPayload = JSON.parse(body.messages[1].content) as {
+          previous_response_errors: Array<{
+            code: string;
+            message: string;
+            path: string;
+          }>;
+        };
+        expect(repairPayload.previous_response_errors).toEqual([
+          expect.objectContaining({
+            code: "too_small",
+            message: expect.any(String),
+            path: "queries",
+          }),
+        ]);
         return jsonResponse({
           choices: [{ message: { content: '{"queries":["one","two","three"]}' } }],
           usage: { prompt_tokens: 110, completion_tokens: 30, total_tokens: 140 },

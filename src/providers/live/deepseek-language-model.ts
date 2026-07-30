@@ -58,7 +58,9 @@ export const createDeepSeekLanguageModel = ({
   }> => {
     let estimatedCostUsd = 0;
     let tokenCount = 0;
-    let previousResponseErrors: Array<{ code: string; path: string }> | undefined;
+    let previousResponseErrors:
+      | Array<{ code: string; message: string; path: string }>
+      | undefined;
 
     for (let attempt = 0; attempt < 2; attempt += 1) {
       const responseBody = await requestProviderJson({
@@ -104,7 +106,13 @@ export const createDeepSeekLanguageModel = ({
       try {
         decoded = JSON.parse(parsedResponse.choices[0].message.content);
       } catch {
-        previousResponseErrors = [{ code: "invalid_json", path: "" }];
+        previousResponseErrors = [
+          {
+            code: "invalid_json",
+            message: "The previous response was not valid JSON.",
+            path: "",
+          },
+        ];
         continue;
       }
 
@@ -118,6 +126,7 @@ export const createDeepSeekLanguageModel = ({
 
       previousResponseErrors = parsedData.error.issues.map((issue) => ({
         code: issue.code,
+        message: issue.message,
         path: issue.path.map(String).join("."),
       }));
     }

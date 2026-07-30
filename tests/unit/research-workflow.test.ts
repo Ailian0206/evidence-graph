@@ -1406,6 +1406,25 @@ describe("research workflow", () => {
     const generateStructured = providers.languageModel.generateStructured;
     let linkEvidenceCalls = 0;
     const linkEvidencePayloads: unknown[] = [];
+    const linkEvidenceSchemas: Array<z.ZodType<unknown>> = [];
+    const repairEvidence = [
+      {
+        claimCandidateId: "claim_exact_quotes",
+        sourceUrl: "https://third.example.org/research",
+        quote: "Third-domain evidence remains inspectable",
+        relation: "context" as const,
+        strength: "moderate" as const,
+        rationale: "The third source adds independent context.",
+      },
+      {
+        claimCandidateId: "claim_exact_quotes",
+        sourceUrl: "https://fourth.example.net/research",
+        quote: "Fourth-domain evidence remains inspectable",
+        relation: "context" as const,
+        strength: "moderate" as const,
+        rationale: "The fourth source adds independent context.",
+      },
+    ];
     providers.languageModel.generateStructured = async (input) => {
       if (input.operation !== "link_evidence") {
         return generateStructured(input);
@@ -1413,31 +1432,13 @@ describe("research workflow", () => {
 
       linkEvidenceCalls += 1;
       linkEvidencePayloads.push(input.payload);
+      linkEvidenceSchemas.push(input.schema);
       if (linkEvidenceCalls === 1) {
         return generateStructured(input);
       }
 
       return {
-        data: input.schema.parse({
-          evidence: [
-            {
-              claimCandidateId: "claim_exact_quotes",
-              sourceUrl: "https://third.example.org/research",
-              quote: "Third-domain evidence remains inspectable",
-              relation: "context",
-              strength: "moderate",
-              rationale: "The third source adds independent context.",
-            },
-            {
-              claimCandidateId: "claim_exact_quotes",
-              sourceUrl: "https://fourth.example.net/research",
-              quote: "Fourth-domain evidence remains inspectable",
-              relation: "context",
-              strength: "moderate",
-              rationale: "The fourth source adds independent context.",
-            },
-          ],
-        }),
+        data: input.schema.parse({ evidence: repairEvidence }),
         usage: { estimatedCostUsd: 0.01, searchCount: 0, tokenCount: 120 },
       };
     };
@@ -1538,6 +1539,10 @@ describe("research workflow", () => {
         ],
       }),
     ]);
+    expect(
+      linkEvidenceSchemas[1].safeParse({ evidence: repairEvidence.slice(0, 1) })
+        .success,
+    ).toBe(false);
     expect(linkedDomains).toEqual(
       new Set([
         "example.com",
