@@ -68,6 +68,7 @@
 
 ## 最近验证基线
 
+- 2026-07-30 C4 Claim extraction 四域稳定性修复已推送到 Draft PR #22；head `ff2b534` 的 GitHub 代码质量门禁与 Supabase Schema/RLS/lint 门禁均通过。真实重测仍需新的付费授权，因此 PR 保持 Draft/Open，尚未启动独立 Claude 审核。
 - 2026-07-30 针对重测第 3 题的失败完成 fixture-first 稳定性修复：启用多域门禁时，Claim extraction payload 会携带必需来源 URL 及 chunk-to-URL 映射，DeepSeek 指令要求每个必需来源至少产出一个有依据的候选主张，避免 linking 阶段面对没有对应 Claim 的来源。新增测试先得到 `2` 项 RED，修复后聚焦测试 `111/111`、Provider boundary、10 题 fixture eval、lint、typecheck 和完整单元测试 `426/426` 通过；未再次调用付费 Provider。
 - 2026-07-30 用户批准独立 `0.25 USD` 总上限后执行 C4 四域修复真实重测。`technical-vector-store` 与 `technical-durable-workflow` 均为 `ready`，分别覆盖 4 个 Evidence domains，费用为 `0.019397 USD` 和 `0.020124 USD`；`technical-citation-verifiability` 收集 4 个来源域名后在 linking 阶段触发 `EVIDENCE_DOMAIN_COVERAGE_LOW`，费用为 `0.020006 USD`。收集器按首个失败停止，固定题集完成率为 `2/10`，累计费用 `0.059527 USD`；完整引用、关系和报告指标未从残缺批次重算。真实产物仍为 Git 忽略且权限 `0600`，再次调用付费 Provider 需要新的明确授权。
 - 2026-07-30 C4 四域覆盖 fixture 修复完成：搜索候选优先填充不同域名，质量门禁可要求 4 个 Evidence domains，缺域时只对缺失域名调用一次补链并使用独立 idempotency key 和 usage。受影响模块 `127/127`、单独复跑 UI 文件 `11/11`、fixture eval、Provider boundary、lint 和 typecheck 通过；全量 unit 首轮为 `423/425`，仅两项无关 UI 输入测试在并发负载下超过 5 秒且单文件复跑通过。未再次调用付费 Provider。
