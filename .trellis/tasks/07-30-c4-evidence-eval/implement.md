@@ -31,7 +31,8 @@
 - The user approved a USD 0.50 aggregate cap. The budget ledger ended at USD 0.477799, including a USD 0.010 conservative reserve for earlier invalid structured responses.
 - All ten runs reached `ready`; quote exactness, uncited factual paragraphs, manual relation accuracy, completion, and per-run cost passed.
 - Source-domain coverage failed in eight cases because Evidence links reached only one to three domains even when collection retained four domains.
-- No further paid call is authorized. The next implementation slice must reproduce and fix domain coverage with fixtures before requesting a new real-run cap.
+- The fixture remediation now prioritizes distinct search domains and performs at most one missing-domain Evidence repair with independent cost and idempotency tracking.
+- No further paid call is authorized. The next step is a newly capped real rerun; do not reuse the exhausted approval.
 
 ## Risk Points
 

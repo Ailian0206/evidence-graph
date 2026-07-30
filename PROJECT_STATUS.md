@@ -5,8 +5,8 @@
 ## 当前阶段
 
 - 当前里程碑：C4“Evidence Eval 与证据质量门禁”正在进行中，模块分支为 `feat/c4-evidence-eval`。
-- 当前进度：C4 真实 10 题评测已在用户批准的 `0.50 USD` 总上限内完成，六项指标中五项通过；8/10 题的 Evidence links 未覆盖 4 个来源域名，因此质量门禁如实失败。Draft PR #22 的代码 head `779c426` 两项 CI 已通过。
-- 下一门禁：先用 fixture 修复并验证 Evidence link 的 4 域覆盖，再取得新的付费上限授权重跑真实评测；未通过真实门禁前不进入独立审核、合并或 C5。
+- 当前进度：C4 真实 10 题评测的六项指标中五项通过，8/10 题的 Evidence links 未覆盖 4 个来源域名。对应 fixture 修复已实现：搜索优先保留不同域名，缺域时只补链一次并独立记账；Draft PR #22 继续跟踪。
+- 下一门禁：取得新的付费上限授权重跑真实 10 题，验证 4 域修复；未通过真实门禁前不进入独立审核、合并或 C5。
 - 默认开发工作流：Trellis 3.4.2；新任务使用 `.trellis/tasks/` 与 `.trellis/spec/`，`docs/superpowers/` 只保留历史记录。
 - 当前禁止：不得未经确认调用真实 Provider，不得开始 C5-C6，不得删除 Production 用户或数据，不得更新 `release` 或部署。
 - 路线图：`docs/roadmap.md`。
@@ -15,7 +15,7 @@
 
 | 维度 | 当前状态 | 说明 |
 | --- | --- | --- |
-| 代码完成度 | C4 评测与受限 live 收集已实现 | 固定题集、评测器、CLI、付费确认与累计预算门禁已实现；真实结果暴露 4 域 Evidence link 覆盖缺口 |
+| 代码完成度 | C4 评测、受限 live 收集与四域修复已实现 | 固定题集、评测器、CLI、累计预算、不同域名来源优先级和一次缺域补链已通过 fixture 验证 |
 | Agent 本地验收度 | C4 真实门禁 5/6 通过 | 65/65 引用精确、无引用事实段落 0、关系抽查 19/20、完成率 10/10、单题最高 `0.02009 USD`；来源域名覆盖失败 |
 | 用户反馈状态 | 异步接收 | 用户可继续体验并提交问题；反馈不回溯阻断已通过门禁的开发流程 |
 | 产品完成度 | 未完成 | C4 真实 Evidence Eval 尚未达到 4 域门槛；3 个真实案例和 Release Candidate 尚未开始 |
@@ -68,6 +68,7 @@
 
 ## 最近验证基线
 
+- 2026-07-30 C4 四域覆盖 fixture 修复完成：搜索候选优先填充不同域名，质量门禁可要求 4 个 Evidence domains，缺域时只对缺失域名调用一次补链并使用独立 idempotency key 和 usage。受影响模块 `127/127`、单独复跑 UI 文件 `11/11`、fixture eval、Provider boundary、lint 和 typecheck 通过；全量 unit 首轮为 `423/425`，仅两项无关 UI 输入测试在并发负载下超过 5 秒且单文件复跑通过。未再次调用付费 Provider。
 - 2026-07-30 Draft PR #22 的代码 head `779c426` 通过 GitHub 代码质量门禁和 Supabase Schema/RLS/lint 门禁。真实评测的四域覆盖指标仍失败，因此不启动独立 Claude 审核、不合并 PR，也不开始 C5。
 - 2026-07-30 C4 真实 10 题评测在用户批准的 `0.50 USD` 总上限内完成，预算账面总额 `0.477799 USD`（含 `0.010 USD` 保守预留），最终成功批次费用 `0.190739 USD`，单题最高 `0.02009 USD`。10/10 runs 为 ready，65/65 exact quotes、无引用事实段落 0、20 条人工关系抽查正确 19 条（95%）；只有来源域名覆盖失败，8/10 案例的 Evidence links 仅覆盖 1-3 个域名。真实输入、来源文本与 Provider 响应均保留在权限 `0600` 的 Git 忽略文件中；未触碰 Production。
 - 2026-07-30 C4 非付费评测基线完成：固定 10 题覆盖技术选型、产品竞品和市场事实，fixture 输出 Quote 精确率 `100%`、无引用事实段落 `0`、Evidence Relation 准确率 `100%`、每题来源域名 `4`、完成率 `100%`、费用 `0 USD`；失败输入可定位 Run、Claim、Evidence、Chunk、Report 和 Citation。Provider 边界、lint、typecheck、单元测试 `412/412`、production build 和 E2E `88/88` 通过；未调用真实 Provider，真实评测总成本门限冻结为 `0.50 USD`，等待单独授权。
@@ -112,4 +113,4 @@
 
 ## 下一步
 
-C4 真实评测已完成但四域 Evidence link 覆盖未通过。下一步先用 fixture 修复该质量缺口；再次真实重测需要新的付费授权与成本上限。C4 通过前不开始 C5，Production 继续冻结。
+C4 的四域 Evidence link fixture 修复已完成。下一步需要新的付费授权与成本上限重跑真实 10 题；C4 通过前不开始 C5，Production 继续冻结。
