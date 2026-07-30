@@ -1405,12 +1405,14 @@ describe("research workflow", () => {
     const providers = createFixtureResearchProviders();
     const generateStructured = providers.languageModel.generateStructured;
     let linkEvidenceCalls = 0;
+    const linkEvidencePayloads: unknown[] = [];
     providers.languageModel.generateStructured = async (input) => {
       if (input.operation !== "link_evidence") {
         return generateStructured(input);
       }
 
       linkEvidenceCalls += 1;
+      linkEvidencePayloads.push(input.payload);
       if (linkEvidenceCalls === 1) {
         return generateStructured(input);
       }
@@ -1496,6 +1498,7 @@ describe("research workflow", () => {
     )?.payload as
       | {
           chunks?: Array<{ sourceUrl?: string }>;
+          minimumSourceDomains?: number;
           requiredSourceUrls?: string[];
         }
       | undefined;
@@ -1513,7 +1516,9 @@ describe("research workflow", () => {
       "https://docs.example.com/evidence-graph",
       "https://third.example.org/research",
       "https://fourth.example.net/research",
+      "https://fifth.example.edu/research",
     ]);
+    expect(extractionPayload?.minimumSourceDomains).toBe(4);
     expect(extractionPayload?.chunks).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ sourceUrl: "https://third.example.org/research" }),
@@ -1522,6 +1527,17 @@ describe("research workflow", () => {
         }),
       ]),
     );
+    expect(linkEvidencePayloads).toEqual([
+      expect.objectContaining({ minimumSourceDomains: 4 }),
+      expect.objectContaining({
+        minimumSourceDomains: 2,
+        requiredSourceUrls: [
+          "https://third.example.org/research",
+          "https://fourth.example.net/research",
+          "https://fifth.example.edu/research",
+        ],
+      }),
+    ]);
     expect(linkedDomains).toEqual(
       new Set([
         "example.com",

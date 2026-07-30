@@ -34,7 +34,8 @@ The live Evidence Eval command is `npm run eval:evidence:live`.
 - The allocated per-run limit is floored to six decimals and cannot exceed `0.15`.
 - A structured model retry is limited to one repair attempt. A successful retry returns combined usage for both responses. A final validation failure throws `ProviderCallError` with the accumulated usage so the workflow records it before failing the step.
 - A quality-gated run may require multiple Evidence-link domains. Search candidates prioritize distinct domains, and linking makes at most one repair call restricted to missing domains. The repair uses its own idempotency key and usage record; insufficient coverage fails instead of producing a low-quality ready result.
-- Before a multi-domain link gate, Claim extraction receives the required source URLs plus chunk-to-URL mappings and must produce grounded candidates across those sources. This keeps the later link/repair pass from being asked to cover a source for which no candidate Claim exists.
+- Under its separate paid gate, live Evidence Eval allocates six distinct-prioritized source slots instead of the local product workflow's default four. It keeps the existing evaluation content and cost caps and requires Evidence links from any four domains, avoiding a single point of failure without changing routine product limits or weakening the metric.
+- Before a multi-domain link gate, Claim extraction receives candidate source URLs, chunk-to-URL mappings, and `minimumSourceDomains`. Initial linking uses the same minimum; the single repair receives all missing source URLs and the remaining domain deficit.
 - Live observations, source excerpts, manual labels, summaries, and Provider responses remain under ignored `output/evidence-eval/`. Files containing source excerpts use mode `0600`.
 
 ## 4. Validation & Error Matrix
@@ -64,7 +65,8 @@ The live Evidence Eval command is `npm run eval:evidence:live`.
 - Assert a final invalid structured response carries accumulated usage and that `runResearchWorkflow` persists it.
 - Assert bounded evaluation runs honor `maxSearchQueries` without changing the default workflow query count.
 - Assert search candidates fill distinct domains first and a quality-gated run repairs only missing Evidence domains once.
-- Assert quality-gated Claim extraction receives the required source URLs and URL-bearing chunks before Evidence linking.
+- Assert live evaluation allocates six distinct-prioritized source slots for a four-domain threshold while routine product limits remain unchanged.
+- Assert quality-gated Claim extraction and linking receive candidate URLs, URL-bearing chunks, and the correct `minimumSourceDomains`; repair receives the remaining deficit.
 - Keep Provider boundary, lint, typecheck, fixture evaluation, unit, build, and E2E gates free of live calls.
 
 ## 7. Wrong vs Correct

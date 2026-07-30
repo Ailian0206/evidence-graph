@@ -249,6 +249,12 @@ describe("DeepSeek live Provider", () => {
     expect(modelSystemPrompt("extract_claims")).toContain(
       "payload.requiredSourceUrls",
     );
+    expect(modelSystemPrompt("extract_claims")).toContain(
+      "payload.minimumSourceDomains",
+    );
+    expect(modelSystemPrompt("link_evidence")).toContain(
+      "payload.minimumSourceDomains",
+    );
   });
 
   it("requests deepseek-v4-flash JSON and validates structured output", async () => {

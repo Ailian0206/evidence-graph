@@ -5,6 +5,8 @@ type EvidenceEvalEnvironment = Record<string, string | undefined>;
 const LIVE_CONFIRMATION = "I_CONFIRM_PAID_EVIDENCE_EVAL";
 const MAXIMUM_TOTAL_COST_USD = 0.5;
 const MAXIMUM_RUN_COST_USD = 0.15;
+const COLLECTION_SOURCE_LIMIT = 6;
+const MINIMUM_EVIDENCE_DOMAINS = 4;
 
 const roundUsd = (value: number) => Math.round(value * 1_000_000) / 1_000_000;
 const floorUsd = (value: number) => Math.floor(value * 1_000_000) / 1_000_000;
@@ -95,7 +97,9 @@ export const createLiveEvidenceEvalBudget = ({
 };
 
 export const liveEvidenceEvalConstants = {
+  collectionSourceLimit: COLLECTION_SOURCE_LIMIT,
   confirmation: LIVE_CONFIRMATION,
   maximumTotalCostUsd: MAXIMUM_TOTAL_COST_USD,
   maximumRunCostUsd: MAXIMUM_RUN_COST_USD,
+  minimumEvidenceDomains: MINIMUM_EVIDENCE_DOMAINS,
 } as const;

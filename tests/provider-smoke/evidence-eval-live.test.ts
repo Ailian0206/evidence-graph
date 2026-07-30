@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   createLiveEvidenceEvalBudget,
+  liveEvidenceEvalConstants,
   readLiveEvidenceEvalEnvironment,
 } from "@/features/evaluation/live-evidence-eval-gate";
 import {
@@ -73,7 +74,7 @@ describe("live Evidence Eval collection", () => {
           id: runId,
           projectId,
           ownerId: OWNER_ID,
-          sourceLimit: providers.executionLimits?.sourceLimit ?? 4,
+          sourceLimit: liveEvidenceEvalConstants.collectionSourceLimit,
           maxContentChars: Math.min(
             providers.executionLimits?.maxContentChars ?? MAX_EVAL_CONTENT_CHARS,
             MAX_EVAL_CONTENT_CHARS,
@@ -94,7 +95,7 @@ describe("live Evidence Eval collection", () => {
         maxCostUsd: budget.perRunCostLimitUsd,
         maxEmbeddingBatches: providers.executionLimits?.maxEmbeddingBatches,
         maxSearchQueries: 2,
-        minimumEvidenceDomains: 4,
+        minimumEvidenceDomains: liveEvidenceEvalConstants.minimumEvidenceDomains,
         store,
         now: () => new Date().toISOString(),
       });

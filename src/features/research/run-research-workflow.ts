@@ -638,7 +638,7 @@ const runResearchWorkflowAttempt = async ({
       }
       const requiredSourceUrls =
         minimumEvidenceDomains > 1
-          ? Array.from(sourceUrlsByDomain.values()).slice(0, minimumEvidenceDomains)
+          ? Array.from(sourceUrlsByDomain.values())
           : undefined;
       assertProviderBudget();
       const result = await executeTrackedProviderCall(idempotencyKey, () =>
@@ -648,7 +648,12 @@ const runResearchWorkflowAttempt = async ({
           payload: {
             ...researchContext,
             chunks: claimChunks,
-            ...(requiredSourceUrls ? { requiredSourceUrls } : {}),
+            ...(requiredSourceUrls
+              ? {
+                  minimumSourceDomains: minimumEvidenceDomains,
+                  requiredSourceUrls,
+                }
+              : {}),
           },
           idempotencyKey,
         }),
@@ -717,11 +722,13 @@ const runResearchWorkflowAttempt = async ({
       const requestEvidence = async ({
         callId,
         chunks,
+        minimumSourceDomains,
         requiredSourceUrls,
         requireEvidence,
       }: {
         callId: string;
         chunks: typeof sourceChunks;
+        minimumSourceDomains: number;
         requiredSourceUrls?: string[];
         requireEvidence: boolean;
       }) => {
@@ -734,6 +741,7 @@ const runResearchWorkflowAttempt = async ({
               ...researchContext,
               claims: extractedClaims.claims,
               sourceChunks: chunks,
+              minimumSourceDomains,
               ...(requiredSourceUrls ? { requiredSourceUrls } : {}),
             },
             idempotencyKey: callId,
@@ -785,6 +793,7 @@ const runResearchWorkflowAttempt = async ({
       let exactEvidence = await requestEvidence({
         callId: idempotencyKey,
         chunks: sourceChunks,
+        minimumSourceDomains: minimumEvidenceDomains,
         requireEvidence: minimumEvidenceDomains === 1,
       });
 
@@ -806,6 +815,7 @@ const runResearchWorkflowAttempt = async ({
         const repairedEvidence = await requestEvidence({
           callId: `${idempotencyKey}:domain_coverage`,
           chunks: repairChunks,
+          minimumSourceDomains: minimumEvidenceDomains - linkedDomains.size,
           requiredSourceUrls,
           requireEvidence: true,
         });
