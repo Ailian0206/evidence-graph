@@ -3,7 +3,7 @@
 import { LoaderCircle, LogIn } from "lucide-react";
 import { useFormStatus } from "react-dom";
 
-import styles from "@/app/[locale]/auth/login/login.module.css";
+import styles from "@/app/[locale]/(product)/auth/login/login.module.css";
 
 export function GitHubSignInButton({
   configured,

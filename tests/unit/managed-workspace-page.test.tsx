@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  createEvidenceWorkspaceFixture: vi.fn(() => ({ project: { id: "demo" } })),
   createSupabaseServerClient: vi.fn(async () => ({ client: true })),
   load: vi.fn(async () => ({ state: "queued" as const, runId: "run_1" })),
   requireManagedUser: vi.fn(async () => ({
@@ -26,7 +27,7 @@ vi.mock("@/features/auth/server-session", () => ({
   requireManagedUser: mocks.requireManagedUser,
 }));
 vi.mock("@/features/research/evidence-workspace-fixture", () => ({
-  createEvidenceWorkspaceFixture: vi.fn(),
+  createEvidenceWorkspaceFixture: mocks.createEvidenceWorkspaceFixture,
 }));
 vi.mock("@/features/research/managed-workspace-store", () => ({
   createManagedWorkspaceStore: () => ({ load: mocks.load }),
@@ -36,7 +37,7 @@ vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: mocks.createSupabaseServerClient,
 }));
 
-import WorkspacePage, * as workspacePageModule from "@/app/[locale]/app/research/[id]/page";
+import WorkspacePage, * as workspacePageModule from "@/app/[locale]/(product)/app/research/[id]/page";
 import { ManagedAppShell } from "@/components/projects/managed-app-shell";
 
 describe("managed workspace page", () => {
@@ -46,6 +47,22 @@ describe("managed workspace page", () => {
 
   it("does not opt the authenticated workspace route into static generation", () => {
     expect(workspacePageModule).not.toHaveProperty("generateStaticParams");
+  });
+
+  it("wraps the anonymous demo in the compact product shell", async () => {
+    const page = await WorkspacePage({
+      params: Promise.resolve({ locale: "zh", id: "demo" }),
+      searchParams: Promise.resolve({}),
+    });
+
+    expect(page.type).toBe(ManagedAppShell);
+    expect(page.props).toMatchObject({ locale: "zh" });
+    expect(page.props.user).toBeUndefined();
+    expect(page.props.children.props).toMatchObject({
+      initialData: { project: { id: "demo" } },
+      initialMode: "graph",
+    });
+    expect(mocks.requireManagedUser).not.toHaveBeenCalled();
   });
 
   it("loads the managed user session for a real project", async () => {

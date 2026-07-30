@@ -13,12 +13,20 @@ vi.mock("@/i18n/navigation", () => ({
   Link: ({
     href,
     children,
+    locale: _locale,
     ...props
-  }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { href: string }) => (
-    <a href={`/zh${href}`} {...props}>
-      {children}
-    </a>
-  ),
+  }: React.AnchorHTMLAttributes<HTMLAnchorElement> & {
+    href: string;
+    locale?: string;
+  }) => {
+    void _locale;
+    return (
+      <a href={`/zh${href}`} {...props}>
+        {children}
+      </a>
+    );
+  },
+  usePathname: () => "/app",
 }));
 
 afterEach(cleanup);
@@ -57,6 +65,11 @@ describe("managed app shell", () => {
     expect(screen.getByText("ailian")).toBeVisible();
     expect(screen.getByText("user@example.com")).toBeVisible();
     expect(screen.getByRole("button", { name: "退出登录" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "返回 Ailian 作品集" })).toHaveAttribute(
+      "href",
+      "/zh/",
+    );
+    expect(screen.getByRole("link", { name: "English" })).toBeVisible();
     expect(screen.getByText("工作区内容")).toBeVisible();
   });
 
@@ -78,5 +91,25 @@ describe("managed app shell", () => {
       "aria-current",
       "page",
     );
+  });
+
+  it("uses a compact product shell for login and anonymous demo routes", () => {
+    render(
+      <NextIntlClientProvider locale="zh" messages={messages}>
+        <ManagedAppShell locale="zh">
+          <p>匿名产品内容</p>
+        </ManagedAppShell>
+      </NextIntlClientProvider>,
+    );
+
+    expect(screen.getByRole("link", { name: "返回 Ailian 作品集" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Evidence Graph" })).toHaveAttribute(
+      "href",
+      "/zh/app",
+    );
+    expect(screen.getByRole("link", { name: "English" })).toBeVisible();
+    expect(screen.queryByRole("navigation", { name: "工作台导航" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "退出登录" })).toBeNull();
+    expect(screen.getByText("匿名产品内容")).toBeVisible();
   });
 });

@@ -12,6 +12,8 @@
     "skip": "跳到主要内容"
   },
   "AppShell": {
+    "portfolio": "返回 Ailian 作品集",
+    "language": "English",
     "navigationLabel": "工作台导航",
     "projects": "研究项目",
     "reports": "报告库",

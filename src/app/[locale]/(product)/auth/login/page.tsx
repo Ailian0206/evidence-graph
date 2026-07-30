@@ -3,6 +3,7 @@ import { LockKeyhole } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { GitHubSignInButton } from "@/components/auth/github-sign-in-button";
+import { ManagedAppShell } from "@/components/projects/managed-app-shell";
 import { signInWithGitHub } from "@/features/auth/actions";
 import { getSafeAppPath } from "@/features/auth/session";
 import type { AppLocale } from "@/i18n/routing";
@@ -32,30 +33,32 @@ export default async function LoginPage({ params, searchParams }: LoginPageProps
   const githubAction = signInWithGitHub.bind(null, locale, nextPath);
 
   return (
-    <div className={styles.page}>
-      <section className={styles.panel} aria-labelledby="auth-title">
-        <p className={styles.eyebrow}>{t("eyebrow")}</p>
-        <LockKeyhole aria-hidden="true" className={styles.icon} size={28} />
-        <h1 id="auth-title">{t("title")}</h1>
-        <p className={styles.description}>{t("description")}</p>
-        <form action={githubAction} className={styles.form}>
-          <GitHubSignInButton
-            configured={configured}
-            label={t("github")}
-            pendingLabel={t("githubPending")}
-          />
-        </form>
-        {!configured ? (
-          <p className={styles.status} role="status">
-            {t("unconfigured")}
-          </p>
-        ) : null}
-        {error ? (
-          <p className={styles.error} role="alert">
-            {t("error")}
-          </p>
-        ) : null}
-      </section>
-    </div>
+    <ManagedAppShell locale={locale}>
+      <div className={styles.page}>
+        <section className={styles.panel} aria-labelledby="auth-title">
+          <p className={styles.eyebrow}>{t("eyebrow")}</p>
+          <LockKeyhole aria-hidden="true" className={styles.icon} size={28} />
+          <h1 id="auth-title">{t("title")}</h1>
+          <p className={styles.description}>{t("description")}</p>
+          <form action={githubAction} className={styles.form}>
+            <GitHubSignInButton
+              configured={configured}
+              label={t("github")}
+              pendingLabel={t("githubPending")}
+            />
+          </form>
+          {!configured ? (
+            <p className={styles.status} role="status">
+              {t("unconfigured")}
+            </p>
+          ) : null}
+          {error ? (
+            <p className={styles.error} role="alert">
+              {t("error")}
+            </p>
+          ) : null}
+        </section>
+      </div>
+    </ManagedAppShell>
   );
 }

@@ -74,7 +74,9 @@ for (const viewport of viewports) {
 
     const metrics = await page.evaluate(() => {
       const graphRoot = document.querySelector<HTMLElement>('[data-testid="workspace-graph"]');
-      const siteHeader = document.querySelector<HTMLElement>(".site-header");
+      const productHeader = document.querySelector<HTMLElement>(
+        "header[data-product-shell]",
+      );
       const projectBar = document.querySelector<HTMLElement>(
         '[data-workspace-state="ready"] > header',
       );
@@ -109,7 +111,7 @@ for (const viewport of viewports) {
       }, 0);
 
       const graphBounds = graphRoot?.getBoundingClientRect();
-      const siteHeaderBounds = siteHeader?.getBoundingClientRect();
+      const productHeaderBounds = productHeader?.getBoundingClientRect();
       const projectBarBounds = projectBar?.getBoundingClientRect();
 
       return {
@@ -124,8 +126,8 @@ for (const viewport of viewports) {
           const bounds = panel.getBoundingClientRect();
           return bounds.left >= 0 && bounds.right <= window.innerWidth + 1;
         }),
-        siteHeaderTop: siteHeaderBounds?.top ?? -1,
-        siteHeaderBottom: siteHeaderBounds?.bottom ?? -1,
+        productHeaderTop: productHeaderBounds?.top ?? -1,
+        productHeaderBottom: productHeaderBounds?.bottom ?? -1,
         projectBarTop: projectBarBounds?.top ?? -1,
       };
     });
@@ -143,9 +145,9 @@ for (const viewport of viewports) {
     expect(metrics.coloredSamples).toBeGreaterThan(20);
     expect(metrics.panelsInsideViewport).toBe(true);
     expect(metrics.visiblePanelCount).toBe(viewport.name === "mobile" ? 1 : 4);
-    expect(metrics.siteHeaderTop).toBeGreaterThanOrEqual(0);
-    expect(metrics.siteHeaderTop).toBeLessThanOrEqual(1);
-    expect(metrics.projectBarTop).toBeGreaterThanOrEqual(metrics.siteHeaderBottom - 1);
+    expect(metrics.productHeaderTop).toBeGreaterThanOrEqual(0);
+    expect(metrics.productHeaderTop).toBeLessThanOrEqual(1);
+    expect(metrics.projectBarTop).toBeGreaterThanOrEqual(metrics.productHeaderBottom - 1);
     expect(audit.documentWidth).toBeLessThanOrEqual(audit.viewportWidth);
     expect(audit.fontSizeViolations).toEqual([]);
     expect(audit.leftRuleViolations).toEqual([]);

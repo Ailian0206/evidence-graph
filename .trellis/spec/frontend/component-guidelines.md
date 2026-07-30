@@ -6,7 +6,7 @@
 - Add `"use client"` only when browser state, effects, event handlers, or client APIs are required.
 - Keep database clients, secrets, and privileged operations out of client components. Mutations cross a Server Action or route-handler boundary.
 
-Examples: `src/app/[locale]/app/reports/page.tsx` loads report data on the server; `src/components/evidence-workspace/evidence-workspace.tsx` owns interactive workspace behavior.
+Examples: `src/app/[locale]/(product)/app/reports/page.tsx` loads report data on the server; `src/components/evidence-workspace/evidence-workspace.tsx` owns interactive workspace behavior.
 
 ## Props And Composition
 

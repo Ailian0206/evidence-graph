@@ -78,5 +78,9 @@ export default async function WorkspacePage({ params, searchParams }: WorkspaceP
 
   const workspace = createEvidenceWorkspaceFixture(locale);
 
-  return <EvidenceWorkspace initialData={workspace} initialMode={initialMode} />;
+  return (
+    <ManagedAppShell locale={locale}>
+      <EvidenceWorkspace initialData={workspace} initialMode={initialMode} />
+    </ManagedAppShell>
+  );
 }
