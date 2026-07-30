@@ -2,7 +2,7 @@
 
 1. Add RED unit tests for portfolio/product layout ownership and compact product-shell behavior.
 2. Move locale routes into `(portfolio)` and `(product)` groups without changing URL segments.
-3. Reduce the locale root layout to shared providers, skip navigation, metadata, and analytics; add group layouts for their respective main landmarks and chrome.
+3. Reduce the locale root layout to shared providers, skip navigation, metadata, and analytics; add group boundaries while keeping each route family responsible for its main landmark and chrome.
 4. Extend `ManagedAppShell` with portfolio return and locale actions plus entry mode; wrap login and anonymous Demo with entry mode.
 5. Update direct module-path tests and bilingual AppShell messages.
 6. Run focused unit tests, lint, typecheck, and build.

@@ -27,14 +27,15 @@ describe("locale route shells", () => {
     expect(screen.getByRole("contentinfo")).toHaveTextContent("Portfolio footer");
   });
 
-  it("renders product routes without the personal site chrome", () => {
+  it("leaves the product main landmark to the product shell", () => {
     render(
       <ProductLayout>
         <p>Product content</p>
       </ProductLayout>,
     );
 
-    expect(screen.getByRole("main")).toHaveTextContent("Product content");
+    expect(screen.queryByRole("main")).toBeNull();
+    expect(screen.getByText("Product content")).toBeVisible();
     expect(screen.queryByText("Portfolio navigation")).toBeNull();
     expect(screen.queryByText("Portfolio footer")).toBeNull();
   });

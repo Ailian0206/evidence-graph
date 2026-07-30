@@ -3,9 +3,5 @@ type ProductLayoutProps = {
 };
 
 export default function ProductLayout({ children }: ProductLayoutProps) {
-  return (
-    <main id="main-content" tabIndex={-1}>
-      {children}
-    </main>
-  );
+  return <>{children}</>;
 }

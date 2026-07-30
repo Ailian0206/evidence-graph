@@ -46,6 +46,8 @@ describe("managed app shell", () => {
     );
 
     const navigation = screen.getByRole("navigation", { name: "工作台导航" });
+    expect(screen.getByRole("banner")).toHaveAttribute("data-product-shell", "true");
+    expect(screen.getByRole("main")).toHaveAttribute("id", "main-content");
     expect(within(navigation).getByRole("link", { name: "研究项目" })).toHaveAttribute(
       "href",
       "/zh/app",
@@ -111,5 +113,6 @@ describe("managed app shell", () => {
     expect(screen.queryByRole("navigation", { name: "工作台导航" })).toBeNull();
     expect(screen.queryByRole("button", { name: "退出登录" })).toBeNull();
     expect(screen.getByText("匿名产品内容")).toBeVisible();
+    expect(screen.getByRole("main")).toHaveTextContent("匿名产品内容");
   });
 });

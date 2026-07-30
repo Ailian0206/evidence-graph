@@ -120,7 +120,9 @@ export function ManagedAppShell({
           ) : null}
         </div>
       </header>
-      {children}
+      <main id="main-content" tabIndex={-1}>
+        {children}
+      </main>
     </div>
   );
 }

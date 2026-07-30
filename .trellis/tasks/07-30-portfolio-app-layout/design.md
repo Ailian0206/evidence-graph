@@ -14,7 +14,7 @@ src/app/[locale]/
     notes/page.tsx              /notes
     evidence/page.tsx           /evidence
   (product)/
-    layout.tsx                  product main landmark only
+    layout.tsx                  pass-through route boundary
     auth/login/**               /auth/login
     app/**                      /app/**
 ```
@@ -23,7 +23,7 @@ Route Group names are omitted from URLs per the installed Next.js 16 documentati
 
 ## Product Shell
 
-Extend `ManagedAppShell` so `active` and `user` are optional:
+Extend `ManagedAppShell` so `active` and `user` are optional. It owns the product header and the `main-content` landmark so skip navigation bypasses the header:
 
 - Authenticated mode: product identity, workspace tabs, locale switch, account summary, sign out.
 - Entry mode: product identity, locale switch, no protected tabs or account controls.
