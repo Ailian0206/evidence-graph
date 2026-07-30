@@ -48,7 +48,7 @@ Turn the existing research workflow's quality claims into a repeatable, inspecta
 6. A deterministic fixture dataset must cover all ten questions, include manual relation labels, pass all thresholds, and require no network access.
 7. A repository command must write a structured summary under ignored `output/evidence-eval/` and return a non-zero exit code when the gate fails.
 8. Real evaluation input and output must remain ignored and must never include paid-provider responses in Git.
-9. A later real run must require a dedicated confirmation value, use a positive aggregate cost cap no greater than USD 0.50, and retain the existing local per-run cap no greater than USD 0.15. No real call is authorized by this task artifact.
+9. Every real run must require a dedicated confirmation value, use a positive aggregate cost cap no greater than USD 0.50, and retain the existing local per-run cap no greater than USD 0.15. Authorization comes only from the user, never from this task artifact.
 
 ## Acceptance Criteria
 
@@ -60,7 +60,9 @@ Turn the existing research workflow's quality claims into a repeatable, inspecta
 - [x] Agent inspection confirms one technical, one competition, and one market fixture sample has a complete source-to-claim-to-evidence-to-citation path.
 - [x] The focused tests, provider boundary check, lint, typecheck, unit suite, production build, and E2E suite pass before PR review.
 - [ ] The milestone uses one Draft PR, independent Claude review, CI, and a merge commit.
-- [x] Real ten-question execution remains blocked until the user separately approves the paid call and aggregate cost cap.
+- [x] Real ten-question execution remained blocked until the user separately approved the paid call and a USD 0.50 aggregate cap.
+- [x] The approved real run completed all ten questions and twenty manual relation samples without committing source text or Provider responses.
+- [ ] The real observation passes all six thresholds; source-domain coverage currently fails in eight of ten cases.
 
 ## Out of Scope
 

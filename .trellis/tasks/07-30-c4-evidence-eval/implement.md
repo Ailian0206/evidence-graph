@@ -23,7 +23,15 @@
    - `npm run test:e2e`
 6. Update project state, commit in logical Chinese Conventional Commits, push the module branch, and create one Draft PR.
 7. Run independent Claude review and CI. Fix verified findings on the same branch and repeat gates as needed.
-8. Stop at the paid execution boundary. Request explicit approval before any real ten-question provider run; do not begin C5.
+8. At the paid execution boundary, require explicit approval and a positive aggregate cap before running the real ten-question evaluation.
+9. Record the measured result without committing private output. If a threshold fails, return to fixture-first implementation and require a new paid authorization before another real run; do not begin C5.
+
+## Live Evaluation Result (2026-07-30)
+
+- The user approved a USD 0.50 aggregate cap. The budget ledger ended at USD 0.477799, including a USD 0.010 conservative reserve for earlier invalid structured responses.
+- All ten runs reached `ready`; quote exactness, uncited factual paragraphs, manual relation accuracy, completion, and per-run cost passed.
+- Source-domain coverage failed in eight cases because Evidence links reached only one to three domains even when collection retained four domains.
+- No further paid call is authorized. The next implementation slice must reproduce and fix domain coverage with fixtures before requesting a new real-run cap.
 
 ## Risk Points
 
