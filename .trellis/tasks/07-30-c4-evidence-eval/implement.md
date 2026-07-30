@@ -64,6 +64,21 @@
 - Three new assertions were confirmed RED before implementation. Focused tests passed 117/117; Provider boundary, the ten-case fixture evaluation, lint, typecheck, and the full unit suite passed 427/427.
 - A new explicit aggregate cap is required before another live ten-case run.
 
+## Third Live Evaluation Rerun (2026-07-30)
+
+- The user approved another separate USD 0.25 aggregate cap with a USD 0.025 per-run allocation.
+- The first two cases reached `ready` with four linked Evidence domains selected from six collected domains.
+- `technical-citation-verifiability` also collected six domains but failed during Evidence linking with `EVIDENCE_DOMAIN_COVERAGE_LOW`; its recorded cost was USD 0.019098.
+- The collector stopped after case three. The fixed-set completion result is 2/10 and the batch cost is USD 0.058600. The three remediation reruns have recorded USD 0.233626 in total.
+- No further paid call is authorized.
+
+## Semantic Repair Remediation (2026-07-30)
+
+- Six collected domains did not make linking reliable, so search capacity and content allocation are no longer treated as the root cause.
+- The Evidence repair response schema now validates Claim candidate IDs, source URLs, exact quotes, and the remaining domain deficit. A semantic failure is passed to DeepSeek's existing one structured-response retry with concrete issue messages and accumulated usage.
+- Two assertions were confirmed RED before implementation. Focused tests passed 111/111; Provider boundary, the ten-case fixture evaluation, lint, typecheck, and the full unit suite passed 427/427.
+- A new explicit aggregate cap is required before another live ten-case run.
+
 ## Risk Points
 
 - Empty or broken observations must not pass through favorable denominators.
