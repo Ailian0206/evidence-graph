@@ -7,6 +7,7 @@
     "dev:local": "node --env-file-if-exists=.env.local scripts/local-development.mjs --profile=fixture",
     "dev:local:live": "node --env-file-if-exists=.env.local scripts/local-development.mjs --profile=live",
     "eval:evidence:fixture": "RESEARCH_PROVIDER_MODE=fixture jiti scripts/run-evidence-eval.ts",
+    "eval:evidence:live": "node --env-file-if-exists=.env.local ./node_modules/vitest/vitest.mjs run --config vitest.evidence-eval-live.config.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
