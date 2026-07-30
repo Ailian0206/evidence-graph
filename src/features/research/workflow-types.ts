@@ -8,21 +8,26 @@ import {
   evidenceStrengthSchema,
 } from "@/features/research/domain";
 
+export const MAX_CLAIM_CANDIDATES = 12;
+
 export const searchPlanSchema = z.object({
   queries: z.array(z.string().min(1)).min(3).max(5),
 });
 
 export const claimCandidatesSchema = z
   .object({
-    claims: z.array(
-      z.object({
-        candidateId: z.string().min(1),
-        statement: z.string().min(1),
-        claimType: claimTypeSchema,
-        qualifiers: z.array(z.string()),
-        confidence: z.number().min(0).max(1),
-      }),
-    ),
+    claims: z
+      .array(
+        z.object({
+          candidateId: z.string().min(1),
+          statement: z.string().min(1),
+          claimType: claimTypeSchema,
+          qualifiers: z.array(z.string()),
+          confidence: z.number().min(0).max(1),
+        }),
+      )
+      .min(1)
+      .max(MAX_CLAIM_CANDIDATES),
   })
   .superRefine(({ claims }, context) => {
     const candidateIds = new Set<string>();

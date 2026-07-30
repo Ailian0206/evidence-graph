@@ -19,12 +19,14 @@ import {
   type WorkflowStep,
 } from "@/features/research/workflow-types";
 import {
+  MIN_CHUNK_CHARACTERS,
   canonicalizeUrl,
   chunkSourceText,
   createContentHash,
   extractDomain,
 } from "@/features/sources/source-utils";
 import {
+  getProviderErrorUsage,
   searchResultSchema,
   type EmbeddingProvider,
   type LanguageModel,
@@ -53,6 +55,7 @@ type RunResearchWorkflowInput = {
   providers: ResearchWorkflowProviders;
   maxCostUsd?: number;
   maxEmbeddingBatches?: number;
+  maxSearchQueries?: number;
   executeProviderCall?: ProviderCallExecutor;
   store: InMemoryResearchWorkflowStore;
   now: () => string;
@@ -100,6 +103,7 @@ const KNOWN_WORKFLOW_ERRORS = new Set([
   "REPORT_NOT_FOUND",
   "RUN_COST_LIMIT_EXCEEDED",
   "RUN_NOT_FOUND",
+  "SEARCH_QUERY_LIMIT_INVALID",
   "SOURCE_NOT_FOUND",
   "STEP_RETRY_LIMIT_EXCEEDED",
   "TAVILY_REQUEST_FAILED",
@@ -110,6 +114,8 @@ const createSourceId = (projectId: string, contentHash: string) =>
 const createClaimId = (projectId: string, candidateId: string) =>
   `claim_${projectId}_${candidateId}`;
 const countUnicodeCodePoints = (content: string) => Array.from(content).length;
+const truncateUnicodeCodePoints = (content: string, maximum: number) =>
+  Array.from(content).slice(0, maximum).join("");
 
 const roundCost = (cost: number) => Math.round(cost * 1_000_000) / 1_000_000;
 
@@ -144,6 +150,7 @@ const runResearchWorkflowAttempt = async ({
   providers,
   maxCostUsd = 1,
   maxEmbeddingBatches = DEFAULT_MAX_EMBEDDING_BATCHES,
+  maxSearchQueries = 5,
   executeProviderCall = executeProviderCallDirectly,
   store,
   now,
@@ -158,6 +165,14 @@ const runResearchWorkflowAttempt = async ({
     maxEmbeddingBatches > DEFAULT_MAX_EMBEDDING_BATCHES
   ) {
     throw new Error("EMBEDDING_BATCH_LIMIT_INVALID");
+  }
+
+  if (
+    !Number.isInteger(maxSearchQueries) ||
+    maxSearchQueries < 1 ||
+    maxSearchQueries > 5
+  ) {
+    throw new Error("SEARCH_QUERY_LIMIT_INVALID");
   }
 
   let run = store.requireRun({ runId, ownerId });
@@ -229,6 +244,21 @@ const runResearchWorkflowAttempt = async ({
   const assertProviderBudget = () => {
     if (run.estimatedCostUsd >= maxCostUsd) {
       throw new Error("RUN_COST_LIMIT_EXCEEDED");
+    }
+  };
+
+  const executeTrackedProviderCall: ProviderCallExecutor = async (
+    idempotencyKey,
+    operation,
+  ) => {
+    try {
+      return await executeProviderCall(idempotencyKey, operation);
+    } catch (error) {
+      const usage = getProviderErrorUsage(error);
+      if (usage) {
+        applyUsage(idempotencyKey, usage);
+      }
+      throw error;
     }
   };
 
@@ -307,7 +337,7 @@ const runResearchWorkflowAttempt = async ({
 
   const plan = await executeStep("planning", searchPlanSchema, async (idempotencyKey) => {
     assertProviderBudget();
-    const result = await executeProviderCall(idempotencyKey, () =>
+    const result = await executeTrackedProviderCall(idempotencyKey, () =>
       providers.languageModel.generateStructured({
         operation: "plan",
         schema: searchPlanSchema,
@@ -325,7 +355,9 @@ const runResearchWorkflowAttempt = async ({
     async (idempotencyKey) => {
       const results: SearchResult[] = [];
 
-      for (const [queryIndex, query] of plan.queries.entries()) {
+      for (const [queryIndex, query] of plan.queries
+        .slice(0, maxSearchQueries)
+        .entries()) {
         const queryIdempotencyKey = `${idempotencyKey}:${queryIndex}`;
         const savedResults = store.getSearchResults(queryIdempotencyKey);
 
@@ -335,7 +367,7 @@ const runResearchWorkflowAttempt = async ({
         }
 
         assertProviderBudget();
-        const result = await executeProviderCall(queryIdempotencyKey, () =>
+        const result = await executeTrackedProviderCall(queryIdempotencyKey, () =>
           providers.search.search({
             query,
             maxResults: run.sourceLimit,
@@ -361,7 +393,7 @@ const runResearchWorkflowAttempt = async ({
 
       if (!extractedManualSources && manualUrls.length > 0) {
         assertProviderBudget();
-        const result = await executeProviderCall(manualExtractionKey, () =>
+        const result = await executeTrackedProviderCall(manualExtractionKey, () =>
           providers.search.extract({
             urls: manualUrls,
             idempotencyKey: manualExtractionKey,
@@ -390,16 +422,32 @@ const runResearchWorkflowAttempt = async ({
       ]) {
         const parsed = searchResultSchema.parse(candidate);
         const canonicalUrl = canonicalizeUrl(parsed.url);
-        const contentHash = createContentHash(parsed.body);
+        const candidateContentHash = createContentHash(parsed.body);
 
-        if (canonicalUrls.has(canonicalUrl) || contentHashes.has(contentHash)) {
+        if (
+          canonicalUrls.has(canonicalUrl) ||
+          contentHashes.has(candidateContentHash)
+        ) {
           continue;
         }
 
         const existingSource = currentSources.find(
           (source) =>
-            source.canonicalUrl === canonicalUrl || source.contentHash === contentHash,
+            source.canonicalUrl === canonicalUrl ||
+            source.contentHash === candidateContentHash,
         );
+        const remainingContentChars = run.maxContentChars - contentCodePoints;
+        const remainingSourceSlots = run.sourceLimit - selectedSources.length;
+        const allocatedContentChars = Math.floor(
+          remainingContentChars / remainingSourceSlots,
+        );
+        const sourceBody =
+          !existingSource &&
+          countUnicodeCodePoints(parsed.body) > allocatedContentChars &&
+          allocatedContentChars >= MIN_CHUNK_CHARACTERS
+            ? truncateUnicodeCodePoints(parsed.body, allocatedContentChars)
+            : parsed.body;
+        const contentHash = existingSource?.contentHash ?? createContentHash(sourceBody);
         const source: Source = existingSource ?? {
           id: createSourceId(run.projectId, contentHash),
           projectId: run.projectId,
@@ -409,7 +457,7 @@ const runResearchWorkflowAttempt = async ({
           publishedAt: parsed.publishedAt,
           domain: extractDomain(canonicalUrl),
           sourceType: parsed.sourceType,
-          body: parsed.body,
+          body: sourceBody,
           contentHash,
           retrievedAt: now(),
         };
@@ -428,6 +476,7 @@ const runResearchWorkflowAttempt = async ({
         selectedSources.push(source);
         selectedSourceIds.add(source.id);
         canonicalUrls.add(canonicalUrl);
+        contentHashes.add(candidateContentHash);
         contentHashes.add(contentHash);
         contentCodePoints += sourceCodePoints;
 
@@ -503,7 +552,7 @@ const runResearchWorkflowAttempt = async ({
       }
 
       assertProviderBudget();
-      const result = await executeProviderCall(batchIdempotencyKey, async () => {
+      const result = await executeTrackedProviderCall(batchIdempotencyKey, async () => {
         const providerResult = await providers.embedding.embed({
           texts: missingEmbeddings.map((chunk) => chunk.text),
           idempotencyKey: batchIdempotencyKey,
@@ -537,7 +586,7 @@ const runResearchWorkflowAttempt = async ({
       const snapshot = store.getSnapshot();
       const chunks = snapshot.chunks.filter((chunk) => indexed.chunkIds.includes(chunk.id));
       assertProviderBudget();
-      const result = await executeProviderCall(idempotencyKey, () =>
+      const result = await executeTrackedProviderCall(idempotencyKey, () =>
         providers.languageModel.generateStructured({
           operation: "extract_claims",
           schema: claimCandidatesSchema,
@@ -599,7 +648,7 @@ const runResearchWorkflowAttempt = async ({
         extractedClaims.claims.map((claim) => claim.candidateId),
       );
       assertProviderBudget();
-      const result = await executeProviderCall(idempotencyKey, async () => {
+      const result = await executeTrackedProviderCall(idempotencyKey, async () => {
         const providerResult = await providers.languageModel.generateStructured({
           operation: "link_evidence",
           schema: evidenceCandidatesSchema,
@@ -676,7 +725,7 @@ const runResearchWorkflowAttempt = async ({
         extractedClaims.claims.map((claim) => claim.candidateId),
       );
       assertProviderBudget();
-      const result = await executeProviderCall(idempotencyKey, async () => {
+      const result = await executeTrackedProviderCall(idempotencyKey, async () => {
         const providerResult = await providers.languageModel.generateStructured({
           operation: "detect_conflicts",
           schema: conflictCandidatesSchema,
@@ -771,7 +820,7 @@ const runResearchWorkflowAttempt = async ({
         evidencedClaims.map((claim) => claim.candidateId),
       );
       assertProviderBudget();
-      const result = await executeProviderCall(idempotencyKey, async () => {
+      const result = await executeTrackedProviderCall(idempotencyKey, async () => {
         const providerResult = await providers.languageModel.generateStructured({
           operation: "draft_report",
           schema: reportDraftSchema,

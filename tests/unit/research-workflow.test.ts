@@ -13,7 +13,7 @@ import {
   evidenceCandidatesSchema,
   reportDraftSchema,
 } from "@/features/research/workflow-types";
-import { searchResultSchema } from "@/providers/contracts";
+import { ProviderCallError, searchResultSchema } from "@/providers/contracts";
 import { createFixtureResearchProviders } from "@/providers/fixtures/research-providers";
 
 const createMemoizingProviderCallExecutor = (): ProviderCallExecutor => {
@@ -31,6 +31,28 @@ const createMemoizingProviderCallExecutor = (): ProviderCallExecutor => {
 };
 
 describe("research provider fixtures", () => {
+  it("bounds claim extraction to twelve unique candidates", () => {
+    const claim = {
+      candidateId: "claim_1",
+      statement: "A bounded claim.",
+      claimType: "factual" as const,
+      qualifiers: [],
+      confidence: 0.8,
+    };
+
+    expect(() =>
+      claimCandidatesSchema.parse({
+        claims: Array.from({ length: 13 }, (_, index) => ({
+          ...claim,
+          candidateId: `claim_${index + 1}`,
+        })),
+      }),
+    ).toThrow();
+    expect(() =>
+      claimCandidatesSchema.parse({ claims: [claim, { ...claim }] }),
+    ).toThrow("CLAIM_CANDIDATE_ID_CONFLICT");
+  });
+
   it("returns deterministic structured data and records idempotency keys", async () => {
     const first = createFixtureResearchProviders();
     const second = createFixtureResearchProviders();
@@ -1279,6 +1301,32 @@ describe("research workflow", () => {
     ).toBe(true);
   });
 
+  it("limits search queries for a bounded evaluation run", async () => {
+    const providers = createFixtureResearchProviders();
+    const fixture = createDemoResearchFixture();
+    fixture.sources = [];
+    fixture.chunks = [];
+    fixture.claims = [];
+    fixture.evidenceLinks = [];
+    fixture.claimRelations = [];
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      maxSearchQueries: 2,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+
+    expect(result.run.status).toBe("ready");
+    expect(providers.calls.filter((call) => call.operation === "search")).toHaveLength(
+      2,
+    );
+  });
+
   it("does not double-count usage when a partial search step retries", async () => {
     const providers = createFixtureResearchProviders({ failSearchAtCall: 2 });
     const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
@@ -1448,6 +1496,45 @@ describe("research workflow", () => {
     );
   });
 
+  it("records usage attached to a failed structured Provider response", async () => {
+    const providers = createFixtureResearchProviders();
+    const generateStructured = providers.languageModel.generateStructured;
+    providers.languageModel.generateStructured = async (input) => {
+      if (input.operation === "extract_claims") {
+        throw new ProviderCallError("PROVIDER_RESPONSE_INVALID", {
+          estimatedCostUsd: 0.002,
+          searchCount: 0,
+          tokenCount: 200,
+        });
+      }
+
+      return generateStructured(input);
+    };
+    const fixture = createDemoResearchFixture();
+    fixture.sources = [];
+    fixture.chunks = [];
+    fixture.claims = [];
+    fixture.evidenceLinks = [];
+    fixture.claimRelations = [];
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+
+    expect(result.run).toMatchObject({
+      status: "failed",
+      errorMessage: "PROVIDER_RESPONSE_INVALID",
+      estimatedCostUsd: 0.043,
+      tokenCount: 480,
+    });
+  });
+
   it("rejects manual sources above the run limit before provider calls", async () => {
     const providers = createFixtureResearchProviders();
     const store = createInMemoryResearchWorkflowStore(createDemoResearchFixture());
@@ -1508,6 +1595,71 @@ describe("research workflow", () => {
     });
     expect(providers.calls.some((call) => call.operation === "embed")).toBe(false);
     expect(store.getSnapshot().sources).toEqual([]);
+  });
+
+  it("retains bounded excerpts from oversized search sources", async () => {
+    const fixture = createDemoResearchFixture();
+    fixture.researchRuns[0].sourceLimit = 4;
+    fixture.researchRuns[0].maxContentChars = 4_000;
+    fixture.sources = [];
+    fixture.chunks = [];
+    fixture.claims = [];
+    fixture.evidenceLinks = [];
+    fixture.claimRelations = [];
+    const providers = createFixtureResearchProviders();
+    providers.search.search = async () => ({
+      data: [
+        {
+          url: "https://example.com/research",
+          title: "Product research interview",
+          body: `Evidence Graph keeps claims connected to exact quotes for review. ${"😀".repeat(5_000)}`,
+          sourceType: "primary_interview" as const,
+        },
+        {
+          url: "https://docs.example.com/evidence-graph",
+          title: "Evidence Graph product notes",
+          body: `A cited report should use only claims with stored evidence links and preserved source excerpts. ${"😀".repeat(5_000)}`,
+          sourceType: "official_document" as const,
+        },
+        {
+          url: "https://market.example.org/research",
+          title: "Market research",
+          body: `Independent market evidence remains available for comparison. ${"😀".repeat(5_000)}`,
+          sourceType: "article" as const,
+        },
+        {
+          url: "https://standards.example.net/research",
+          title: "Research standard",
+          body: `Published standards describe review and traceability controls. ${"😀".repeat(5_000)}`,
+          sourceType: "documentation" as const,
+        },
+      ],
+      usage: { estimatedCostUsd: 0.01, searchCount: 1, tokenCount: 0 },
+    });
+    const store = createInMemoryResearchWorkflowStore(fixture);
+
+    const result = await runResearchWorkflow({
+      runId: "run_demo",
+      ownerId: "user_ailian",
+      manualSources: [],
+      providers,
+      store,
+      now: () => "2026-07-15T01:00:00.000Z",
+    });
+    const sources = store.getSnapshot().sources;
+
+    expect(result.run.status).toBe("ready");
+    expect(sources).toHaveLength(4);
+    expect(new Set(sources.map((source) => source.domain))).toHaveLength(4);
+    expect(
+      sources.reduce(
+        (total, source) => total + Array.from(source.body).length,
+        0,
+      ),
+    ).toBe(fixture.researchRuns[0].maxContentChars);
+    expect(sources.every((source) => Array.from(source.body).length === 1_000)).toBe(
+      true,
+    );
   });
 
   it("coalesces more than 1500 short paragraphs before embedding", async () => {

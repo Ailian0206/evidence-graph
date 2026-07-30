@@ -278,6 +278,69 @@ describe("DeepSeek live Provider", () => {
     expect(result.usage).toMatchObject({ searchCount: 0, tokenCount: 120 });
   });
 
+  it("repairs one invalid structured response and combines both usages", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({
+          choices: [{ message: { content: '{"queries":[]}' } }],
+          usage: { prompt_tokens: 100, completion_tokens: 20, total_tokens: 120 },
+        }),
+      )
+      .mockImplementationOnce(async (_input: RequestInfo | URL, init?: RequestInit) => {
+        expect(String(init?.body)).toContain("previous_response_errors");
+        return jsonResponse({
+          choices: [{ message: { content: '{"queries":["one","two","three"]}' } }],
+          usage: { prompt_tokens: 110, completion_tokens: 30, total_tokens: 140 },
+        });
+      });
+    const provider = createDeepSeekLanguageModel({
+      apiKey: "deepseek-secret",
+      fetchImpl,
+    });
+
+    const result = await provider.generateStructured({
+      operation: "plan",
+      schema: z.object({ queries: z.array(z.string()).min(3) }),
+      payload: { question: "How?", language: "en" },
+      idempotencyKey: "run:planning",
+    });
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(result.data.queries).toEqual(["one", "two", "three"]);
+    expect(result.usage).toMatchObject({ searchCount: 0, tokenCount: 260 });
+    expect(result.usage.estimatedCostUsd).toBeCloseTo(
+      (210 * 0.14 + 50 * 0.28) / 1_000_000,
+      12,
+    );
+  });
+
+  it("keeps accumulated usage on a final invalid structured response", async () => {
+    const fetchImpl = vi.fn(async () =>
+      jsonResponse({
+        choices: [{ message: { content: '{"queries":[]}' } }],
+        usage: { prompt_tokens: 100, completion_tokens: 20, total_tokens: 120 },
+      }),
+    );
+    const provider = createDeepSeekLanguageModel({
+      apiKey: "deepseek-secret",
+      fetchImpl,
+    });
+
+    await expect(
+      provider.generateStructured({
+        operation: "plan",
+        schema: z.object({ queries: z.array(z.string()).min(3) }),
+        payload: { question: "How?", language: "en" },
+        idempotencyKey: "run:planning",
+      }),
+    ).rejects.toMatchObject({
+      message: "PROVIDER_RESPONSE_INVALID",
+      usage: { searchCount: 0, tokenCount: 240 },
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
   it("turns invalid JSON and non-success responses into stable errors", async () => {
     const fetchImpl = vi.fn(async () =>
       jsonResponse({ choices: [{ message: { content: "not-json" } }] }),
