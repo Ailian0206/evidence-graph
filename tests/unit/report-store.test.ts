@@ -10,6 +10,7 @@ import {
   type ReportRow,
 } from "@/features/reports/report-store";
 import { publicReportSlugs } from "@/features/reports/report-fixture";
+import { publicCaseReports } from "@/features/reports/public-case-reports";
 
 const sections = [
   {
@@ -333,6 +334,53 @@ describe("report store", () => {
       report: { slug: publicReportSlugs.zh, status: "published" },
     });
     expect(createQueries).not.toHaveBeenCalled();
+  });
+
+  it("serves all curated C5 reports without Supabase", async () => {
+    const createQueries = vi.fn();
+
+    for (const curatedReport of publicCaseReports) {
+      const result = await getPublicReport(
+        { slug: curatedReport.report.slug },
+        {
+          isSupabaseConfigured: () => false,
+          createQueries,
+        },
+      );
+
+      expect(result).toEqual(curatedReport);
+      expect(result.report.status).toBe("published");
+    }
+
+    expect(publicCaseReports).toHaveLength(3);
+    expect(createQueries).not.toHaveBeenCalled();
+  });
+
+  it("keeps every curated factual section backed by complete HTTPS citations", () => {
+    for (const curatedReport of publicCaseReports) {
+      const citationsById = new Map(
+        curatedReport.report.citations.map((citation) => [
+          citation.evidenceLinkId,
+          citation,
+        ]),
+      );
+
+      for (const section of curatedReport.report.sections) {
+        if (!section.factual) {
+          continue;
+        }
+
+        expect(section.citationIds.length).toBeGreaterThan(0);
+        for (const citationId of section.citationIds) {
+          const citation = citationsById.get(citationId);
+          expect(citation).toBeDefined();
+          expect(citation?.sourceTitle.trim()).not.toBe("");
+          expect(citation?.quote.trim()).not.toBe("");
+          expect(citation?.sourceUrl).toMatch(/^https:\/\//);
+          expect(section.markdown).toContain(`[${citationId}]`);
+        }
+      }
+    }
   });
 
   it("returns REPORT_NOT_FOUND for unknown slugs when Supabase is not configured", async () => {

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
+import { findPublicCaseReport } from "@/features/reports/public-case-reports";
 import { findPublicReportFixture } from "@/features/reports/report-fixture";
 import { createReviewedReportSnapshot } from "@/features/reports/reviewed-report";
 import {
@@ -303,6 +304,11 @@ export const getPublicReport = async (
   { slug }: { slug: string },
   dependencies: PublicReportDependencies = createProductionPublicReportDependencies(),
 ) => {
+  const curatedReport = findPublicCaseReport(slug);
+  if (curatedReport) {
+    return publicReportSchema.parse(curatedReport);
+  }
+
   const fixture = findPublicReportFixture(slug);
   if (fixture) {
     return publicReportSchema.parse(fixture);
