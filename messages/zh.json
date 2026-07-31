@@ -86,7 +86,7 @@
     "status": "正在构建",
     "previewLabel": "产品预览 / {status}",
     "description": "把研究结论连接回可以检查的原文证据。",
-    "sample": "示例工作台使用确定性研究数据，不调用真实 Provider。",
+    "sample": "公开案例使用 C4 实测结果与可核对来源，不调用实时 Provider。",
     "openWorkspace": "打开示例工作台"
   },
   "Auth": {

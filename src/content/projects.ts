@@ -19,8 +19,8 @@ export const publicProjects: PortfolioProject[] = [
       en: "Persist Sources, Claims, Evidence Links, and conflicts, then require every factual report paragraph to resolve to exact source excerpts.",
     },
     proof: {
-      zh: "当前正在建立双语作品集、证据领域模型、可重复研究工作流与公开报告。",
-      en: "Currently building the bilingual portfolio, evidence domain model, repeatable research workflow, and public reports.",
+      zh: "C4 真实十题评测达到 65/65 精确引用、无引用事实段落 0、关系抽查 19/20；三个真实案例现已公开。",
+      en: "The C4 ten-question real evaluation reached 65/65 exact quotes, zero uncited factual paragraphs, and 19/20 sampled relations; three real cases are now public.",
     },
     tags: ["Next.js", "TypeScript", "Agent", "pgvector"],
     repositoryUrl: "https://github.com/Ailian0206/evidence-graph",

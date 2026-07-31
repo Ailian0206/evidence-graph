@@ -86,7 +86,7 @@
     "status": "Building",
     "previewLabel": "Product preview / {status}",
     "description": "Connect research claims back to source evidence readers can inspect.",
-    "sample": "The sample workspace uses deterministic research data and makes no real provider calls.",
+    "sample": "This public case uses measured C4 results and inspectable sources without a live provider call.",
     "openWorkspace": "Open sample workspace"
   },
   "Auth": {
