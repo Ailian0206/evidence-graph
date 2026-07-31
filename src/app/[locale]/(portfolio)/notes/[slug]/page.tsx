@@ -93,20 +93,16 @@ export default async function PublicResearchCasePage({
         <p className="section-index">{copy.caseLabel}</p>
         <h1>{researchCase.title[locale]}</h1>
         <p>{researchCase.summary[locale]}</p>
-        <dl>
-          <div>
-            <dt>
-              <CalendarDays aria-hidden="true" size={15} />
-              {researchCase.researchedAt}
-            </dt>
-          </div>
-          <div>
-            <dt>
-              <Database aria-hidden="true" size={15} />
-              {copy.sources.replace("{count}", String(researchCase.sourceCount))}
-            </dt>
-          </div>
-        </dl>
+        <ul className="research-case-meta">
+          <li>
+            <CalendarDays aria-hidden="true" size={15} />
+            {researchCase.researchedAt}
+          </li>
+          <li>
+            <Database aria-hidden="true" size={15} />
+            {copy.sources.replace("{count}", String(researchCase.sourceCount))}
+          </li>
+        </ul>
       </header>
 
       <section className="research-case-question content-width">

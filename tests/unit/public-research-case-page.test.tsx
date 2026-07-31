@@ -48,9 +48,12 @@ describe("public research case page", () => {
     const element = await PublicResearchCasePage({
       params: Promise.resolve({ locale: "en", slug: researchCase.slug }),
     });
-    render(element);
+    const { container } = render(element);
 
     expect(screen.getByRole("heading", { name: researchCase.title.en })).toBeVisible();
+    const metadata = container.querySelector(".research-case-meta");
+    expect(metadata?.tagName).toBe("UL");
+    expect(metadata?.querySelectorAll(":scope > li")).toHaveLength(2);
     expect(screen.getByText(researchCase.failure.correction.en)).toBeVisible();
     expect(screen.getByRole("link", { name: "Open cited report" })).toHaveAttribute(
       "href",

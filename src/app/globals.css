@@ -1017,23 +1017,22 @@ dd {
   line-height: 1.7;
 }
 
-.research-case-hero dl {
+.research-case-meta {
   display: flex;
   margin: 28px 0 0;
+  padding: 0;
   gap: 12px;
   flex-wrap: wrap;
+  list-style: none;
 }
 
-.research-case-hero dl div {
+.research-case-meta li {
+  display: flex;
+  align-items: center;
   padding: 9px 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--paper-muted);
-}
-
-.research-case-hero dt {
-  display: flex;
-  align-items: center;
   gap: 7px;
   color: var(--muted);
   font-size: 12px;
