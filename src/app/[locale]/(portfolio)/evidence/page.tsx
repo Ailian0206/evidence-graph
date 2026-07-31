@@ -3,6 +3,7 @@ import { ArrowLeft, Code2, Waypoints } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { EvidenceCanvas } from "@/components/portfolio/evidence-canvas";
+import { publicResearchCases } from "@/content/public-research-cases";
 import { Link } from "@/i18n/navigation";
 import type { AppLocale } from "@/i18n/routing";
 
@@ -27,6 +28,7 @@ export default async function EvidencePage({
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("Evidence");
+  const researchCase = publicResearchCases[1];
 
   return (
     <div className="evidence-preview public-page">
@@ -57,7 +59,12 @@ export default async function EvidencePage({
         </div>
       </header>
       <div className="content-width evidence-preview-canvas">
-        <EvidenceCanvas locale={locale} mode="workspace" />
+        <EvidenceCanvas
+          locale={locale}
+          mode="workspace"
+          graph={researchCase.graph}
+          query={researchCase.question[locale]}
+        />
       </div>
       <p className="preview-caption content-width">{t("sample")}</p>
     </div>

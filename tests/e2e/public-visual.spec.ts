@@ -153,6 +153,71 @@ test("mobile hero graph nodes remain interactive", async ({ page }) => {
   await sourceNode.click({ timeout: 2000 });
 
   await expect(page.locator(".evidence-canvas-hero .canvas-inspector")).toContainText(
-    "2026-07-12 获取 · 一手访谈",
+    "真实完成批次记录精确 Quote、关系、来源覆盖与完成率。",
   );
 });
+
+for (const viewport of viewports) {
+  test(`public research case stays readable at ${viewport.name}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.goto("/zh/notes/evidence-graph-vs-ai-search");
+
+    await expect(page.locator(".research-case-graph .graph-node")).toHaveCount(4);
+    await expect(page.getByRole("link", { name: "打开引用报告" })).toBeVisible();
+
+    const audit = await inspectVisibleUi(page, [
+      ".research-case-article > section",
+      ".research-case-failure",
+    ]);
+    const layout = await page.evaluate(() => {
+      const graph = document.querySelector<HTMLElement>(".research-case-graph .evidence-canvas");
+      const nodes = Array.from(
+        document.querySelectorAll<HTMLElement>(".research-case-graph .graph-node"),
+      );
+      const inspector = document.querySelector<HTMLElement>(
+        ".research-case-graph .canvas-inspector",
+      );
+      const overlaps = (left: DOMRect, right: DOMRect) =>
+        !(
+          left.right <= right.left ||
+          left.left >= right.right ||
+          left.bottom <= right.top ||
+          left.top >= right.bottom
+        );
+
+      if (!graph || !inspector) {
+        throw new Error("research case graph is missing");
+      }
+
+      const graphBounds = graph.getBoundingClientRect();
+      const inspectorBounds = inspector.getBoundingClientRect();
+      return {
+        documentWidth: document.documentElement.scrollWidth,
+        viewportWidth: window.innerWidth,
+        nodesInsideGraph: nodes.every((node) => {
+          const bounds = node.getBoundingClientRect();
+          return (
+            bounds.left >= graphBounds.left &&
+            bounds.right <= graphBounds.right &&
+            bounds.top >= graphBounds.top &&
+            bounds.bottom <= graphBounds.bottom
+          );
+        }),
+        inspectorOverlapsNode: nodes.some((node) =>
+          overlaps(inspectorBounds, node.getBoundingClientRect()),
+        ),
+      };
+    });
+
+    expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewportWidth);
+    expect(layout.nodesInsideGraph).toBe(true);
+    expect(layout.inspectorOverlapsNode).toBe(false);
+    expect(audit.fontSizeViolations).toEqual([]);
+    expect(audit.leftRuleViolations).toEqual([]);
+
+    await page.screenshot({
+      path: `output/playwright/public-case-${viewport.name}.png`,
+      fullPage: true,
+    });
+  });
+}

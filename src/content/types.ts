@@ -22,6 +22,6 @@ export type PracticeNote = {
   slug: string;
   title: LocalizedText;
   summary: LocalizedText;
-  status: "research" | "draft";
+  status: "research" | "draft" | "published";
   date: string;
 };

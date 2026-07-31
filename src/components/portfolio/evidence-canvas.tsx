@@ -1,129 +1,103 @@
 "use client";
 
-import { Check, FileText, Quote, Search } from "lucide-react";
+import { CircleCheckBig, FileText, Quote, Search, Waypoints } from "lucide-react";
 import { useState } from "react";
 
+import type { PublicResearchCase } from "@/content/public-research-cases";
 import type { AppLocale } from "@/i18n/routing";
 
-type EvidenceNode = "claim" | "evidence" | "source";
-
-const canvasCopy = {
+const canvasLabels = {
   zh: {
-    query: "可追溯引用是否让 AI 研究更容易审核？",
-    claim: "精确引用让主张可被逐条检查",
-    evidence: "研究者可以从结论直接回到保存的原文片段。",
-    source: "来源 03 / 产品研究访谈",
-    labels: { claim: "主张", evidence: "证据", source: "来源" },
-    toolbar: {
-      hero: "研究运行 01",
-      workspace: "运行 01 / 证据审核",
-    },
-    detail: {
-      claim: "待审核主张 · 2 条支持证据",
-      evidence: "精确匹配 · 第 18 段",
-      source: "2026-07-12 获取 · 一手访谈",
-    },
+    source: "来源",
+    evidence: "证据",
+    claim: "主张",
+    decision: "决策",
+    hero: "真实案例 / 证据链",
+    workspace: "公开研究 / 决策图",
   },
   en: {
-    query: "Do traceable citations make AI research easier to review?",
-    claim: "Exact citations make claims individually inspectable",
-    evidence: "Researchers can move directly from a conclusion to the saved source excerpt.",
-    source: "Source 03 / Product research interview",
-    labels: { claim: "Claim", evidence: "Evidence", source: "Source" },
-    toolbar: {
-      hero: "Research run 01",
-      workspace: "Run 01 / Evidence review",
-    },
-    detail: {
-      claim: "Proposed claim · 2 supporting excerpts",
-      evidence: "Exact match · Paragraph 18",
-      source: "Retrieved 2026-07-12 · Primary interview",
-    },
+    source: "Source",
+    evidence: "Evidence",
+    claim: "Claim",
+    decision: "Decision",
+    hero: "Real case / Evidence chain",
+    workspace: "Public research / Decision graph",
   },
 } as const;
 
-export function EvidenceCanvas({
-  locale,
-  mode,
-}: {
+const nodeIcons = {
+  source: FileText,
+  evidence: Quote,
+  claim: Waypoints,
+  decision: CircleCheckBig,
+} as const;
+
+type EvidenceCanvasProps = {
   locale: AppLocale;
   mode: "hero" | "workspace";
-}) {
-  const [selectedNode, setSelectedNode] = useState<EvidenceNode>("evidence");
-  const [focusedNode, setFocusedNode] = useState<EvidenceNode | null>(null);
-  const [hoveredNode, setHoveredNode] = useState<EvidenceNode | null>(null);
-  const copy = canvasCopy[locale];
-  const activeNode = hoveredNode ?? focusedNode ?? selectedNode;
-  const selectNode = (node: EvidenceNode) => () => setSelectedNode(node);
-  const focusNode = (node: EvidenceNode) => () => setFocusedNode(node);
-  const hoverNode = (node: EvidenceNode) => () => setHoveredNode(node);
-  const clearFocusedNode = () => setFocusedNode(null);
-  const clearHoveredNode = () => setHoveredNode(null);
+  graph: PublicResearchCase["graph"];
+  query: string;
+};
+
+export function EvidenceCanvas({ locale, mode, graph, query }: EvidenceCanvasProps) {
+  const initialNode =
+    graph.nodes.find((node) => node.type === "evidence")?.id ?? graph.nodes[0]?.id ?? "";
+  const [selectedNode, setSelectedNode] = useState(initialNode);
+  const [focusedNode, setFocusedNode] = useState<string | null>(null);
+  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  const labels = canvasLabels[locale];
+  const activeNodeId = hoveredNode ?? focusedNode ?? selectedNode;
+  const activeNode = graph.nodes.find((node) => node.id === activeNodeId) ?? graph.nodes[0];
 
   return (
     <div className={`evidence-canvas evidence-canvas-${mode}`}>
       <div className="canvas-toolbar">
         <span className="canvas-status">
           <span aria-hidden="true" />
-          {copy.toolbar[mode]}
+          {labels[mode]}
         </span>
         <Search aria-hidden="true" size={16} />
       </div>
-      <p className="canvas-query">{copy.query}</p>
+      <p className="canvas-query">{query}</p>
 
       <div
         className="graph-plane"
-        data-active-node={activeNode}
-        onPointerLeave={clearHoveredNode}
+        data-active-node={activeNode?.type}
+        onPointerLeave={() => setHoveredNode(null)}
       >
-        <span className="graph-edge edge-claim-evidence" aria-hidden="true" />
-        <span className="graph-edge edge-evidence-source" aria-hidden="true" />
-        <button
-          className="graph-node graph-node-claim"
-          type="button"
-          aria-pressed={selectedNode === "claim"}
-          onClick={selectNode("claim")}
-          onFocus={focusNode("claim")}
-          onBlur={clearFocusedNode}
-          onPointerEnter={hoverNode("claim")}
-          onPointerLeave={clearHoveredNode}
-        >
-          <span>{copy.labels.claim}</span>
-          <strong>{copy.claim}</strong>
-        </button>
-        <button
-          className="graph-node graph-node-evidence"
-          type="button"
-          aria-pressed={selectedNode === "evidence"}
-          onClick={selectNode("evidence")}
-          onFocus={focusNode("evidence")}
-          onBlur={clearFocusedNode}
-          onPointerEnter={hoverNode("evidence")}
-          onPointerLeave={clearHoveredNode}
-        >
-          <Quote aria-hidden="true" size={16} />
-          <span>{copy.labels.evidence}</span>
-          <strong>{copy.evidence}</strong>
-        </button>
-        <button
-          className="graph-node graph-node-source"
-          type="button"
-          aria-pressed={selectedNode === "source"}
-          onClick={selectNode("source")}
-          onFocus={focusNode("source")}
-          onBlur={clearFocusedNode}
-          onPointerEnter={hoverNode("source")}
-          onPointerLeave={clearHoveredNode}
-        >
-          <FileText aria-hidden="true" size={16} />
-          <span>{copy.labels.source}</span>
-          <strong>{copy.source}</strong>
-        </button>
+        {graph.edges.map((edge, index) => (
+          <span
+            className={`graph-edge graph-edge-${index + 1}`}
+            data-active={edge.from === activeNodeId || edge.to === activeNodeId}
+            aria-hidden="true"
+            key={edge.id}
+          />
+        ))}
+        {graph.nodes.map((node) => {
+          const Icon = nodeIcons[node.type];
+          return (
+            <button
+              className={`graph-node graph-node-${node.type}`}
+              type="button"
+              aria-pressed={selectedNode === node.id}
+              onClick={() => setSelectedNode(node.id)}
+              onFocus={() => setFocusedNode(node.id)}
+              onBlur={() => setFocusedNode(null)}
+              onPointerEnter={() => setHoveredNode(node.id)}
+              onPointerLeave={() => setHoveredNode(null)}
+              key={node.id}
+            >
+              <Icon aria-hidden="true" size={16} />
+              <span>{labels[node.type]}</span>
+              <strong>{node.label[locale]}</strong>
+            </button>
+          );
+        })}
       </div>
 
-      <div className="canvas-inspector" aria-live="polite">
-        <Check aria-hidden="true" size={16} />
-        <span>{copy.detail[activeNode]}</span>
+      <div className="canvas-inspector" aria-live="polite" role="status">
+        <CircleCheckBig aria-hidden="true" size={16} />
+        <span>{activeNode?.detail[locale]}</span>
       </div>
     </div>
   );

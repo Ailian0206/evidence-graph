@@ -18,6 +18,26 @@ const publicRoutes = [
     heading: "AI Photo Studio CN",
     screenshot: "case-photo-zh",
   },
+  {
+    path: "/zh/notes/cyberverse-commercial-foundation",
+    heading: "CyberVerse 能否成为独立开发者的商业产品底座？",
+    screenshot: "research-cyberverse-zh",
+  },
+  {
+    path: "/zh/notes/evidence-graph-vs-ai-search",
+    heading: "Evidence Graph 与普通 AI 搜索总结有什么不同？",
+    screenshot: "research-comparison-zh",
+  },
+  {
+    path: "/zh/notes/long-running-ai-infrastructure",
+    heading: "Vercel、Railway、Cloudflare：长时 AI 研究工作流怎么选？",
+    screenshot: "research-infrastructure-zh",
+  },
+  {
+    path: "/en/notes/evidence-graph-vs-ai-search",
+    heading: "How does Evidence Graph differ from ordinary AI search summaries?",
+    screenshot: "research-comparison-en",
+  },
 ] as const;
 
 for (const route of publicRoutes) {
@@ -45,6 +65,12 @@ test("invalid locale prefixes return 404 without redirecting", async ({ request 
   }
 });
 
+test("unknown public research cases return 404", async ({ request }) => {
+  const response = await request.get("/zh/notes/missing-case", { maxRedirects: 0 });
+
+  expect(response.status()).toBe(404);
+});
+
 test("evidence preview exposes inspectable source state", async ({ page }) => {
   await page.goto("/zh/evidence");
 
@@ -53,7 +79,7 @@ test("evidence preview exposes inspectable source state", async ({ page }) => {
 
   await expect(sourceNode).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator(".canvas-inspector")).toContainText(
-    "2026-07-12 获取 · 一手访谈",
+    "真实完成批次记录精确 Quote、关系、来源覆盖与完成率。",
   );
 });
 
@@ -66,7 +92,7 @@ test("evidence preview keeps a clicked selection after pointer leave", async ({ 
 
   await expect(sourceNode).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator(".canvas-inspector")).toContainText(
-    "2026-07-12 获取 · 一手访谈",
+    "真实完成批次记录精确 Quote、关系、来源覆盖与完成率。",
   );
 });
 
@@ -79,7 +105,7 @@ test("Chinese public pages localize metadata and secondary labels", async ({ pag
     "我把复杂的 AI 工作流做成可理解、可验证、可持续维护的产品。当前重点是 Evidence Graph：让研究结论回到原文证据。",
   );
   await expect(page.locator(".note-row").first().locator("p").first()).toHaveText(
-    "草稿",
+    "已发布",
   );
   await expect(page.locator("body")).not.toContainText("Research");
   await expect(page.locator("body")).not.toContainText("Draft");
@@ -87,7 +113,7 @@ test("Chinese public pages localize metadata and secondary labels", async ({ pag
   await page.goto("/zh/evidence");
 
   await expect(page.locator(".evidence-canvas-workspace .canvas-status")).toContainText(
-    "运行 01 / 证据审核",
+    "公开研究 / 决策图",
   );
 
   await page.goto("/zh/work");
@@ -106,11 +132,13 @@ test("evidence preview keeps hover and focus state aligned", async ({ page }) =>
   await claimNode.hover();
   await expect(graphPlane).toHaveAttribute("data-active-node", "claim");
   await expect(claimNode).toHaveAttribute("aria-pressed", "false");
-  await expect(inspector).toContainText("待审核主张 · 2 条支持证据");
+  await expect(inspector).toContainText(
+    "Source、Evidence、Claim 和关系独立保存，错误可以局部修正。",
+  );
 
   await graphPlane.hover({ position: { x: 8, y: 160 } });
   await expect(graphPlane).toHaveAttribute("data-active-node", "evidence");
-  await expect(inspector).toContainText("精确匹配 · 第 18 段");
+  await expect(inspector).toContainText("公开报告的无引用事实段落为 0，十题全部完成。");
 
   await claimNode.focus();
   await expect(graphPlane).toHaveAttribute("data-active-node", "claim");
@@ -119,15 +147,17 @@ test("evidence preview keeps hover and focus state aligned", async ({ page }) =>
   await claimNode.hover();
   await graphPlane.hover({ position: { x: 8, y: 160 } });
   await expect(graphPlane).toHaveAttribute("data-active-node", "claim");
-  await expect(inspector).toContainText("待审核主张 · 2 条支持证据");
+  await expect(inspector).toContainText(
+    "Source、Evidence、Claim 和关系独立保存，错误可以局部修正。",
+  );
 
   await backLink.focus();
   await expect(graphPlane).toHaveAttribute("data-active-node", "evidence");
-  await expect(inspector).toContainText("精确匹配 · 第 18 段");
+  await expect(inspector).toContainText("公开报告的无引用事实段落为 0，十题全部完成。");
 
   await evidenceNode.focus();
   await expect(evidenceNode).toHaveAttribute("aria-pressed", "true");
-  await expect(inspector).toContainText("精确匹配 · 第 18 段");
+  await expect(inspector).toContainText("公开报告的无引用事实段落为 0，十题全部完成。");
 });
 
 test("Chinese portfolio sections do not expose English structural labels", async ({
@@ -161,10 +191,10 @@ test("Evidence Graph case study shows the real graph and public report entry", a
   await page.goto("/zh/work/evidence-graph");
 
   await expect(page.locator(".evidence-canvas-workspace")).toBeVisible();
-  await expect(page.getByRole("link", { name: "查看公开报告" })).toHaveAttribute(
-    "href",
-    "/r/traceable-citations-review-zh",
-  );
+  await expect(
+    page.getByRole("link", { name: "查看公开报告", exact: true }),
+  ).toHaveAttribute("href", "/r/evidence-graph-vs-ai-search-report");
+  await expect(page.locator(".case-research li")).toHaveCount(3);
 });
 
 test("mobile evidence preview keeps controls clear of the graph", async ({ page }) => {

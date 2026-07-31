@@ -1,22 +1,22 @@
 # Evidence Graph 项目状态
 
-更新时间：2026-07-30
+更新时间：2026-07-31
 
 ## 当前阶段
 
-- 当前里程碑：C4“Evidence Eval 与证据质量门禁”已完成，当前没有进行中的里程碑。
-- 当前进度：现有完整真实批次按批准的二域/90% MVP 口径六项全部通过；PR #22 已通过独立 Claude 审核和 GitHub CI，并以 merge commit `67e5a4b` 合并到 `main`。
-- 下一门禁：C5“真实案例与作品集回填”尚未开始；等待后续任务指令，不静默扩展范围。
+- 当前里程碑：C5“真实案例与作品集回填”进行中，工作分支为 `feat/c5-public-cases`。
+- 当前进度：C5 已完成 3 个公开案例、静态报告与作品集入口，Provider boundary、lint、typecheck、440 项单元测试、production build、97 项 E2E 和三档浏览器验收均通过；Draft PR #23 已创建。
+- 下一门禁：PR #23 直接进入独立 Claude 审核和 GitHub CI；两者通过后以 merge commit 合并并停止，不开始 C6。
 - 默认开发工作流：Trellis 3.4.2；新任务使用 `.trellis/tasks/` 与 `.trellis/spec/`，`docs/superpowers/` 只保留历史记录。
-- 当前禁止：不得未经确认调用真实 Provider 或开始 C5-C6，不得删除 Production 用户或数据，不得更新 `release` 或部署。
+- 当前禁止：不得未经确认调用真实 Provider 或开始 C6，不得删除 Production 用户或数据，不得更新 `release` 或部署。
 - 路线图：`docs/roadmap.md`。
 
 ## 真实完成度
 
 | 维度 | 当前状态 | 说明 |
 | --- | --- | --- |
-| 代码完成度 | C4 已完成并合并 | 固定题集、比例评测器、CLI、累计预算、不同域名来源优先级和有界补链已通过门禁 |
-| Agent 本地验收度 | C4 新口径 6/6 通过 | 65/65 精确引用、无引用事实段落 0、关系 19/20、至少二域 9/10、完成 10/10、单题最高 `0.02009 USD` |
+| 代码完成度 | C5 实现完成，PR #23 审核中 | 3 个固定双语案例、可引用静态报告、Notes 入口与作品集回填已通过本地代码门禁 |
+| Agent 本地验收度 | C5 已通过 | 首页、案例详情、报告和导航已在 390x844、1024x768、1440x1000 三档视口验收 |
 | 用户反馈状态 | 异步接收 | 用户可继续体验并提交问题；反馈不回溯阻断已通过门禁的开发流程 |
 | 产品完成度 | 未完成 | 3 个真实案例和 Release Candidate 尚未开始 |
 | Production 状态 | 有可用历史基线，当前冻结 | `release` 是唯一 Production Branch；C6 前不再发布 |
@@ -44,7 +44,7 @@
 | C2 核心研究闭环与缺陷收敛 | 已完成 | PR #19 已通过自动化、Agent 本地验收、独立审核和 CI，并以 merge commit 合并 |
 | C3 Settings 与账号/数据生命周期 | 已完成 | PR #20 已通过 Agent 验收、独立审核和 CI，并以 merge commit 合并 |
 | C4 Evidence Eval | 已完成 | PR #22 已通过新口径真实评测、独立审核和 CI，并以 merge commit 合并 |
-| C5 真实案例与作品集回填 | 尚未开始 | 3 个真实案例和作品集页面通过 Agent 验收与模块门禁 |
+| C5 真实案例与作品集回填 | 进行中 | 3 个真实案例和作品集页面通过 Agent 验收与模块门禁 |
 | C6 本地 Release Candidate | 尚未开始 | 固定候选提交通过完整门禁和 Agent walkthrough |
 | R1 Production Beta | 冻结 | 只有 C6 完成并获用户明确发布授权后执行 |
 
@@ -123,4 +123,4 @@
 
 ## 下一步
 
-C4 已完成并合并。C5 尚未开始，等待后续任务指令；Production 继续冻结。
+C5 功能与 Agent 本地验收已完成，Draft PR #23 已创建。`test:managed` 的 Provider boundary 通过，托管数据库步骤因 Supabase CLI 临时 pooler 角色认证失败而受阻；该外部环境门禁不影响静态案例实现，也不通过产品代码规避。下一步完成独立审核、CI 和 merge commit；Production 继续冻结，不开始 C6。

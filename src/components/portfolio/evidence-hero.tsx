@@ -2,6 +2,7 @@ import { ArrowDownRight, ArrowUpRight, Mail } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
 
 import { profile } from "@/content/profile";
+import { publicResearchCases } from "@/content/public-research-cases";
 import { Link } from "@/i18n/navigation";
 import type { AppLocale } from "@/i18n/routing";
 
@@ -10,10 +11,16 @@ import { EvidenceCanvas } from "./evidence-canvas";
 export async function EvidenceHero() {
   const locale = (await getLocale()) as AppLocale;
   const t = await getTranslations("Portfolio");
+  const researchCase = publicResearchCases[1];
 
   return (
     <section className="portfolio-hero">
-      <EvidenceCanvas locale={locale} mode="hero" />
+      <EvidenceCanvas
+        locale={locale}
+        mode="hero"
+        graph={researchCase.graph}
+        query={researchCase.question[locale]}
+      />
       <div className="hero-vignette" aria-hidden="true" />
       <div className="hero-content">
         <p className="hero-eyebrow">{t("eyebrow")}</p>

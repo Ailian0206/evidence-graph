@@ -45,3 +45,21 @@ test("skip link moves keyboard focus to the localized main content", async ({ pa
   await skipLink.press("Enter");
   await expect(page.locator("#main-content")).toBeFocused();
 });
+
+test("visitor can move from Notes to a real case and its cited report", async ({ page }) => {
+  await page.goto("/zh/notes");
+
+  await page
+    .getByRole("link", { name: "Evidence Graph 与普通 AI 搜索总结有什么不同？" })
+    .click();
+  await expect(page).toHaveURL(/\/zh\/notes\/evidence-graph-vs-ai-search$/);
+  await expect(page.locator(".graph-node-decision")).toBeVisible();
+
+  await page.getByRole("link", { name: "打开引用报告" }).click();
+  await expect(page).toHaveURL(/\/r\/evidence-graph-vs-ai-search-report$/);
+  await expect(page.getByTestId("public-report")).toBeVisible();
+  await expect(page.locator('[data-public-citations="true"] a').first()).toHaveAttribute(
+    "href",
+    /^https:\/\//,
+  );
+});
