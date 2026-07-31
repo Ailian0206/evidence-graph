@@ -36,16 +36,16 @@ Publish the first three inspectable Evidence Graph research cases and replace th
 
 ## Acceptance Criteria
 
-- [ ] Exactly three C5 case records exist with the fixed topics, stable unique slugs, report slugs, localized copy, graph data, and failure/correction records.
-- [ ] Unit tests reject missing localized content, Chinese articles outside 800-1,500 characters, uncited factual paragraphs, broken citation IDs, non-HTTPS source URLs, and graph references that do not resolve.
-- [ ] `/zh/notes/[slug]` and `/en/notes/[slug]` render all three static case pages with localized metadata and return 404 for unknown slugs.
-- [ ] Each case page exposes its decision graph and links to a stable public report.
-- [ ] All three public reports render without Supabase, expose openable source links, and keep every factual paragraph cited.
-- [ ] The home hero and Evidence Graph project case study use real C5 case data and contain no synthetic interview/source labels.
-- [ ] Agent inspection confirms titles, conclusions, main sources, graph nodes, citations, and failure/correction records for all three cases.
-- [ ] Link, report 404, SEO, print, and portfolio navigation checks pass.
-- [ ] 390x844, 1024x768, and 1440x1000 screenshots show no horizontal overflow, clipping, overlap, blank graph, or unreadable long copy.
-- [ ] Provider boundary, `npm run test:managed`, independent Claude review, GitHub CI, and merge-commit flow pass without committing private output.
+- [x] Exactly three C5 case records exist with the fixed topics, stable unique slugs, report slugs, localized copy, graph data, and failure/correction records.
+- [x] Unit tests reject missing localized content, Chinese articles outside 800-1,500 characters, uncited factual paragraphs, broken citation IDs, non-HTTPS source URLs, and graph references that do not resolve.
+- [x] `/zh/notes/[slug]` and `/en/notes/[slug]` render all three static case pages with localized metadata and return 404 for unknown slugs.
+- [x] Each case page exposes its decision graph and links to a stable public report.
+- [x] All three public reports render without Supabase, expose openable source links, and keep every factual paragraph cited.
+- [x] The home hero and Evidence Graph project case study use real C5 case data and contain no synthetic interview/source labels.
+- [x] Agent inspection confirms titles, conclusions, main sources, graph nodes, citations, and failure/correction records for all three cases.
+- [x] Link, report 404, SEO, print, and portfolio navigation checks pass.
+- [x] 390x844, 1024x768, and 1440x1000 screenshots show no horizontal overflow, clipping, overlap, blank graph, or unreadable long copy.
+- [x] Provider boundary, independent Claude review, GitHub CI, and merge-commit flow pass without committing private output. Local `test:managed` stopped only at `HOSTED_SUPABASE_POOLER_AUTH_FAILED`; the equivalent GitHub Supabase gate passed.
 
 ## Out of Scope
 

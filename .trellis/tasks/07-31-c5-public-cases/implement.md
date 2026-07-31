@@ -35,11 +35,11 @@
 
 - [x] Run focused content, public route, report publication, and visual tests.
 - [x] Verify every external source link manually without adding brittle third-party network checks to CI.
-- [ ] Run `npm run check:provider-boundary`, `npm run lint`, `npm run typecheck`, `npm run test:unit`, `npm run build`, `npm run test:e2e`, and `npm run test:managed`. All local code gates pass; `test:managed` remains blocked only by `HOSTED_SUPABASE_POOLER_AUTH_FAILED`.
+- [x] Run `npm run check:provider-boundary`, `npm run lint`, `npm run typecheck`, `npm run test:unit`, `npm run build`, `npm run test:e2e`, and `npm run test:managed`. All local code gates pass; `test:managed` stopped only at `HOSTED_SUPABASE_POOLER_AUTH_FAILED`, while the equivalent GitHub Supabase gate passed.
 - [x] Start the local app and inspect all three cases plus home -> Evidence Graph case study -> case -> report navigation.
 - [x] Capture 390x844, 1024x768, and 1440x1000 screenshots and run the visible UI audit.
-- [ ] Update project status, create one Draft PR, wait for CI, run independent Claude review immediately, fix verified findings, and merge with a merge commit.
-- [ ] Archive the Trellis task and stop; do not start C6.
+- [x] Update project status, create one Draft PR, wait for CI, run independent Claude review immediately, fix verified findings, and merge with a merge commit.
+- [x] Archive the Trellis task and stop; do not start C6.
 
 ## Risk And Stop Conditions
 
