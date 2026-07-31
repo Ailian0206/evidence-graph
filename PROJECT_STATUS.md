@@ -5,8 +5,8 @@
 ## 当前阶段
 
 - 当前里程碑：C5“真实案例与作品集回填”进行中，工作分支为 `feat/c5-public-cases`。
-- 当前进度：C5 已完成 3 个公开案例、静态报告与作品集入口，Provider boundary、lint、typecheck、439 项单元测试、production build、97 项 E2E 和三档浏览器验收均通过；尚未提交或创建 PR。
-- 下一门禁：创建唯一 Draft PR，直接进入独立 Claude 审核和 GitHub CI；两者通过后以 merge commit 合并并停止，不开始 C6。
+- 当前进度：C5 已完成 3 个公开案例、静态报告与作品集入口，Provider boundary、lint、typecheck、440 项单元测试、production build、97 项 E2E 和三档浏览器验收均通过；Draft PR #23 已创建。
+- 下一门禁：PR #23 直接进入独立 Claude 审核和 GitHub CI；两者通过后以 merge commit 合并并停止，不开始 C6。
 - 默认开发工作流：Trellis 3.4.2；新任务使用 `.trellis/tasks/` 与 `.trellis/spec/`，`docs/superpowers/` 只保留历史记录。
 - 当前禁止：不得未经确认调用真实 Provider 或开始 C6，不得删除 Production 用户或数据，不得更新 `release` 或部署。
 - 路线图：`docs/roadmap.md`。
@@ -15,7 +15,7 @@
 
 | 维度 | 当前状态 | 说明 |
 | --- | --- | --- |
-| 代码完成度 | C5 实现完成，待 PR 收口 | 3 个固定双语案例、可引用静态报告、Notes 入口与作品集回填已通过本地代码门禁 |
+| 代码完成度 | C5 实现完成，PR #23 审核中 | 3 个固定双语案例、可引用静态报告、Notes 入口与作品集回填已通过本地代码门禁 |
 | Agent 本地验收度 | C5 已通过 | 首页、案例详情、报告和导航已在 390x844、1024x768、1440x1000 三档视口验收 |
 | 用户反馈状态 | 异步接收 | 用户可继续体验并提交问题；反馈不回溯阻断已通过门禁的开发流程 |
 | 产品完成度 | 未完成 | 3 个真实案例和 Release Candidate 尚未开始 |
@@ -123,4 +123,4 @@
 
 ## 下一步
 
-C5 功能与 Agent 本地验收已完成。`test:managed` 的 Provider boundary 通过，托管数据库步骤因 Supabase CLI 临时 pooler 角色认证失败而受阻；该外部环境门禁不影响静态案例实现，也不通过产品代码规避。下一步完成 Draft PR、独立审核、CI 和 merge commit；Production 继续冻结，不开始 C6。
+C5 功能与 Agent 本地验收已完成，Draft PR #23 已创建。`test:managed` 的 Provider boundary 通过，托管数据库步骤因 Supabase CLI 临时 pooler 角色认证失败而受阻；该外部环境门禁不影响静态案例实现，也不通过产品代码规避。下一步完成独立审核、CI 和 merge commit；Production 继续冻结，不开始 C6。
