@@ -72,3 +72,28 @@
 ### Status
 
 [OK] **Completed**
+
+
+## Session 4: 完成 C5 真实案例与作品集回填
+
+**Date**: 2026-07-31
+**Task**: 完成 C5 真实案例与作品集回填
+**Branch**: `main`
+
+### Summary
+
+发布三个双语真实研究案例、Source 到 Decision 决策图和稳定引用报告，完成作品集回填与三档浏览器验收；PR #23 经独立 Claude 复审和两项 CI 通过后以 merge commit 合并，归档 C5，未启动 C6。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `af9d6a7` | (see git log) |
+| `e9fb26e` | (see git log) |
+| `a657ef6` | (see git log) |
+| `6cbbb0c` | (see git log) |
+| `3259c33` | (see git log) |
+
+### Status
+
+[OK] **Completed**
